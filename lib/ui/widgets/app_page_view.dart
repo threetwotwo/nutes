@@ -15,7 +15,7 @@ class AppPageView extends StatefulWidget {
 
 class _AppPageViewState extends State<AppPageView> {
   //Ser initial page to the feed page
-  final _pageController = PageController(initialPage: 1);
+//  final _pageController = PageController(initialPage: 1);
   Widget _editorStoryScreen;
 
   final _focusNode = FocusScopeNode();
@@ -27,26 +27,34 @@ class _AppPageViewState extends State<AppPageView> {
       node: _focusNode,
       child: EditorPage(
         isStoryMode: true,
-        onBackPressed: () => _animateToPage(1),
+        onBackPressed: () => cache.animateTo(1),
+//        onBackPressed: () => _animateToPage(1),
       ),
     );
 
     ///listen to page scroll
-    _pageController.addListener(() {
-      if (_pageController.page.floor() != 0) {
+    cache.appScrollController.addListener(() {
+      if (cache.appScrollController.page.floor() != 0) {
         FocusScope.of(context).requestFocus(FocusNode());
       } else {
         FocusScope.of(context).setFirstFocus(_focusNode);
       }
     });
+//    _pageController.addListener(() {
+//      if (_pageController.page.floor() != 0) {
+//        FocusScope.of(context).requestFocus(FocusNode());
+//      } else {
+//        FocusScope.of(context).setFirstFocus(_focusNode);
+//      }
+//    });
 
     super.initState();
   }
 
-  void _animateToPage(int page) {
-    _pageController.animateToPage(page,
-        duration: Duration(milliseconds: 300), curve: Curves.easeOut);
-  }
+//  void _animateToPage(int page) {
+//    _pageController.animateToPage(page,
+//        duration: Duration(milliseconds: 300), curve: Curves.easeOut);
+//  }
 
   @override
   Widget build(BuildContext context) {
@@ -56,11 +64,12 @@ class _AppPageViewState extends State<AppPageView> {
         return PageView(
           dragStartBehavior: DragStartBehavior.down,
           physics: cache.physics,
-          controller: _pageController,
+          controller: cache.appScrollController,
           children: <Widget>[
             _editorStoryScreen,
             HomeScreen(
-              onCreatePressed: () => _animateToPage(0),
+//              onCreatePressed: () => _animateToPage(0),
+              onCreatePressed: () => cache.animateTo(0),
 
               ///Page view is scrollable only when on feed page
               ///TODO: disable scroll on push @@@ Make use of Dismissible to
@@ -72,7 +81,8 @@ class _AppPageViewState extends State<AppPageView> {
               }),
             ),
             DirectScreen(
-              onLeadingPressed: () => _animateToPage(1),
+              onLeadingPressed: () => cache.animateTo(1),
+//              onLeadingPressed: () => _animateToPage(1),
               onTrailingPressed: () {},
             ),
           ],

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
+//import 'package:provider/provider.dart';
 import 'package:nutes/core/models/filter.dart';
 import 'package:nutes/core/services/local_cache.dart';
-import 'package:nutes/core/view_models/base_model.dart';
+//import 'package:nutes/core/view_models/base_model.dart';
 import 'package:nutes/core/view_models/upload_model.dart';
 import 'package:nutes/ui/shared/buttons.dart';
 import 'package:nutes/ui/shared/provider_view.dart';
@@ -45,8 +45,8 @@ class _EditorPageState extends State<EditorPage>
 
   @override
   void initState() {
-    ///hide system overlays
-    SystemChrome.setEnabledSystemUIOverlays([]);
+    ///hide system overlays when not in story mode
+    if (!widget.isStoryMode) SystemChrome.setEnabledSystemUIOverlays([]);
     super.initState();
   }
 
@@ -185,10 +185,52 @@ class _EditorPageState extends State<EditorPage>
         duration: Duration(milliseconds: 100),
         curve: Curves.easeOut,
       );
-      final bundle = await capturePages[i]
-          .controller
-          .screenshotController
-          .capture(index: i, pixelRatio: 5);
+
+      final page = capturePages[i];
+
+      final filter = page.filter;
+
+      double aspectRatio;
+
+      final text = page.controller.textController.text.length;
+
+      switch (filter.type) {
+        case FilterType.urban:
+          if (text > 230)
+            aspectRatio = 0.8;
+          else if (text > 150)
+            aspectRatio = 1;
+          else
+            aspectRatio = 1.4;
+          break;
+
+        case FilterType.canvas:
+        case FilterType.ego:
+          if (text > 300)
+            aspectRatio = 0.8;
+          else if (text > 200)
+            aspectRatio = 1;
+          else
+            aspectRatio = 1.4;
+          break;
+
+        case FilterType.frame:
+          aspectRatio = 1;
+          break;
+
+        default:
+          aspectRatio = 1;
+          break;
+      }
+
+      print('suggested aspect ratio for image: $aspectRatio');
+
+      final bundle =
+          await capturePages[i].controller.screenshotController.capture(
+                index: i,
+                pixelRatio: 5,
+                aspectRatio: aspectRatio,
+              );
 
       bundles.add(bundle);
     }
@@ -292,6 +334,7 @@ class _EditorPageState extends State<EditorPage>
                               await Future.delayed(Duration(milliseconds: 100));
 
                               final bundles = await takeScreenshots();
+
                               Navigator.push(
                                   context,
                                   MaterialPageRoute(

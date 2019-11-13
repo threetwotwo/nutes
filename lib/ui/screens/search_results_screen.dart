@@ -6,6 +6,7 @@ import 'package:nutes/ui/screens/my_profile_screen.dart';
 import 'package:nutes/ui/screens/profile_screen.dart';
 import 'package:nutes/ui/shared/avatar_image.dart';
 import 'package:nutes/ui/shared/avatar_list_item.dart';
+import 'package:nutes/ui/shared/refresh_list_view.dart';
 import 'package:nutes/ui/shared/styles.dart';
 
 class SearchResultsScreen extends StatefulWidget {
@@ -50,32 +51,37 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
                                 ? []
                                 : snapshot.data.data['uids'] ?? [];
 
-                            return ListView.builder(
-                                shrinkWrap: true,
-                                physics: NeverScrollableScrollPhysics(),
-                                itemCount: docs.length,
-                                itemBuilder: (context, index) {
-                                  final user = User.fromMap(docs[index].data,
-                                      uid: docs[index].documentID);
+                            return RefreshListView(
+//                              onRefresh: () {},
+//                              onLoadMore: () {},
+                              children: <Widget>[
+                                ListView.builder(
+                                    shrinkWrap: true,
+                                    physics: NeverScrollableScrollPhysics(),
+                                    itemCount: docs.length,
+                                    itemBuilder: (context, index) {
+                                      final user = User.fromMap(
+                                          docs[index].data,
+                                          uid: docs[index].documentID);
 
-                                  final isFollowingText =
-                                      followingIds.contains(user.uid)
-                                          ? user.displayName.isEmpty
-                                              ? 'Follo'
-                                                  'wing'
-                                              : ' • Following'
-                                          : '';
-                                  return AvatarListItem(
-                                    avatar: AvatarImage(
-                                      url: user.photoUrl,
-                                      spacing: 1.6,
+                                      final isFollowingText =
+                                          followingIds.contains(user.uid)
+                                              ? user.displayName.isEmpty
+                                                  ? 'Follo'
+                                                      'wing'
+                                                  : ' • Following'
+                                              : '';
+                                      return AvatarListItem(
+                                        avatar: AvatarImage(
+                                          url: user.photoUrl,
+                                          spacing: 1.6,
 //                                      showStoryIndicator: true,
-                                      padding: 8,
-                                      addStory: false,
-                                    ),
-                                    title: user.username,
-                                    subtitle:
-                                        '${user.displayName}$isFollowingText',
+                                          padding: 8,
+                                          addStory: false,
+                                        ),
+                                        title: user.username,
+                                        subtitle:
+                                            '${user.displayName}$isFollowingText',
 //                                    trailingWidget: Padding(
 //                                      padding: const EdgeInsets.all(8.0),
 //                                      child: Text(
@@ -85,12 +91,14 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
 //                                        style: TextStyle(color: Colors.grey),
 //                                      ),
 //                                    ),
-                                    onAvatarTapped:
-                                        _navigateToProfile(context, user),
-                                    onBodyTapped:
-                                        _navigateToProfile(context, user),
-                                  );
-                                });
+                                        onAvatarTapped:
+                                            _navigateToProfile(context, user),
+                                        onBodyTapped:
+                                            _navigateToProfile(context, user),
+                                      );
+                                    }),
+                              ],
+                            );
                           });
                     },
                   ),

@@ -276,7 +276,7 @@ class _PostListItemState extends State<PostListItem> {
                   ],
                   if (!isShout)
                     AspectRatio(
-                      aspectRatio: aspectRatio,
+                      aspectRatio: post.urls.first.aspectRatio ?? 1,
                       child: PageViewer(
                         controller: _controller,
                         length: post.urls.length,

@@ -75,6 +75,7 @@ class FIRStorage {
     print('upload finished');
     return ImageUrlBundle(
       index: index,
+      aspectRatio: fileBundle.aspectRatio,
       original: urls[0],
       medium: urls[1],
       small: urls[2],

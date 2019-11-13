@@ -18,13 +18,19 @@ class ScreenshotController {
     @required int index,
     String path = "",
     double pixelRatio: 4,
+    double aspectRatio = 1,
   }) async {
     try {
       final original = await _createImageFile(pixelRatio, path);
       final medium = await _createImageFile(pixelRatio / 4, path);
       final small = await _createImageFile(pixelRatio / 8, path);
       return ImageFileBundle(
-          index: index, original: original, medium: medium, small: small);
+        index: index,
+        aspectRatio: aspectRatio,
+        original: original,
+        medium: medium,
+        small: small,
+      );
     } catch (Exception) {
       throw (Exception);
     }

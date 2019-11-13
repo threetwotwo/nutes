@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nutes/core/services/local_cache.dart';
 import 'package:preload_page_view/preload_page_view.dart';
 import 'package:nutes/core/models/post_type.dart';
 import 'package:nutes/ui/shared/app_bars.dart';
@@ -14,6 +15,7 @@ class ConfirmUploadPage extends StatelessWidget {
   final bool enableStory;
   final List<ImageFileBundle> fileBundles;
   final _controller = PreloadPageController();
+  final cache = LocalCache.instance;
 
   ConfirmUploadPage({Key key, this.fileBundles, this.enableStory = false})
       : super(key: key);
@@ -44,7 +46,7 @@ class ConfirmUploadPage extends StatelessWidget {
           child: Column(
             children: <Widget>[
               AspectRatio(
-                  aspectRatio: 1,
+                  aspectRatio: fileBundles.first.aspectRatio ?? 1,
                   child: PageViewer(
                     controller: _controller,
                     length: fileBundles.length,
@@ -89,6 +91,12 @@ class ConfirmUploadPage extends StatelessWidget {
                       onPressed: () {
                         print('posting to story');
                         Repo.uploadStory(fileBundle: fileBundles.first);
+
+                        Navigator.popUntil(context, (r) => r.isFirst);
+
+                        cache.animateTo(1);
+//                        Future.delayed(Duration(milliseconds: 100))
+//                            .then((_) => cache.animateTo(1));
                       },
                       child: Text(
                         'Story',
@@ -112,9 +120,11 @@ class ConfirmUploadPage extends StatelessWidget {
                     onPressed: () {
                       print('pressed share to post');
                       Repo.uploadPost(
-                          type: PostType.text,
-                          fileBundles: fileBundles,
-                          isPrivate: Repo.currentProfile.user.isPrivate);
+                        type: PostType.text,
+                        fileBundles: fileBundles,
+                        isPrivate: Repo.currentProfile.user.isPrivate,
+                      );
+                      Navigator.popUntil(context, (r) => r.isFirst);
                     },
                     child: Text(
                       'Share',

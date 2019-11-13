@@ -17,12 +17,20 @@ class LocalCache {
   bool activityIsFirst = true;
   bool profileIsFirst = true;
 
+  PageController appScrollController = PageController(initialPage: 1);
+
   ScrollController homeScrollController = ScrollController();
   ScrollController searchScrollController = ScrollController();
   ScrollController profileScrollController = ScrollController();
 
   static const scrollDuration = Duration(milliseconds: 300);
   static const scrollCurve = Curves.easeInOut;
+
+  void animateTo(int page) {
+    print('animate app to page $page');
+    appScrollController.animateToPage(page,
+        duration: scrollDuration, curve: scrollCurve);
+  }
 
   void animateToTop(TabItem tabItem) {
     ScrollController controller;

@@ -358,6 +358,7 @@ class Repo {
                     'original': b.original,
                     'medium': b.medium,
                     'small': b.small,
+                    'aspect_ratio': b.aspectRatio ?? 1,
                   })
               .toList() ??
           {};

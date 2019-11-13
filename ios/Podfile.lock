@@ -148,9 +148,6 @@ PODS:
     - TOCropViewController (~> 2.5.1)
   - image_picker (0.0.1):
     - Flutter
-  - keyboard_visibility (0.5.0):
-    - Flutter
-    - Reachability
   - leveldb-library (1.22)
   - nanopb (0.3.9011):
     - nanopb/decode (= 0.3.9011)
@@ -160,7 +157,6 @@ PODS:
   - path_provider (0.0.1):
     - Flutter
   - Protobuf (3.10.0)
-  - Reachability (3.2)
   - sqflite (0.0.1):
     - Flutter
     - FMDB (~> 2.7.2)
@@ -172,10 +168,9 @@ DEPENDENCIES:
   - firebase_core (from `.symlinks/plugins/firebase_core/ios`)
   - firebase_database (from `.symlinks/plugins/firebase_database/ios`)
   - firebase_storage (from `.symlinks/plugins/firebase_storage/ios`)
-  - Flutter (from `.symlinks/flutter/ios-release`)
+  - Flutter (from `.symlinks/flutter/ios`)
   - image_cropper (from `.symlinks/plugins/image_cropper/ios`)
   - image_picker (from `.symlinks/plugins/image_picker/ios`)
-  - keyboard_visibility (from `.symlinks/plugins/keyboard_visibility/ios`)
   - path_provider (from `.symlinks/plugins/path_provider/ios`)
   - sqflite (from `.symlinks/plugins/sqflite/ios`)
 
@@ -204,7 +199,6 @@ SPEC REPOS:
     - leveldb-library
     - nanopb
     - Protobuf
-    - Reachability
     - TOCropViewController
 
 EXTERNAL SOURCES:
@@ -219,13 +213,11 @@ EXTERNAL SOURCES:
   firebase_storage:
     :path: ".symlinks/plugins/firebase_storage/ios"
   Flutter:
-    :path: ".symlinks/flutter/ios-release"
+    :path: ".symlinks/flutter/ios"
   image_cropper:
     :path: ".symlinks/plugins/image_cropper/ios"
   image_picker:
     :path: ".symlinks/plugins/image_picker/ios"
-  keyboard_visibility:
-    :path: ".symlinks/plugins/keyboard_visibility/ios"
   path_provider:
     :path: ".symlinks/plugins/path_provider/ios"
   sqflite:
@@ -260,12 +252,10 @@ SPEC CHECKSUMS:
   GTMSessionFetcher: 43b8b64263023d4f32caa0b40f4c8bfa3c5f36d8
   image_cropper: 966bf742cd9cee8d78010ec5c67dd9e7826e6b19
   image_picker: 16e5fec1fbc87fd3b297c53e4048521eaf17cd06
-  keyboard_visibility: 96a24de806fe6823c3ad956c01ba2ec6d056616f
   leveldb-library: 55d93ee664b4007aac644a782d11da33fba316f7
   nanopb: 18003b5e52dab79db540fe93fe9579f399bd1ccd
   path_provider: fb74bd0465e96b594bb3b5088ee4a4e7bb1f2a9d
   Protobuf: a4dc852ad69c027ca2166ed287b856697814375b
-  Reachability: 33e18b67625424e47b6cde6d202dce689ad7af96
   sqflite: ff1d9da63c06588cc8d1faf7256d741f16989d5a
   TOCropViewController: e9da34f484aedd4e5d5a8ab230ba217cfe16c729
 
