@@ -1,5 +1,6 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:nutes/ui/shared/styles.dart';
 import 'package:nutes/core/view_models/login_model.dart';
@@ -138,6 +139,11 @@ class UsernameTextField extends StatelessWidget {
     final model = Provider.of<LoginModel>(context);
 
     return BaseTextField(
+      maxLength: 30,
+      inputFormatters: [
+        WhitelistingTextInputFormatter(RegExp("[a-z._0-9]")),
+      ],
+
       ///ensure lowercase
       textCapitalization: TextCapitalization.none,
       controller: controller,
@@ -189,7 +195,8 @@ class BaseTextField extends StatelessWidget {
   final Function(String) onChanged;
   final Function(String) onSubmit;
   final TextCapitalization textCapitalization;
-
+  final int maxLength;
+  final List<TextInputFormatter> inputFormatters;
   const BaseTextField({
     Key key,
     @required this.controller,
@@ -202,6 +209,8 @@ class BaseTextField extends StatelessWidget {
     this.onSubmit,
     this.textCapitalization = TextCapitalization.none,
     this.message,
+    this.maxLength,
+    this.inputFormatters,
   }) : super(key: key);
 
   @override
@@ -220,7 +229,9 @@ class BaseTextField extends StatelessWidget {
           ),
         ),
         TextField(
+          inputFormatters: inputFormatters ?? null,
           textCapitalization: textCapitalization,
+          maxLength: maxLength ?? 200,
           onChanged: onChanged,
           onSubmitted: onSubmit,
           obscureText: this.obscureText,
@@ -228,6 +239,7 @@ class BaseTextField extends StatelessWidget {
           controller: controller,
           style: TextStyles.defaultText.copyWith(fontSize: textSize),
           decoration: InputDecoration(
+            counterText: '',
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide(

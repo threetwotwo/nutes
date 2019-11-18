@@ -64,6 +64,7 @@ class _ExploreScreenState extends State<ExploreScreen>
       child: Column(
         children: <Widget>[
           TabBar(
+            onTap: (tab) => cache.searchTabIndex = tab,
             indicatorColor: Colors.black,
             labelColor: Colors.black,
             labelStyle: TextStyles.W500Text15,
@@ -75,20 +76,22 @@ class _ExploreScreenState extends State<ExploreScreen>
             ],
           ),
           Expanded(
-            child: TabBarView(children: [
-              ExploreTabView(
-                controller: cache.searchScrollController,
-                posts: trendingPosts,
-                onRefresh: _getTrendingPosts,
-                onLoadMore: _getTrendingPosts,
-              ),
-              ExploreTabView(
-                controller: cache.searchScrollController,
-                posts: newestPosts,
-                onRefresh: _getNewestPosts,
-                onLoadMore: _getNewestPosts,
-              ),
-            ]),
+            child: TabBarView(
+              children: [
+                ExploreTabView(
+                  controller: cache.searchPopularScrollController,
+                  posts: trendingPosts,
+                  onRefresh: _getTrendingPosts,
+                  onLoadMore: _getTrendingPosts,
+                ),
+                ExploreTabView(
+                  controller: cache.searchSubmittedScrollController,
+                  posts: newestPosts,
+                  onRefresh: _getNewestPosts,
+                  onLoadMore: _getNewestPosts,
+                ),
+              ],
+            ),
           )
         ],
       ),

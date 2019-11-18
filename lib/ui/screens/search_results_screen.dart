@@ -115,9 +115,7 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
   Function _navigateToProfile(BuildContext context, User user) {
     return () => Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (context) => user.uid == Repo.currentProfile.uid
-                ? MyProfileScreen(isRoot: false)
-                : ProfileScreen(uid: user.uid),
+            builder: (context) => ProfileScreen(uid: user.uid),
           ),
         );
   }

@@ -240,15 +240,18 @@ class _LoginButtonState extends State<LoginButton>
         if (model.isSigningIn) {
           userProf = await model.signIn(username: username, password: password);
         } else {
-          await model.checkIfEmailIsValid(email);
+          ///Create a new user
+          model.checkIfEmailIsValid(email);
           await model.checkUsernameExists(username);
 
           if (model.emailIsValid && !model.usernameExists) {
-            userProf = await model.signUp(
+            await model.createUser(
               email: email,
               password: password,
               username: username,
             );
+            userProf =
+                await model.signIn(username: username, password: password);
           } else
             return model.setErrorMessage(model.usernameExists
                 ? 'Please '
@@ -258,7 +261,6 @@ class _LoginButtonState extends State<LoginButton>
                         'try another email'
                     : 'Please enter a valid email');
         }
-        Repo.currentProfile = userProf;
       },
       child: Column(
         children: <Widget>[

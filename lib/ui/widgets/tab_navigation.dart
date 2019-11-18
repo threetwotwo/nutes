@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nutes/core/models/tab_item.dart';
+import 'package:nutes/core/services/auth.dart';
 import 'package:nutes/core/services/locator.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/core/view_models/home_model.dart';
@@ -48,6 +49,8 @@ class TabNavigator extends StatelessWidget {
 
   final model = locator<HomeModel>();
 
+  final auth = Auth.instance;
+
   TabNavigator(
       {this.navigatorKey,
       this.tabItem,
@@ -83,18 +86,8 @@ class TabNavigator extends StatelessWidget {
 //          ActivityRoute.user: (context) => ProfileScreen(),
         };
       case TabItem.profile:
-        print(Repo.currentProfile.toMap());
         return {
           ProfileRoute.root: MyProfileScreen(isRoot: true),
-//          ProfileRoute.root: ProfileScreen(
-//            isRoot: true,
-//            uid: Repo.currentProfile.uid,
-//            onTrailingPressed: () => Navigator.of(context, rootNavigator: true)
-//                .push(MaterialPageRoute(
-//                    builder: (context) => AccountScreen(
-//                          user: Repo.currentProfile,
-//                        ))),
-//          ),
         };
     }
   }

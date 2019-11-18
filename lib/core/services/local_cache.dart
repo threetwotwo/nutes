@@ -17,14 +17,21 @@ class LocalCache {
   bool activityIsFirst = true;
   bool profileIsFirst = true;
 
+  int searchTabIndex = 0;
+
   PageController appScrollController = PageController(initialPage: 1);
 
   ScrollController homeScrollController = ScrollController();
-  ScrollController searchScrollController = ScrollController();
+  ScrollController searchPopularScrollController = ScrollController();
+  ScrollController searchSubmittedScrollController = ScrollController();
   ScrollController profileScrollController = ScrollController();
 
   static const scrollDuration = Duration(milliseconds: 300);
   static const scrollCurve = Curves.easeInOut;
+
+  void reset() {
+    LocalCache.instance = LocalCache();
+  }
 
   void animateTo(int page) {
     print('animate app to page $page');
@@ -33,6 +40,7 @@ class LocalCache {
   }
 
   void animateToTop(TabItem tabItem) {
+    print('scroll up for $tabItem');
     ScrollController controller;
 
     print(tabItem);
@@ -41,7 +49,9 @@ class LocalCache {
         controller = instance.homeScrollController;
         break;
       case TabItem.search:
-        controller = instance.searchScrollController;
+        controller = searchTabIndex == 0
+            ? instance.searchPopularScrollController
+            : instance.searchSubmittedScrollController;
         break;
       case TabItem.create:
         break;
@@ -52,8 +62,7 @@ class LocalCache {
         break;
     }
 
-    ///Scroll up if the controller is attached to a scroll view
-    if (controller.hasClients)
-      controller.animateTo(0, duration: scrollDuration, curve: scrollCurve);
+    ///Scroll up
+    controller.animateTo(0, duration: scrollDuration, curve: scrollCurve);
   }
 }

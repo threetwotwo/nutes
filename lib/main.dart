@@ -2,13 +2,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:nutes/core/services/auth.dart';
 import 'package:provider/provider.dart';
 import 'package:nutes/core/services/local_cache.dart';
 import 'package:nutes/ui/widgets/app_page_view.dart';
 import 'package:nutes/ui/screens/login_screen.dart';
 import 'package:nutes/core/services/locator.dart';
 import 'package:nutes/core/services/repository.dart';
-import 'package:nutes/core/view_models/feed_model.dart';
 import 'package:nutes/core/view_models/login_model.dart';
 import 'package:nutes/core/view_models/profile_model.dart';
 
@@ -97,6 +97,14 @@ class MainBuilder extends StatefulWidget {
 
 class _MainBuilderState extends State<MainBuilder> {
   final _auth = locator<LoginModel>();
+  final auth = Auth.instance;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+
+    super.initState();
+  }
 
   @override
   void dispose() {
@@ -110,7 +118,6 @@ class _MainBuilderState extends State<MainBuilder> {
       providers: [
         ChangeNotifierProvider<LoginModel>(
             builder: (context) => locator<LoginModel>()),
-        ChangeNotifierProvider<FeedModel>(builder: (context) => FeedModel()),
         ChangeNotifierProvider<ProfileModel>(
             builder: (context) => locator<ProfileModel>()),
       ],
@@ -129,7 +136,9 @@ class _MainBuilderState extends State<MainBuilder> {
 //          }
 
           if (snapshot.hasData) {
-            return AppPageView();
+            return AppPageView(
+              uid: snapshot.data.uid,
+            );
           } else {
             return LoginScreen();
           }

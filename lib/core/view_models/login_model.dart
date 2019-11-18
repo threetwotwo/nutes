@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:nutes/core/models/user.dart';
+import 'package:nutes/core/services/auth.dart';
 import 'package:nutes/core/services/firestore_service.dart';
 import 'package:nutes/core/services/locator.dart';
 import 'package:nutes/core/services/repository.dart';
@@ -17,7 +18,8 @@ class LoginModel extends BaseModel {
 
   bool get isSigningIn => this._isSigningIn;
   FirebaseAuth get auth => this._auth;
-  get currentUser => this._auth.currentUser();
+  Future<FirebaseUser> get currentUser => this._auth.currentUser();
+
   get onAuthStateChanged {
     return this._auth.onAuthStateChanged;
   }
@@ -49,8 +51,6 @@ class LoginModel extends BaseModel {
   }
 
   Future<UserProfile> signIn({String username, String password}) async {
-    print('sign in');
-
     setState(ViewState.Busy);
 
     bool noError = true;
@@ -79,14 +79,13 @@ class LoginModel extends BaseModel {
       }
     });
 
-    print(user);
     if (user == null && noError)
       setErrorMessage('Incorrect username or password');
     setState(ViewState.Idle);
     return user;
   }
 
-  Future<UserProfile> signUp({
+  Future<UserProfile> createUser({
     @required String email,
     @required String password,
     @required String username,

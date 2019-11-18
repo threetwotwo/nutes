@@ -10,6 +10,7 @@ import 'package:nutes/core/models/chat_message.dart';
 import 'package:nutes/core/models/post_type.dart';
 import 'package:nutes/core/models/story.dart';
 import 'package:nutes/core/models/tab_item.dart';
+import 'package:nutes/core/services/auth.dart';
 import 'package:nutes/core/services/firestore_service.dart';
 import 'package:nutes/core/services/rtdb_provider.dart';
 import 'package:nutes/core/services/storage_provider.dart';
@@ -27,6 +28,8 @@ class Repo {
   final _firestore = FirestoreService();
   final _database = RTDBProvider();
   final _storage = FIRStorage();
+
+  final auth = Auth.instance;
 
   static final _instance = Repo();
   static UserProfile currentProfile;
@@ -391,7 +394,7 @@ class Repo {
 
   ///current user's story stream
   static Stream<QuerySnapshot> myStoryStream() {
-    return _instance._firestore.myStoryStream();
+    return _instance._firestore.myStoryStream(_instance.auth.profile.uid);
   }
 
   static Future<List<UserStory>> getSnapshotUserStories(
@@ -417,9 +420,9 @@ class Repo {
   }
 
   ///fetch posts
-  static Future<List<Post>> getMorePosts({int limit}) {
-    return _instance._firestore.getMorePosts(limit: limit);
-  }
+//  static Future<List<Post>> getMorePosts({int limit}) {
+//    return _instance._firestore.getMorePosts(limit: limit);
+//  }
 
   static Future<List> getMyFollowRequests() async {
     final doc = await _instance._firestore.myFollowRequestsRef().get();
@@ -472,14 +475,22 @@ class Repo {
 
   static Future<User> getUser(String uid) => _instance._firestore.getUser(uid);
 
+  static Future<void> logout() => _instance._firestore.logout();
+
   ///returns a user object
   static Future<UserProfile> signInWithUsernameAndPassword(
-      {String username, String password}) {
-    print('repo signn in');
-    return _instance._firestore
+      {String username, String password}) async {
+    print('repo sign in $username');
+    final user = await _instance._firestore
         .signInWithUsernameAndPassword(username: username, password: password);
 
-//    return null;
+    _instance.auth.reset();
+
+    Repo.currentProfile = user;
+
+    _instance.auth.profile = user;
+
+    return user;
   }
 
   static Future<UserProfile> createUser({
@@ -487,6 +498,8 @@ class Repo {
     @required String password,
     @required String email,
   }) async {
+    print('create user $username');
+
     ///create FIRUser
     final authResult = await FirebaseAuth.instance
         .createUserWithEmailAndPassword(email: email, password: password)
@@ -497,7 +510,7 @@ class Repo {
 
     ///create user doc on firestore
     return (authResult != null)
-        ? await _instance._firestore.signUp(
+        ? await _instance._firestore.createUser(
             uid: authResult.user.uid,
             username: username,
             email: authResult.user.email)
@@ -552,6 +565,6 @@ class Repo {
   }
 
   static DocumentReference myRef() {
-    return _instance._firestore.userRef(currentProfile.uid);
+    return _instance._firestore.userRef(_instance.auth.profile.uid);
   }
 }

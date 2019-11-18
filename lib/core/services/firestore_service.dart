@@ -7,14 +7,18 @@ import 'package:nutes/core/models/post.dart';
 import 'package:nutes/core/models/post_type.dart';
 import 'package:nutes/core/models/story.dart';
 import 'package:nutes/core/models/user.dart';
+import 'package:nutes/core/services/auth.dart';
+import 'package:nutes/core/services/local_cache.dart';
 import 'package:nutes/core/services/repository.dart';
 
 ///The service that handles all reads and writes to firestore
 class FirestoreService {
   static final Firestore shared = Firestore.instance;
 
+  final auth = Auth.instance;
+  final cache = LocalCache.instance;
+
   static User currentUser;
-  Map<String, DocumentSnapshot> _lastFeedSnaps = {};
   List<String> _followings = [];
 
   Future<Map<String, dynamic>> runTransaction(
@@ -98,13 +102,13 @@ class FirestoreService {
   }
 
   DocumentReference _mySnapshotStoriesRef() {
-    return userRef(Repo.currentProfile.uid)
+    return userRef(auth.profile.uid)
         .collection('snapshots')
         .document('stories');
   }
 
   CollectionReference _storiesRef(String uid) {
-    assert(uid != null);
+//    assert(uid != null);
     return shared.collection('users').document(uid).collection('stories');
   }
 
@@ -240,8 +244,9 @@ class FirestoreService {
     return userRef(Repo.currentProfile.uid)
         .collection('chats')
         .where('is_persisted', isEqualTo: true)
-        .orderBy('last_checked_timestamp', descending: true)
-        .snapshots(includeMetadataChanges: true);
+//        .orderBy('last_checked_timestamp', descending: true)
+        .snapshots();
+//        .snapshots(includeMetadataChanges: true);
   }
 
   isTyping(String chatId, String uid, bool isTyping) {
@@ -717,7 +722,7 @@ class FirestoreService {
     return deleteRecentPostsToFollowerFeed(Repo.currentProfile.uid, uid);
   }
 
-  Stream<QuerySnapshot> myStoryStream() {
+  Stream<QuerySnapshot> myStoryStream(String uid) {
     final timestamp = Timestamp.now();
 
     final todayInSeconds = timestamp.seconds;
@@ -726,7 +731,7 @@ class FirestoreService {
     ///24 hours ago since now
     final cutOff = Timestamp(todayInSeconds - 86400, todayInNanoSeconds);
 
-    return _storiesRef(Repo.currentProfile.uid)
+    return _storiesRef(uid)
         .where('timestamp', isGreaterThanOrEqualTo: cutOff)
         .snapshots();
   }
@@ -734,7 +739,7 @@ class FirestoreService {
   DocumentReference myFollowingListRef() {
     return shared
         .collection('users')
-        .document(Repo.currentProfile.uid)
+        .document(auth.profile.uid)
         .collection('followings_list')
         .document('list');
   }
@@ -762,7 +767,7 @@ class FirestoreService {
   ///contains username and photo_url
   Future<List<User>> getAbridgedUserFromUids(List<String> uids) async {
     ///get followings array
-    final ref = shared.collection('users').document(Repo.currentProfile.uid);
+    final ref = shared.collection('users').document(auth.profile.uid);
 
     final doc = await ref.get();
 
@@ -1137,7 +1142,7 @@ class FirestoreService {
 
   ///TODO: how to get didlikes and stats?
   Stream<QuerySnapshot> myPostStream() {
-    final ref = userRef(Repo.currentProfile.uid)
+    final ref = userRef(auth.profile.uid)
         .collection('posts')
         .orderBy('timestamp', descending: true);
     return ref.snapshots();
@@ -1262,7 +1267,7 @@ class FirestoreService {
   }
 
   Future<List<Post>> getFeed() async {
-    final ref = userRef(Repo.currentProfile.uid)
+    final ref = userRef(auth.profile.uid)
         .collection('feed')
         .orderBy('timestamp', descending: true);
     final docs = await ref.getDocuments();
@@ -1383,7 +1388,7 @@ class FirestoreService {
   }
 
   Future<List<Post>> getPostsComplete(List<Post> posts) async {
-    final userFollowings = await getMyUserFollowings(Repo.currentProfile.uid);
+    final userFollowings = await getMyUserFollowings(auth.profile.uid);
     print('my userFollowings = $userFollowings');
 
     ///remove null posts
@@ -1403,73 +1408,73 @@ class FirestoreService {
 
   ///fetch more posts
   ///paginates using list of document snapshots
-  Future<List<Post>> getMorePosts({int limit}) async {
-    List<Post> posts = [];
+//  Future<List<Post>> getMorePosts({int limit}) async {
+//    List<Post> posts = [];
+//
+//    ///mark followings that produce empty posts
+//    ///and remove them from followings list
+//    List<String> followingsToRemove = [];
+//
+//    if (_lastFeedSnaps.isEmpty) return posts;
+////    print(_lastFeedSnaps.values.map((snap) => snap.documentID).toList());
+//
+//    if (_followings.isEmpty) {
+//      final followingsQS = await shared
+//          .collection('userFollowings')
+//          .document(Repo.currentProfile.uid)
+//          .collection('followings')
+//          .orderBy('uid')
+//          .getDocuments();
+//
+//      ///exit if there are no followings
+//      if (followingsQS.documents.isEmpty) {
+//        return posts;
+//      }
+//      _followings
+//          .addAll(followingsQS.documents.map((s) => s.documentID).toList());
+//    }
+//
+////    _lastFeedFollowing = followingsQS.documents.last;
+//    print('getMorePosts followings: $_followings');
+//
+//    for (final following in _followings) {
+//      print('get more posts of $following');
+//
+//      ///continue if current following has no snap
+//      final lastSnap = _lastFeedSnaps[following];
+//
+//      if (lastSnap == null) continue;
+//
+//      final postsQS = await shared
+//          .collection('posts')
+//          .where('uid', isEqualTo: following)
+//          .orderBy('timestamp', descending: true)
+//          .startAfter([lastSnap['timestamp']])
+//          .limit(limit)
+//          .getDocuments();
+//
+//      ///continue to the next following and remove the snap
+//      ///if all the posts have been fetched for the current following
+//      if (postsQS.documents.isEmpty) {
+//        print('empty posts for $following');
+//        followingsToRemove.add(following);
+//        _lastFeedSnaps.remove(following);
+//        continue;
+//      }
+//
+//      ///update snap for the current following
+//      _lastFeedSnaps[following] = postsQS.documents.last;
+//
+//      posts.addAll(postsQS.documents.map((s) => Post.fromDoc(s)).toList());
+//    }
+//
+//    ///remove empty followings
+//    _followings.removeWhere((s) => followingsToRemove.contains(s));
+//
+//    return posts;
+//  }
 
-    ///mark followings that produce empty posts
-    ///and remove them from followings list
-    List<String> followingsToRemove = [];
-
-    if (_lastFeedSnaps.isEmpty) return posts;
-//    print(_lastFeedSnaps.values.map((snap) => snap.documentID).toList());
-
-    if (_followings.isEmpty) {
-      final followingsQS = await shared
-          .collection('userFollowings')
-          .document(Repo.currentProfile.uid)
-          .collection('followings')
-          .orderBy('uid')
-          .getDocuments();
-
-      ///exit if there are no followings
-      if (followingsQS.documents.isEmpty) {
-        return posts;
-      }
-      _followings
-          .addAll(followingsQS.documents.map((s) => s.documentID).toList());
-    }
-
-//    _lastFeedFollowing = followingsQS.documents.last;
-    print('getMorePosts followings: $_followings');
-
-    for (final following in _followings) {
-      print('get more posts of $following');
-
-      ///continue if current following has no snap
-      final lastSnap = _lastFeedSnaps[following];
-
-      if (lastSnap == null) continue;
-
-      final postsQS = await shared
-          .collection('posts')
-          .where('uid', isEqualTo: following)
-          .orderBy('timestamp', descending: true)
-          .startAfter([lastSnap['timestamp']])
-          .limit(limit)
-          .getDocuments();
-
-      ///continue to the next following and remove the snap
-      ///if all the posts have been fetched for the current following
-      if (postsQS.documents.isEmpty) {
-        print('empty posts for $following');
-        followingsToRemove.add(following);
-        _lastFeedSnaps.remove(following);
-        continue;
-      }
-
-      ///update snap for the current following
-      _lastFeedSnaps[following] = postsQS.documents.last;
-
-      posts.addAll(postsQS.documents.map((s) => Post.fromDoc(s)).toList());
-    }
-
-    ///remove empty followings
-    _followings.removeWhere((s) => followingsToRemove.contains(s));
-
-    return posts;
-  }
-
-  Future<UserProfile> signUp({
+  Future<UserProfile> createUser({
     @required uid,
     @required String username,
     @required String email,
@@ -1509,6 +1514,11 @@ class FirestoreService {
 //    });
 
     return user2;
+  }
+
+  Future<void> logout() async {
+    await FirebaseAuth.instance.signOut();
+    auth.reset();
   }
 
   Future<UserProfile> signInWithUsernameAndPassword(

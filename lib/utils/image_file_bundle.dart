@@ -43,7 +43,7 @@ class ImageUrlBundle {
       small: map['small'] ?? '',
       medium: map['medium'] ?? '',
       original: map['original'] ?? '',
-      aspectRatio: map['aspect_ratio'] ?? 1,
+      aspectRatio: (map['aspect_ratio'] ?? 1.0).toDouble(),
     );
   }
 }

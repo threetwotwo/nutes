@@ -3,7 +3,6 @@ import 'package:get_it/get_it.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:nutes/core/services/firestore_service.dart';
 import 'package:nutes/core/view_models/comment_model.dart';
-import 'package:nutes/core/view_models/feed_model.dart';
 import 'package:nutes/core/view_models/home_model.dart';
 import 'package:nutes/core/view_models/login_model.dart';
 import 'package:nutes/core/view_models/profile_model.dart';
@@ -17,7 +16,6 @@ void setUpLocator() {
   locator.registerSingleton(RouteObserver<PageRoute>());
   locator.registerFactory(() => HomeModel());
   locator.registerFactory(() => LoginModel());
-  locator.registerFactory(() => FeedModel());
   locator.registerFactory(() => ProfileModel());
   locator.registerLazySingleton(() => FirestoreService());
   locator.registerFactory(() => UploadModel());

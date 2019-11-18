@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nutes/core/models/user.dart';
+import 'package:nutes/core/services/auth.dart';
 import 'package:nutes/core/services/repository.dart';
 
 import 'avatar_image.dart';
@@ -16,7 +17,9 @@ class StoryAvatar extends StatelessWidget {
   final String heroTag;
 //  final UStoryState storyState;
 
-  const StoryAvatar({
+  final auth = Auth.instance;
+
+  StoryAvatar({
     Key key,
     @required this.isFinished,
     this.isEmpty = false,
@@ -49,8 +52,7 @@ class StoryAvatar extends StatelessWidget {
                     url: user.photoUrl,
                     spacing: 2,
                     showStoryIndicator: !isFinished,
-                    addStory:
-                        user.uid == Repo.currentProfile.uid && isEmpty ?? false,
+                    addStory: user.uid == auth.profile.uid && isEmpty ?? false,
                   ),
                 ),
               ],
@@ -59,13 +61,11 @@ class StoryAvatar extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
 //              color: Colors.grey,
               child: Text(
-                user.uid == Repo.currentProfile.uid
-                    ? 'Your Story'
-                    : user.username,
+                user.uid == auth.profile.uid ? 'Your Story' : user.username,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                     fontWeight: FontWeight.w400,
-                    color: user.uid == Repo.currentProfile.uid
+                    color: user.uid == auth.profile.uid
                         ? Colors.grey
                         : Colors.black),
               ),

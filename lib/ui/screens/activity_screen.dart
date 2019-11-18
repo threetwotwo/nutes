@@ -5,6 +5,7 @@ import 'package:nutes/core/models/activity.dart';
 import 'package:nutes/core/models/follow_request.dart';
 import 'package:nutes/core/models/post.dart';
 import 'package:nutes/core/models/user.dart';
+import 'package:nutes/core/services/auth.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/screens/follow_request_screen.dart';
 import 'package:nutes/ui/screens/post_detail_page.dart';
@@ -111,12 +112,27 @@ class _FollowingsActivityScreenState extends State<FollowingsActivityScreen> {
   }
 }
 
-class SelfActivityView extends StatelessWidget {
-  final stream = Firestore.instance
-      .collection('users')
-      .document(Repo.currentProfile.uid)
-      .collection('follow_requests')
-      .snapshots();
+class SelfActivityView extends StatefulWidget {
+  @override
+  _SelfActivityViewState createState() => _SelfActivityViewState();
+}
+
+class _SelfActivityViewState extends State<SelfActivityView> {
+  String uid = Auth.instance.profile.uid;
+
+  Stream<QuerySnapshot> stream;
+
+  @override
+  void initState() {
+    stream = Firestore.instance
+        .collection('users')
+        .document(uid)
+        .collection('follow_requests')
+        .snapshots();
+
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(

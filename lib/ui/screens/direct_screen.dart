@@ -29,7 +29,7 @@ class _DirectScreenState extends State<DirectScreen> {
 
   @override
   void initState() {
-    _chatStream = Repo.DMStream();
+//    _chatStream = Repo.DMStream();
 
     super.initState();
   }
@@ -79,12 +79,22 @@ class _DirectScreenState extends State<DirectScreen> {
                   ],
                 ),
                 StreamBuilder<QuerySnapshot>(
-                    stream: _chatStream,
+                    stream: Repo.DMStream(),
                     builder: (context, snapshot) {
                       if (!snapshot.hasData) {
                         return Center(child: Text('No conversations to show'));
                       } else {
-                        final docs = snapshot.data.documents;
+                        var docs = snapshot.data.documents;
+
+                        docs.sort((a, b) {
+                          final Timestamp aTime =
+                              a.data['last_checked_timestamp'];
+                          final Timestamp bTime =
+                              b.data['last_checked_timestamp'];
+
+                          return bTime.millisecondsSinceEpoch
+                              .compareTo(aTime.millisecondsSinceEpoch);
+                        });
 
                         return ListView.builder(
                           shrinkWrap: true,
