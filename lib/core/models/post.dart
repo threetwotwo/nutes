@@ -55,6 +55,7 @@ class PostMyLikes {
   }
 }
 
+///For pagination
 class PostCursor {
   final List<Post> posts;
   final DocumentSnapshot startAfter;
@@ -73,6 +74,7 @@ class Post {
   final PostMyLikes myLikes;
   PostStats stats;
   final Map metadata;
+  final String caption;
 
   ///List of users who are also my followings who liked this post
   final List<User> myFollowingLikes;
@@ -90,6 +92,7 @@ class Post {
     this.challengedDidLike,
     this.stats,
     this.metadata,
+    this.caption,
     this.myFollowingLikes = const [],
   });
 
@@ -100,6 +103,7 @@ class Post {
     PostStats stats,
     PostMyLikes myLikes,
     List<User> myFollowingLikes,
+    String caption,
     User uploader,
   }) {
     return Post(
@@ -113,6 +117,7 @@ class Post {
       challengedDidLike: challengedDidLike ?? this.challengedDidLike ?? false,
       stats: stats ?? this.stats,
       metadata: this.metadata,
+      caption: caption ?? this.caption,
       myLikes: myLikes ?? this.myLikes,
       myFollowingLikes: myFollowingLikes ?? this.myFollowingLikes ?? [],
     );
@@ -126,6 +131,8 @@ class Post {
         .toList();
     final uploaderData = doc['uploader'] ?? {};
     final uploader = User.fromMap(uploaderData);
+
+    final caption = doc['caption'] ?? '';
 
     PostType type;
 
@@ -147,6 +154,7 @@ class Post {
       urls: urls,
       timestamp: doc['timestamp'] ?? Timestamp.now(),
       metadata: doc['data'] ?? {},
+      caption: caption,
       didLike: false,
 //      stats: stats,
     );

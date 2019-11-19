@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:nutes/utils/timeAgo.dart';
 import 'package:preload_page_view/preload_page_view.dart';
 import 'package:nutes/core/models/post_type.dart';
 import 'package:nutes/core/models/user.dart';
@@ -17,7 +18,6 @@ import 'package:nutes/ui/shared/styles.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:nutes/ui/shared/dots_indicator.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:transparent_image/transparent_image.dart';
 import 'avatar_list_item.dart';
 
 enum PostHeight { small, medium, large }
@@ -330,6 +330,31 @@ class _PostListItemState extends State<PostListItem> {
                         ),
                         LikeCountBar(
                           post: post,
+                        ),
+                        if (post.caption.isNotEmpty)
+                          Container(
+                            padding: EdgeInsets.only(top: 8),
+                            child: RichText(
+                              text: TextSpan(children: [
+                                TextSpan(
+                                  text: post.owner.username,
+                                  style: TextStyles.W500Text15,
+                                ),
+                                TextSpan(
+                                  text: ' ${post.caption}',
+                                  style: TextStyles.w300Text,
+                                ),
+                              ]),
+                            ),
+                          ),
+//                        SizedBox(height: 8),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8.0),
+                          child: Text(
+                            TimeAgo.formatLong(post.timestamp.toDate()),
+                            style: TextStyles.w300Display
+                                .copyWith(fontSize: 14, color: Colors.grey),
+                          ),
                         ),
                       ],
                     ),

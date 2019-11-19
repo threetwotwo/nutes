@@ -1313,6 +1313,21 @@ class FirestoreService {
     return Future.wait(futures);
   }
 
+  Future<List<User>> getFollowingsOfUser(String uid) async {
+    final docs =
+        await userRef(uid).collection('followings').limit(20).getDocuments();
+
+    final futures =
+        docs.documents.map((doc) => getUser(doc.documentID)).toList();
+
+    var result = await Future.wait(futures);
+
+//    result.toList(growable: false);
+//    result.removeWhere((u) => u == null);
+
+    return List.from(result)..removeWhere((u) => u == null);
+  }
+
   Future<List<User>> getMyUserFollowings(String uid) async {
     final docs = await userRef(uid)
         .collection('followings_list')

@@ -121,6 +121,7 @@ class User {
 
   factory User.fromDoc(DocumentSnapshot doc) {
     final data = doc.data;
+    if (data == null || doc.documentID == 'list') return null;
     return User(
       isPrivate: data['is_private'] ?? false,
       uid: doc.documentID,

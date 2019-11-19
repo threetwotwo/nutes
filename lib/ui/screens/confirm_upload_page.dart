@@ -17,6 +17,8 @@ class ConfirmUploadPage extends StatelessWidget {
   final _controller = PreloadPageController();
   final cache = LocalCache.instance;
 
+  final captionController = TextEditingController();
+
   ConfirmUploadPage({Key key, this.fileBundles, this.enableStory = false})
       : super(key: key);
   @override
@@ -42,7 +44,7 @@ class ConfirmUploadPage extends StatelessWidget {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          physics: ClampingScrollPhysics(),
+//          physics: ClampingScrollPhysics(),
           child: Column(
             children: <Widget>[
               AspectRatio(
@@ -95,8 +97,6 @@ class ConfirmUploadPage extends StatelessWidget {
                         Navigator.popUntil(context, (r) => r.isFirst);
 
                         cache.animateTo(1);
-//                        Future.delayed(Duration(milliseconds: 100))
-//                            .then((_) => cache.animateTo(1));
                       },
                       child: Text(
                         'Story',
@@ -107,6 +107,26 @@ class ConfirmUploadPage extends StatelessWidget {
                     ),
                   ),
                 ),
+              Container(
+//                color: Colors.white,
+                width: MediaQuery.of(context).size.width,
+                padding: const EdgeInsets.all(8),
+                child: TextField(
+                  controller: captionController,
+                  style: TextStyles.defaultText.copyWith(fontSize: 15),
+                  maxLines: 5,
+                  minLines: 1,
+                  maxLength: 2000,
+                  decoration: InputDecoration(
+                    counterText: '',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide.none,
+                    ),
+                    hintText: 'Write a caption...',
+                  ),
+                ),
+              ),
               AvatarListItem(
                 avatar: AvatarImage(
                   url: Repo.currentProfile.user.photoUrl,
@@ -123,6 +143,7 @@ class ConfirmUploadPage extends StatelessWidget {
                         type: PostType.text,
                         fileBundles: fileBundles,
                         isPrivate: Repo.currentProfile.user.isPrivate,
+                        caption: captionController.text,
                       );
                       Navigator.popUntil(context, (r) => r.isFirst);
                     },
@@ -135,50 +156,10 @@ class ConfirmUploadPage extends StatelessWidget {
                   ),
                 ),
               ),
-              AvatarListItem(
-                avatar: AvatarImage(
-                  url: '',
-                  spacing: 0,
-                  addStoryIndicatorSize: null,
-                ),
-                title: 'keanu',
-                subtitle: 'john wick',
-                trailingWidget: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: FlatButton(
-                    onPressed: () {},
-                    child: Text(
-                      'Send',
-                      style:
-                          TextStyles.W500Text15.copyWith(color: Colors.white),
-                    ),
-                    color: Colors.blue,
-                  ),
-                ),
-              ),
             ],
           ),
         ),
       ),
     );
-  }
-}
-
-class DraftPageView extends StatelessWidget {
-  final List<ImageFileBundle> bundles;
-  final PageController controller;
-  const DraftPageView({Key key, @required this.bundles, this.controller})
-      : super(key: key);
-  @override
-  Widget build(BuildContext context) {
-    return PageView.builder(
-        itemCount: bundles.length,
-        physics: ClampingScrollPhysics(),
-        itemBuilder: (context, index) {
-          return Image.file(
-            bundles[index].medium,
-            fit: BoxFit.cover,
-          );
-        });
   }
 }

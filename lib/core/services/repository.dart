@@ -80,6 +80,9 @@ class Repo {
   static Future<List<User>> getFollowersOfUser(String uid) =>
       _instance._firestore.getFollowersOfUser(uid);
 
+  static Future<List<User>> getFollowingsOfUser(String uid) =>
+      _instance._firestore.getFollowingsOfUser(uid);
+
   static Future<List<User>> getMyUserFollowings(String uid) =>
       _instance._firestore.getMyUserFollowings(uid);
 
@@ -315,6 +318,7 @@ class Repo {
     List<ImageFileBundle> fileBundles,
     User peer,
     Map metadata,
+    String caption,
   }) async {
 //    return print(type);
     final timestamp = Timestamp.now();
@@ -373,6 +377,7 @@ class Repo {
       'type': PostHelper.stringValue(type),
       'uploader': uploader,
       'timestamp': timestamp,
+      'caption': caption ?? '',
       if (metadata != null) 'data': metadata,
       if (fileBundles != null) 'urls': bundleMaps,
     };

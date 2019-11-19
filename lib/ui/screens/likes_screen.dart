@@ -10,6 +10,7 @@ import 'package:nutes/ui/shared/avatar_list_extended.dart';
 import 'package:nutes/ui/shared/avatar_list_item.dart';
 import 'package:nutes/ui/shared/buttons.dart';
 import 'package:nutes/ui/shared/search_bar.dart';
+import 'package:nutes/ui/shared/styles.dart';
 
 class LikeScreen extends StatefulWidget {
   const LikeScreen({
@@ -44,7 +45,10 @@ class _LikeScreenState extends State<LikeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: BaseAppBar(
-        title: Text('Likes'),
+        title: Text(
+          'Likes',
+          style: TextStyles.W500Text15,
+        ),
       ),
       body: SafeArea(
         child: AvatarListExtended(

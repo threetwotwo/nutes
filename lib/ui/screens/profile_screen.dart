@@ -142,7 +142,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                               isOwner: false,
                               profile: profile,
                               onFollowersPressed: () => Navigator.push(context,
-                                  FollowerListScreen.route(profile.user)),
+                                  FollowerListScreen.route(profile.user, 0)),
+                              onFollowingsPressed: () => Navigator.push(context,
+                                  FollowerListScreen.route(profile.user, 1)),
                               onMessagePressed: () =>
                                   Navigator.of(context, rootNavigator: true)
                                       .push(

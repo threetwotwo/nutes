@@ -107,7 +107,9 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                             : Navigator.of(context, rootNavigator: true)
                                 .push(EditorPage.route()),
                         onFollowersPressed: () => Navigator.push(context,
-                            FollowerListScreen.route(auth.profile.user)),
+                            FollowerListScreen.route(auth.profile.user, 0)),
+                        onFollowingsPressed: () => Navigator.push(context,
+                            FollowerListScreen.route(auth.profile.user, 1)),
                         hasStories: momentDocs.isNotEmpty,
                         profile: prof,
                         isOwner: true,
