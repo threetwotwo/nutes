@@ -236,8 +236,6 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future getInitialMessages() async {
-    //TODO: get most recent messages array stored in a doc (reduce reads
-    // everytime chat screen is loaded)
     final end = await Repo.chatEndAtForUser(widget.peer.uid);
     final initialMessages =
         await Repo.getInitialMessages(chatId: chatId, endAt: end);
@@ -247,9 +245,6 @@ class _ChatScreenState extends State<ChatScreen> {
       startAt = initialMessages.last.timestamp;
     }
 
-//    ChatStream.updateMessages(initialMessages);
-//    ChatStream.messages = initialMessages;
-//    ChatStream.refreshStream();
     setState(() {
       messages.addAll(initialMessages);
       initialMessagedFinishedLoading = true;
@@ -259,6 +254,7 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: BaseAppBar(
         onLeadingPressed: () => Navigator.pop(context),
         title: AvatarListItem(
@@ -300,7 +296,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       itemBuilder: (context, index) {
                         final message = messages[index];
 
-                        ///Remember list view is reversed
+                        ///Remember: list view is reversed
                         final isLast = index < 1;
                         final nextBubbleIsMine = (!isLast &&
                             messages[index - 1].senderId ==
@@ -312,13 +308,35 @@ class _ChatScreenState extends State<ChatScreen> {
 
                         final isPeer =
                             message.senderId != Repo.currentProfile.uid;
+
+                        ///Show message date if previous message is
+                        ///sent more than an hour ago
+                        final isFirst = index == messages.length - 1;
+                        final currentMessage = messages[index];
+                        final previousMessage =
+                            isFirst ? null : messages[index + 1];
+
+                        bool showDate;
+
+                        if (previousMessage == null) {
+                          showDate = true;
+                        } else if (currentMessage.timestamp == null ||
+                            previousMessage.timestamp == null) {
+                          showDate = true;
+                        } else {
+                          showDate = previousMessage.timestamp.seconds <
+                              currentMessage.timestamp.seconds - 3600;
+                        }
+
                         switch (message.type) {
                           case Bubbles.text:
                             return ChatTextBubble(
-                                isPeer: isPeer,
-                                message: message,
-                                isLast: showPeerAvatar,
-                                peer: widget.peer);
+                              isPeer: isPeer,
+                              message: message,
+                              isLast: showPeerAvatar,
+                              peer: widget.peer,
+                              showDate: showDate,
+                            );
                           case Bubbles.photo:
                             return SizedBox();
                           case Bubbles.shout_challenge:

@@ -6,16 +6,18 @@ class Comment {
   final String id;
   final User uploader;
   final String postId;
+
+  ///The comment is a reply to another comment if [parentId] is null
   final String parentId;
   final Timestamp timestamp;
   final CommentStats stats;
   final String text;
 
   Comment({
-    this.id,
+    @required this.id,
     @required this.postId,
-    @required this.text,
     this.parentId,
+    @required this.text,
     @required this.timestamp,
     @required this.uploader,
     this.stats,

@@ -2,6 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:nutes/core/models/comment.dart';
+import 'package:nutes/core/services/auth.dart';
+import 'package:nutes/ui/shared/comment_list_item.dart';
 import 'package:nutes/utils/timeAgo.dart';
 import 'package:preload_page_view/preload_page_view.dart';
 import 'package:nutes/core/models/post_type.dart';
@@ -20,24 +23,24 @@ import 'package:nutes/ui/shared/dots_indicator.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'avatar_list_item.dart';
 
-enum PostHeight { small, medium, large }
-
-PostHeight calculatePostHeight(int charLength) {
-  if (charLength < 150) {
-    return PostHeight.small;
-  } else if (charLength < 400) {
-    return PostHeight.medium;
-  } else
-    return PostHeight.large;
-}
-
-double getPostAspectRatio(PostHeight postHeight) {
-  return <PostHeight, double>{
-    PostHeight.small: 1.4,
-    PostHeight.medium: 1,
-    PostHeight.large: 0.8,
-  }[postHeight];
-}
+//enum PostHeight { small, medium, large }
+//
+//PostHeight calculatePostHeight(int charLength) {
+//  if (charLength < 150) {
+//    return PostHeight.small;
+//  } else if (charLength < 400) {
+//    return PostHeight.medium;
+//  } else
+//    return PostHeight.large;
+//}
+//
+//double getPostAspectRatio(PostHeight postHeight) {
+//  return <PostHeight, double>{
+//    PostHeight.small: 1.4,
+//    PostHeight.medium: 1,
+//    PostHeight.large: 0.8,
+//  }[postHeight];
+//}
 
 class PostListView extends StatefulWidget {
   final List<Post> posts;
@@ -107,6 +110,8 @@ class _PostListItemState extends State<PostListItem> {
 
   Post post;
 
+  bool isCommenting = false;
+
   _getPostComplete() async {
     print('get post compelte');
 
@@ -150,8 +155,7 @@ class _PostListItemState extends State<PostListItem> {
 
     final totalChars = challengedText.length + challengerText.length;
 
-    final postHeight = calculatePostHeight(totalChars);
-    final aspectRatio = getPostAspectRatio(postHeight);
+//    final postHeight = calculatePostHeight(totalChars);
 
     return post.stats == null || post.myFollowingLikes == null
         ? Container(
@@ -323,6 +327,23 @@ class _PostListItemState extends State<PostListItem> {
                               builder: (context) => CommentScreen(),
                             ),
                           ),
+                          onSendTapped: () {
+                            print('send tpped');
+                            if (mounted)
+                              setState(() {
+                                post = post.copyWith(
+                                  comments: [
+                                    Comment(
+                                        id: '',
+                                        postId: '',
+                                        text: 'New '
+                                            'comment',
+                                        uploader: Auth.instance.profile.user,
+                                        timestamp: Timestamp.now())
+                                  ],
+                                );
+                              });
+                          },
                           controller: _controller,
                           itemCount: post.type == PostType.shout
                               ? 1
@@ -332,22 +353,14 @@ class _PostListItemState extends State<PostListItem> {
                           post: post,
                         ),
                         if (post.caption.isNotEmpty)
-                          Container(
-                            padding: EdgeInsets.only(top: 8),
-                            child: RichText(
-                              text: TextSpan(children: [
-                                TextSpan(
-                                  text: post.owner.username,
-                                  style: TextStyles.W500Text15,
-                                ),
-                                TextSpan(
-                                  text: ' ${post.caption}',
-                                  style: TextStyles.w300Text,
-                                ),
-                              ]),
-                            ),
+                          CommentPostListItem(
+                            uploader: post.owner,
+                            text: post.caption,
                           ),
-//                        SizedBox(height: 8),
+                        if (post.comments != null && post.comments.isNotEmpty)
+                          for (final c in post.comments)
+                            CommentPostListItem(
+                                uploader: c.uploader, text: c.text),
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 8.0),
                           child: Text(
@@ -356,6 +369,22 @@ class _PostListItemState extends State<PostListItem> {
                                 .copyWith(fontSize: 14, color: Colors.grey),
                           ),
                         ),
+                        isCommenting
+                            ? TextField()
+                            : FlatButton(
+                                focusColor: Colors.blue,
+                                highlightColor: Colors.white,
+//                          splashColor: Colors.blue[100],
+                                onPressed: () {
+                                  setState(() {
+                                    isCommenting = true;
+                                  });
+                                },
+                                child: Text(
+                                  'Add comment...',
+                                  style: TextStyle(color: Colors.blueAccent),
+                                ),
+                              ),
                       ],
                     ),
                   ),

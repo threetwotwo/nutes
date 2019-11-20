@@ -1,8 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:line_icons/line_icons.dart';
-import 'package:line_icons/line_icons.dart';
-import 'package:nutes/ui/widgets/shout_text_field.dart';
 
 class ChatScreenInput extends StatefulWidget {
   final VoidCallback onImagePressed;

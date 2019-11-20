@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:meta/meta.dart';
+import 'package:nutes/core/models/comment.dart';
 import 'package:nutes/core/models/post_type.dart';
 import 'package:nutes/core/models/user.dart';
 import 'package:nutes/utils/image_file_bundle.dart';
@@ -75,6 +76,7 @@ class Post {
   PostStats stats;
   final Map metadata;
   final String caption;
+  final List<Comment> comments;
 
   ///List of users who are also my followings who liked this post
   final List<User> myFollowingLikes;
@@ -93,6 +95,7 @@ class Post {
     this.stats,
     this.metadata,
     this.caption,
+    this.comments,
     this.myFollowingLikes = const [],
   });
 
@@ -105,6 +108,7 @@ class Post {
     List<User> myFollowingLikes,
     String caption,
     User uploader,
+    List<Comment> comments,
   }) {
     return Post(
       type: this.type,
@@ -118,6 +122,7 @@ class Post {
       stats: stats ?? this.stats,
       metadata: this.metadata,
       caption: caption ?? this.caption,
+      comments: comments ?? this.comments,
       myLikes: myLikes ?? this.myLikes,
       myFollowingLikes: myFollowingLikes ?? this.myFollowingLikes ?? [],
     );

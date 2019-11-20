@@ -6,6 +6,7 @@ import 'package:nutes/core/models/user.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/screens/profile_screen.dart';
 import 'package:nutes/ui/shared/avatar_image.dart';
+import 'package:intl/intl.dart';
 
 const kPeerBubbleColor = Colors.white;
 const kPeerTextColor = Colors.black;
@@ -87,37 +88,63 @@ class ChatTextBubble extends StatelessWidget {
   final bool isLast;
 
   final User peer;
+
+  final bool showDate;
+
   const ChatTextBubble({
     @required this.isPeer,
     @required this.message,
     @required this.isLast,
     @required this.peer,
+    this.showDate = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width * 0.75;
-    return Row(
-      mainAxisAlignment:
-          isPeer ? MainAxisAlignment.start : MainAxisAlignment.end,
-      crossAxisAlignment: CrossAxisAlignment.end,
+    final isAWeekOld = message.timestamp.toDate().millisecondsSinceEpoch <
+        DateTime.now().millisecondsSinceEpoch - 604800000;
+//    print(message.timestamp.toDate().second);
+//    print(DateTime.now().second);
+    return Column(
       children: <Widget>[
-        if (isPeer) ChatPeerAvatar(peer: peer, isVisible: isLast),
-        Container(
-          padding: kBubbleVerticalPadding,
-          constraints: BoxConstraints(maxWidth: width),
-          child: Bubble(
-            alignment: isPeer ? Alignment.centerLeft : Alignment.centerRight,
-            shadowColor: isPeer ? Colors.black : Colors.transparent,
-            color: isPeer ? Colors.white : Colors.blueAccent[400],
-            padding: BubbleEdges.symmetric(vertical: 10, horizontal: 10),
-//            margin: BubbleEdges.only(top: 10),
+        if (showDate)
+          Padding(
+            padding: const EdgeInsets.all(8.0),
             child: Text(
-              message.content,
-              style: TextStyle(
-                  color: isPeer ? Colors.black : Colors.white, fontSize: 16),
+              '${isAWeekOld ? (DateFormat.d().format(message.timestamp.toDate()) + ' ' + DateFormat.MMM().format(message.timestamp.toDate())) : DateFormat.EEEE().format(message.timestamp.toDate())} '
+              '${DateFormat.jm().format(message.timestamp.toDate())}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: Colors.grey, fontSize: 13),
             ),
           ),
+        Row(
+          mainAxisAlignment:
+              isPeer ? MainAxisAlignment.start : MainAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: <Widget>[
+            if (isPeer) ChatPeerAvatar(peer: peer, isVisible: isLast),
+            Container(
+//          color: Colors.green,
+              padding: kBubbleVerticalPadding,
+              constraints: BoxConstraints(maxWidth: width),
+              child: Bubble(
+                alignment:
+                    isPeer ? Alignment.centerLeft : Alignment.centerRight,
+                shadowColor: isPeer ? Colors.transparent : Colors.transparent,
+                color: isPeer ? Colors.grey[100] : Colors.blueAccent[400],
+                padding: BubbleEdges.symmetric(vertical: 10, horizontal: 10),
+//            margin: BubbleEdges.only(top: 10),
+                child: Text(
+                  message.content,
+                  style: TextStyle(
+                      color: isPeer ? Colors.black : Colors.white,
+                      fontSize: 16),
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -303,97 +330,100 @@ class ChatShoutBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: isPeer ? onTapped : null,
-      child: Container(
-        padding: EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.8,
-        ),
-        child: Column(
-          crossAxisAlignment:
-              isPeer ? CrossAxisAlignment.start : CrossAxisAlignment.end,
-          children: <Widget>[
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Center(
-                child: Text(
-                  isPeer
-                      ? '${peer.username} started a shout'
-                      : 'You started a '
-                          'shout',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: Colors.grey),
-                ),
+      child: Column(
+        crossAxisAlignment:
+            isPeer ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+        children: <Widget>[
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Center(
+              child: Text(
+                isPeer
+                    ? '${peer.username} started a shout'
+                    : 'You started a '
+                        'shout',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: Colors.grey),
               ),
             ),
-            Row(
+          ),
+          Container(
+//            color: Colors.yellow,
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width * 0.75,
+            ),
+            child: Row(
               mainAxisAlignment:
                   isPeer ? MainAxisAlignment.start : MainAxisAlignment.end,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: <Widget>[
                 if (isPeer) ChatPeerAvatar(peer: peer, isVisible: isLast),
-                Bubble(
-                  alignment:
-                      isPeer ? Alignment.centerLeft : Alignment.centerRight,
+                Expanded(
+                  child: Bubble(
+                    alignment:
+                        isPeer ? Alignment.centerLeft : Alignment.centerRight,
 //                    color: Color(0xFFDCF8C8),
-                  shadowColor: Colors.black,
+                    shadowColor: Colors.black,
 
-                  color: isPeer ? kPeerBubbleColor : kMyBubbleColor,
-                  nip: isPeer ? BubbleNip.leftBottom : BubbleNip.rightBottom,
-                  child: Stack(
-                    children: <Widget>[
-                      Column(
-                        crossAxisAlignment: isPeer
-                            ? CrossAxisAlignment.start
-                            : CrossAxisAlignment.end,
-                        children: <Widget>[
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: <Widget>[
-                              Text(
-                                isPeer
-                                    ? peer.username
-                                    : Repo.currentProfile.user.username,
-                                style: TextStyle(
-                                    color:
-                                        isPeer ? kPeerTextColor : kMyTextColor,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            content,
-                            style: TextStyle(
-                              color: isPeer ? kPeerTextColor : kMyTextColor,
-                              fontSize: 16,
+                    color: isPeer ? kPeerBubbleColor : kMyBubbleColor,
+//                    nip: isPeer ? BubbleNip.leftBottom : BubbleNip.rightBottom,
+                    child: Stack(
+                      children: <Widget>[
+                        Column(
+                          crossAxisAlignment: isPeer
+                              ? CrossAxisAlignment.start
+                              : CrossAxisAlignment.end,
+                          children: <Widget>[
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: <Widget>[
+                                Text(
+                                  isPeer
+                                      ? peer.username
+                                      : Repo.currentProfile.user.username,
+                                  style: TextStyle(
+                                      color: isPeer
+                                          ? kPeerTextColor
+                                          : kMyTextColor,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500),
+                                ),
+                              ],
                             ),
-                          ),
-                        ],
-                      ),
-                      if (isPeer)
-                        Positioned.fill(
-                          child: Align(
-                            alignment: Alignment.center,
-                            child: CircleAvatar(
-                              radius: 30,
-                              backgroundColor: Colors.black.withOpacity(0.35),
-                              child: Icon(
-                                LineIcons.bullhorn,
-                                color: Colors.white.withOpacity(0.95),
-                                size: 28,
+                            SizedBox(height: 8),
+                            Text(
+                              content,
+                              style: TextStyle(
+                                color: isPeer ? kPeerTextColor : kMyTextColor,
+                                fontSize: 16,
                               ),
                             ),
-                          ),
+                          ],
                         ),
-                    ],
+                        if (isPeer)
+                          Positioned.fill(
+                            child: Align(
+                              alignment: Alignment.center,
+                              child: CircleAvatar(
+                                radius: 30,
+                                backgroundColor: Colors.black.withOpacity(0.35),
+                                child: Icon(
+                                  LineIcons.bullhorn,
+                                  color: Colors.white.withOpacity(0.95),
+                                  size: 28,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
               ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
