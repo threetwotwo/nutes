@@ -17,9 +17,9 @@ class RTDBProvider {
     return stats;
   }
 
-  Future<PostStats> getPostStats(String postId) async {
-    final postRef = this.postRef(postId);
-    final snap = await postRef.once();
-    return PostStats.fromSnap(snap);
-  }
+//  Future<PostStats> getPostStats(String postId) async {
+//    final postRef = this.postRef(postId);
+//    final snap = await postRef.once();
+//    return PostStats.fromSnap(snap);
+//  }
 }

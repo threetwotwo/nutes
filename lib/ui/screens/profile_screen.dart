@@ -3,11 +3,13 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:line_icons/line_icons.dart';
 import 'package:nutes/core/models/post.dart';
+import 'package:nutes/core/services/auth.dart';
 import 'package:nutes/core/services/local_cache.dart';
 import 'package:nutes/ui/screens/chat_screen.dart';
 import 'package:nutes/ui/screens/follower_list_screen.dart';
 import 'package:nutes/ui/shared/app_bars.dart';
 import 'package:nutes/ui/shared/dismiss_view.dart';
+import 'package:nutes/ui/shared/loading_indicator.dart';
 import 'package:nutes/ui/shared/post_grid_view.dart';
 import 'package:nutes/ui/shared/refresh_list_view.dart';
 import 'package:nutes/ui/widgets/profile_header.dart';
@@ -25,13 +27,23 @@ class ProfileScreen extends StatefulWidget {
   final bool shouldNavigate;
   final VoidCallback onTrailingPressed;
   final String uid;
+  final String username;
 
   ///Whether to show back button
   final bool isRoot;
 
+  static Route<dynamic> routeUsername(String username) {
+    return MaterialPageRoute(
+      builder: (BuildContext context) =>
+          username == Auth.instance.profile.user.username
+              ? MyProfileScreen()
+              : ProfileScreen(username: username),
+    );
+  }
+
   static Route<dynamic> route(String uid) {
     return MaterialPageRoute(
-      builder: (BuildContext context) => uid == Repo.currentProfile.uid
+      builder: (BuildContext context) => uid == Auth.instance.profile.uid
           ? MyProfileScreen()
           : ProfileScreen(uid: uid),
     );
@@ -42,7 +54,8 @@ class ProfileScreen extends StatefulWidget {
     this.shouldNavigate = true,
     this.onTrailingPressed,
     this.isRoot = false,
-    @required this.uid,
+    this.uid,
+    this.username,
   }) : super(key: key);
 
   @override
@@ -59,12 +72,39 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   List<Post> posts = [];
 
-  Stream<DocumentSnapshot> _myFollowingStream;
+//  Stream<DocumentSnapshot> _myFollowingStream;
 
   final cache = LocalCache.instance;
 
-  _getUser() async {
-    var result = await Repo.getUserProfile(widget.uid);
+  String uid;
+
+  bool isLoadingProfile = false;
+  bool isLoadingPosts = false;
+
+  _initUid() async {
+    uid = widget.uid;
+
+    setState(() {
+      isLoadingProfile = true;
+    });
+
+    if (uid == null) {
+      print('uid is nnull');
+      final result = await Repo.getUserProfileFromUsername(widget.username);
+      profile = result;
+      if (result != null) uid = result.uid;
+      setState(() {
+        isLoadingProfile = false;
+      });
+    }
+
+    if (uid == null) return;
+    _getUserProfile();
+    _getPosts();
+  }
+
+  _getUserProfile() async {
+    var result = await Repo.getUserProfile(uid);
     final myFollowRequests = await Repo.getMyFollowRequests();
 
     result = result.copyWith(
@@ -72,6 +112,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
     if (mounted)
       setState(() {
+        isLoadingProfile = false;
         profile = result;
       });
   }
@@ -80,17 +121,17 @@ class _ProfileScreenState extends State<ProfileScreen>
   initState() {
     super.initState();
 
-    _getPosts();
-
-    _myFollowingStream = Repo.myFollowingListStream();
-
-    _getUser();
+    _initUid();
   }
 
   _getPosts() async {
-    final result = await Repo.getPostsForUser(uid: widget.uid, limit: 10);
+    setState(() {
+      isLoadingPosts = true;
+    });
+    final result = await Repo.getPostsForUser(uid: uid, limit: 10);
     if (mounted)
       setState(() {
+        isLoadingPosts = false;
         posts = result;
       });
   }
@@ -116,131 +157,145 @@ class _ProfileScreenState extends State<ProfileScreen>
           ),
         ),
         body: SafeArea(
-          child: DismissView(
-            onDismiss: () => Navigator.pop(context),
-            child: StreamBuilder<DocumentSnapshot>(
-                stream: _myFollowingStream,
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) return Container();
-                  final List uids = snapshot.data.data == null
-                      ? []
-                      : snapshot.data.data['uids'];
-                  return (profile == null)
-                      ? GestureDetector(
-                          onHorizontalDragUpdate: (_) {},
-                          child: Container(
-                            color: Colors.white,
-                          ))
-                      : RefreshListView(
-                          onLoadMore: () {},
+          child: isLoadingProfile
+              ? LoadingIndicator()
+              : DismissView(
+                  onDismiss: () => Navigator.pop(context),
+                  child: StreamBuilder<DocumentSnapshot>(
+                      stream: Repo.myFollowingListStream(),
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData) return Container();
+                        final List uids = snapshot.data.data == null
+                            ? []
+                            : snapshot.data.data['uids'];
+                        return (profile == null)
+                            ? GestureDetector(
+                                onHorizontalDragUpdate: (_) {},
+                                child: Container(
+                                  color: Colors.white,
+                                ))
+                            : RefreshListView(
+                                onLoadMore: () {},
 //                            controller: cache.profileScrollController,
-                          children: <Widget>[
-                            ProfileHeader(
-                              hasStories: false,
-                              isFollowing:
-                                  isFollowing ?? uids.contains(widget.uid),
-                              isOwner: false,
-                              profile: profile,
-                              onFollowersPressed: () => Navigator.push(context,
-                                  FollowerListScreen.route(profile.user, 0)),
-                              onFollowingsPressed: () => Navigator.push(context,
-                                  FollowerListScreen.route(profile.user, 1)),
-                              onMessagePressed: () =>
-                                  Navigator.of(context, rootNavigator: true)
-                                      .push(
-                                MaterialPageRoute(
-                                  builder: (context) => ChatScreen(
-                                    peer: profile.user,
-                                  ),
-                                ),
-                              ),
-                              onEditPressed: profile == null
-                                  ? null
-                                  : () {
-                                      return Navigator.of(context,
-                                              rootNavigator: true)
-                                          .push(MaterialPageRoute(
-                                              fullscreenDialog: true,
-                                              builder: (ctx) =>
-                                                  EditProfilePage()));
-                                    },
-                              onFollow: () {
-                                if (profile.user.isPrivate) {
-                                  setState(() {
-                                    profile = profile.copyWith(
-                                        hasRequestedFollow: true);
-                                  });
-                                  return Repo.requestFollow(
-                                      profile.user, profile.user.isPrivate);
-                                }
-
-                                if (isFollowing ?? uids.contains(widget.uid)) {
-                                  print('unfollow');
-
-                                  Repo.unfollowUser(profile.uid);
-
-                                  if (mounted)
-                                    setState(() {
-                                      isFollowing = false;
-                                      profile = profile.copyWith(
-                                          followerCount:
-                                              profile.stats.followerCount - 1);
-                                    });
-                                } else {
-                                  print('follow');
-                                  Repo.requestFollow(
-                                      profile.user, profile.user.isPrivate);
-                                  if (mounted)
-                                    setState(() {
-                                      isFollowing = true;
-                                      profile = profile.copyWith(
-                                          followerCount:
-                                              profile.stats.followerCount + 1);
-                                    });
-                                }
-                              },
-                              onRequest: () {
-                                setState(() {
-                                  profile = profile.copyWith(
-                                      hasRequestedFollow: false);
-                                });
-                                Repo.redactFollowRequest(
-                                    Repo.currentProfile.uid, profile.uid);
-                              },
-                            ),
-                            Divider(height: 0, thickness: 1),
-                            profile.user.isPrivate == null
-                                ? SizedBox()
-                                : profile.user.isPrivate &&
-                                        !(uids.contains(profile.uid))
-                                    ? PrivateAccount()
-                                    : PostMasterView(
-                                        view: view,
-                                        postGridView: PostGridView(
-                                          posts: posts,
-                                          onTap: (index) =>
-                                              Navigator.of(context).push(
-                                                  MaterialPageRoute(
-                                                      builder: (context) =>
-                                                          PostDetailScreen(
-                                                            post: posts[index],
-                                                          ))),
+                                children: <Widget>[
+                                  ProfileHeader(
+                                    hasStories: false,
+                                    isFollowing:
+                                        isFollowing ?? uids.contains(uid),
+                                    isOwner: false,
+                                    profile: profile,
+                                    onFollowersPressed: () => Navigator.push(
+                                        context,
+                                        FollowerListScreen.route(
+                                            profile.user, 0)),
+                                    onFollowingsPressed: () => Navigator.push(
+                                        context,
+                                        FollowerListScreen.route(
+                                            profile.user, 1)),
+                                    onMessagePressed: () => Navigator.of(
+                                            context,
+                                            rootNavigator: true)
+                                        .push(
+                                      MaterialPageRoute(
+                                        builder: (context) => ChatScreen(
+                                          peer: profile.user,
                                         ),
-                                        postListView: ListView.builder(
-                                          shrinkWrap: true,
-                                          physics:
-                                              NeverScrollableScrollPhysics(),
-                                          itemCount: posts.length,
-                                          itemBuilder: (context, index) =>
-                                              PostListItem(
-                                            shouldNavigate: true,
-                                            post: posts[index],
-                                          ),
-                                        )),
-                          ],
-                        );
-                }),
-          ),
+                                      ),
+                                    ),
+                                    onEditPressed: profile == null
+                                        ? null
+                                        : () {
+                                            return Navigator.of(context,
+                                                    rootNavigator: true)
+                                                .push(MaterialPageRoute(
+                                                    fullscreenDialog: true,
+                                                    builder: (ctx) =>
+                                                        EditProfilePage()));
+                                          },
+                                    onFollow: () {
+                                      if (profile.user.isPrivate) {
+                                        setState(() {
+                                          profile = profile.copyWith(
+                                              hasRequestedFollow: true);
+                                        });
+                                        return Repo.requestFollow(profile.user,
+                                            profile.user.isPrivate);
+                                      }
+
+                                      if (isFollowing ?? uids.contains(uid)) {
+                                        print('unfollow');
+
+                                        Repo.unfollowUser(profile.uid);
+
+                                        if (mounted)
+                                          setState(() {
+                                            isFollowing = false;
+                                            profile = profile.copyWith(
+                                                followerCount: profile
+                                                        .stats.followerCount -
+                                                    1);
+                                          });
+                                      } else {
+                                        print('follow');
+                                        Repo.requestFollow(profile.user,
+                                            profile.user.isPrivate);
+                                        if (mounted)
+                                          setState(() {
+                                            isFollowing = true;
+                                            profile = profile.copyWith(
+                                                followerCount: profile
+                                                        .stats.followerCount +
+                                                    1);
+                                          });
+                                      }
+                                    },
+                                    onRequest: () {
+                                      setState(() {
+                                        profile = profile.copyWith(
+                                            hasRequestedFollow: false);
+                                      });
+                                      Repo.redactFollowRequest(
+                                          Repo.currentProfile.uid, profile.uid);
+                                    },
+                                  ),
+                                  Divider(height: 0, thickness: 1),
+                                  profile.user.isPrivate == null
+                                      ? SizedBox()
+                                      : profile.user.isPrivate &&
+                                              !(uids.contains(profile.uid))
+                                          ? PrivateAccount()
+                                          : isLoadingPosts
+                                              ? LoadingIndicator()
+                                              : PostMasterView(
+                                                  view: view,
+                                                  postGridView: PostGridView(
+                                                    posts: posts,
+                                                    onTap: (index) => Navigator
+                                                            .of(context)
+                                                        .push(MaterialPageRoute(
+                                                            builder: (context) =>
+                                                                PostDetailScreen(
+                                                                  post: posts[
+                                                                      index],
+                                                                ))),
+                                                  ),
+                                                  postListView:
+                                                      ListView.builder(
+                                                    shrinkWrap: true,
+                                                    physics:
+                                                        NeverScrollableScrollPhysics(),
+                                                    itemCount: posts.length,
+                                                    itemBuilder:
+                                                        (context, index) =>
+                                                            PostListItem(
+                                                      shouldNavigate: true,
+                                                      post: posts[index],
+                                                    ),
+                                                  )),
+                                ],
+                              );
+                      }),
+                ),
         ));
   }
 

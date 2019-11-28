@@ -1,105 +1,110 @@
 import 'package:flutter/material.dart';
+import 'package:line_icons/line_icons.dart';
 import 'package:nutes/core/models/comment.dart';
+import 'package:nutes/ui/screens/profile_screen.dart';
 import 'package:nutes/ui/shared/avatar_image.dart';
+import 'package:nutes/ui/shared/comment_text.dart';
 import 'package:nutes/ui/shared/styles.dart';
-import 'package:flutter_vector_icons/flutter_vector_icons.dart';
-import 'package:nutes/utils/smart_text.dart';
+import 'package:nutes/utils/timeAgo.dart';
 
 final _greyTextStyle = TextStyles.w300Text.copyWith(
-  fontSize: 13,
+  fontSize: 14,
   color: Colors.grey,
 );
 
 class CommentListItem extends StatelessWidget {
   final Comment comment;
 
-  const CommentListItem({Key key, @required this.comment}) : super(key: key);
+  final Function(Comment) onReply;
+
+  const CommentListItem({Key key, @required this.comment, this.onReply})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Container(
+      padding: EdgeInsets.only(
+          left: comment.parentId == null || comment.parentId.isEmpty ? 0 : 40),
       color: Colors.white,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.max,
+      child: Column(
         children: <Widget>[
-          Flexible(
-            flex: 2,
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: AvatarImage(
-                url: comment.uploader.photoUrl,
-                spacing: 0,
-              ),
-            ),
-          ),
-          Flexible(
-            flex: 10,
-            child: Container(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            mainAxisSize: MainAxisSize.max,
+            children: <Widget>[
+              Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                mainAxisSize: MainAxisSize.max,
                 children: <Widget>[
-                  Padding(
-                    padding: EdgeInsets.symmetric(vertical: 10),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: <Widget>[
-//                        RichText(
-//                          text: TextSpan(
-//                            style: TextStyles.medium300Text,
-//                            children: [
-//                              TextSpan(
-//                                  text: comment.uploader.username,
-//                                  style: TextStyles.medium600Text),
-//                              TextSpan(text: ' '),
-//                              //TODO: format with clickable links eg.
-//                              // shoutouts/hastags
-//                              TextSpan(text: comment.text),
-//                            ],
-//                          ),
-//                          overflow: TextOverflow.ellipsis,
-//                        ),
-                        SmartText(
-                          leading: TextSpan(
-                            text: comment.uploader.username,
-                          ),
-                          text: comment.text,
-                          onTagClick: (tag) => print(tag),
-                          style: TextStyles.w300Text,
-                        ),
-                        SizedBox(height: 10),
-                        Row(
-                          children: <Widget>[
-                            Text('11h', style: _greyTextStyle),
-                            SizedBox(width: 20),
-                            Text('9 likes',
-                                style: _greyTextStyle.copyWith(
-                                    fontWeight: FontWeight.w500)),
-                            SizedBox(width: 20),
-                            Text('Reply',
-                                style: _greyTextStyle.copyWith(
-                                    fontWeight: FontWeight.w500)),
-                          ],
-                        ),
-                      ],
+                  Container(
+                    width: comment.parentId == null || comment.parentId.isEmpty
+                        ? 48
+                        : 44,
+                    child: AvatarImage(
+                      onTap: () => Navigator.of(context)
+                          .push(ProfileScreen.route(comment.owner.uid)),
+                      url: comment.owner.photoUrl,
+                      spacing: 0,
                     ),
                   ),
                 ],
               ),
+              Expanded(
+                child: CommentText(
+                  uid: comment.owner.uid,
+                  leading: TextSpan(
+                    text: comment.owner.username,
+                  ),
+                  text: comment.text,
+                  onOpen: (uid) =>
+                      Navigator.of(context).push(ProfileScreen.route(uid)),
+                  onTagClick: (tag) => print(tag),
+                  onMention: (name) {
+                    print(name);
+                    return Navigator.of(context)
+                        .push(ProfileScreen.routeUsername(name));
+                  },
+                  style: TextStyles.w300Text,
+                ),
+              ),
+              IconButton(
+                  icon: Icon(
+                    LineIcons.heart_o,
+                    color: Colors.grey,
+                    size: 14,
+                  ),
+                  onPressed: () {
+                    print('liked comment');
+                  }),
+            ],
+          ),
+          Container(
+//            color: Colors.red,
+            child: Row(
+              children: <Widget>[
+                SizedBox(width: 50),
+                Text(TimeAgo.formatShort(comment.timestamp.toDate()),
+                    style: _greyTextStyle),
+                if (comment.stats?.likeCount ?? 0 > 0) ...[
+                  SizedBox(width: 20),
+                  Text('${comment.stats?.likeCount ?? 0} likes',
+                      style:
+                          _greyTextStyle.copyWith(fontWeight: FontWeight.w400)),
+                ],
+                SizedBox(width: 20),
+                Material(
+                  child: InkWell(
+                    onTap: () => onReply(comment),
+                    child: Text('Reply',
+                        style: _greyTextStyle.copyWith(
+                            fontWeight: FontWeight.w400)),
+                  ),
+                ),
+//                Text(comment.id ?? ''),
+              ],
             ),
           ),
-          Flexible(
-              flex: 2,
-              child: Padding(
-                padding: const EdgeInsets.all(5.0),
-                child: IconButton(
-                    icon: Icon(
-                      MaterialCommunityIcons.heart_outline,
-                      color: Colors.grey,
-                    ),
-                    onPressed: () {}),
-              )),
         ],
       ),
     );

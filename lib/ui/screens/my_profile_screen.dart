@@ -101,9 +101,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
 
                       return ProfileHeader(
                         onAvatarPressed: () => momentDocs.isNotEmpty
-                            ? Navigator.of(context, rootNavigator: true).push(
-                                StoryPageView.route(0, [userStory],
-                                    bgWidget: null))
+                            ? StoryPageView.show(context, 0, [userStory])
                             : Navigator.of(context, rootNavigator: true)
                                 .push(EditorPage.route()),
                         onFollowersPressed: () => Navigator.push(context,

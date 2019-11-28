@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:meta/meta.dart';
 import 'package:nutes/core/models/activity.dart';
 import 'package:nutes/core/models/chat_message.dart';
+import 'package:nutes/core/models/comment.dart';
 import 'package:nutes/core/models/post_type.dart';
 import 'package:nutes/core/models/story.dart';
 import 'package:nutes/core/models/tab_item.dart';
@@ -307,6 +308,16 @@ class Repo {
     });
   }
 
+  static uploadComment({
+    @required Post post,
+    @required Comment comment,
+//    @required User owner,
+//    @required String text,
+//    String parentId,
+  }) async {
+    return _instance._firestore.uploadComment(post: post, comment: comment);
+  }
+
   static uploadShout({@required User peer, @required Map data}) {
     return uploadPost(
         type: PostType.shout, isPrivate: false, peer: peer, metadata: data);
@@ -472,6 +483,9 @@ class Repo {
 //      _instance._firestore
 //          .isFollowing(follower: follower, following: following);
 
+  static Future<UserProfile> getUserProfileFromUsername(String username) =>
+      _instance._firestore.getUserProfileFromUsername(username);
+
   static Future<UserProfile> getUserProfile(String uid) =>
       _instance._firestore.getUserProfile(uid);
 
@@ -549,6 +563,14 @@ class Repo {
 
     return posts;
   }
+
+  static Comment newComment(
+          {@required String text, @required postId, Comment parentComment}) =>
+      _instance._firestore
+          .newComment(text: text, postId: postId, parentComment: parentComment);
+
+  static Future<List<Comment>> getComments(String postId) async =>
+      _instance._firestore.getComments(postId);
 
   ///Returns a complete post from an incomplete one
   static Future<Post> getPostStatsAndLikes(Post post) async {

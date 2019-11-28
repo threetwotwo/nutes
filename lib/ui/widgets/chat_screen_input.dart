@@ -162,9 +162,9 @@ class _ChatScreenInputState extends State<ChatScreenInput> {
                               builder: (context) => CupertinoAlertDialog(
                                     title: Text('Start a shout?'),
                                     content: Text('\nOnce the other person '
-                                        'responds, the shout become public and '
-                                        'followers of both parties can view it.\n'
-                                        '\nShouts expire within 24 hours.'),
+                                        'responds, the shout becomes public '
+                                        'and can be viewed by '
+                                        'followers of both parties.'),
                                     actions: <Widget>[
                                       CupertinoDialogAction(
                                           child: Text('Cancel'),

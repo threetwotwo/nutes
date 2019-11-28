@@ -10,6 +10,7 @@ import 'package:nutes/ui/screens/shout_screen.dart';
 import 'package:nutes/ui/shared/app_bars.dart';
 import 'package:nutes/ui/shared/avatar_image.dart';
 import 'package:nutes/ui/shared/avatar_list_item.dart';
+import 'package:nutes/ui/shared/loading_indicator.dart';
 import 'package:nutes/ui/widgets/chat_bubble.dart';
 import 'package:nutes/ui/widgets/chat_screen_input.dart';
 import 'package:nutes/ui/widgets/shout_text_field.dart';
@@ -271,124 +272,116 @@ class _ChatScreenState extends State<ChatScreen> {
             children: <Widget>[
               Expanded(
                 child: Container(
-//                  child: StreamBuilder<List<ChatMessage>>(
-//                      stream: ChatStream.stream(),
-//                      builder: (context, snap) {
-//                        if (!snap.hasData) return SizedBox();
-//                        final ms = snap.data;
-//                        return AnimatedList(
-//                          controller: _scrollController,
-//                          key: _listKey,
-//                          physics: AlwaysScrollableScrollPhysics(),
-//                          reverse: true,
-//                          initialItemCount: ms.length ?? 0,
-//                          itemBuilder: (context, index, animation) =>
-//                              _buildItem(context, ms[index], animation),
-//                        );
-//                      }),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                    child: ListView.builder(
-                      physics: AlwaysScrollableScrollPhysics(),
-                      reverse: true,
-                      controller: _scrollController,
-                      itemCount: messages.length,
-                      itemBuilder: (context, index) {
-                        final message = messages[index];
+                  child: Center(
+                    child: !initialMessagedFinishedLoading
+                        ? LoadingIndicator()
+                        : Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 8.0),
+                            child: ListView.builder(
+                              physics: AlwaysScrollableScrollPhysics(),
+                              reverse: true,
+                              controller: _scrollController,
+                              itemCount: messages.length,
+                              itemBuilder: (context, index) {
+                                final message = messages[index];
 
-                        ///Remember: list view is reversed
-                        final isLast = index < 1;
-                        final nextBubbleIsMine = (!isLast &&
-                            messages[index - 1].senderId ==
-                                Repo.currentProfile.uid);
+                                ///Remember: list view is reversed
+                                final isLast = index < 1;
+                                final nextBubbleIsMine = (!isLast &&
+                                    messages[index - 1].senderId ==
+                                        Repo.currentProfile.uid);
 
-                        final showPeerAvatar =
-                            (isLast && message.senderId == widget.peer.uid) ||
-                                nextBubbleIsMine;
+                                final showPeerAvatar = (isLast &&
+                                        message.senderId == widget.peer.uid) ||
+                                    nextBubbleIsMine;
 
-                        final isPeer =
-                            message.senderId != Repo.currentProfile.uid;
+                                final isPeer =
+                                    message.senderId != Repo.currentProfile.uid;
 
-                        ///Show message date if previous message is
-                        ///sent more than an hour ago
-                        final isFirst = index == messages.length - 1;
-                        final currentMessage = messages[index];
-                        final previousMessage =
-                            isFirst ? null : messages[index + 1];
+                                ///Show message date if previous message is
+                                ///sent more than an hour ago
+                                final isFirst = index == messages.length - 1;
+                                final currentMessage = messages[index];
+                                final previousMessage =
+                                    isFirst ? null : messages[index + 1];
 
-                        bool showDate;
+                                bool showDate;
 
-                        if (previousMessage == null) {
-                          showDate = true;
-                        } else if (currentMessage.timestamp == null ||
-                            previousMessage.timestamp == null) {
-                          showDate = true;
-                        } else {
-                          showDate = previousMessage.timestamp.seconds <
-                              currentMessage.timestamp.seconds - 3600;
-                        }
+                                if (previousMessage == null) {
+                                  showDate = true;
+                                } else if (currentMessage.timestamp == null ||
+                                    previousMessage.timestamp == null) {
+                                  showDate = true;
+                                } else {
+                                  showDate = previousMessage.timestamp.seconds <
+                                      currentMessage.timestamp.seconds - 3600;
+                                }
 
-                        switch (message.type) {
-                          case Bubbles.text:
-                            return ChatTextBubble(
-                              isPeer: isPeer,
-                              message: message,
-                              isLast: showPeerAvatar,
-                              peer: widget.peer,
-                              showDate: showDate,
-                            );
-                          case Bubbles.photo:
-                            return SizedBox();
-                          case Bubbles.shout_challenge:
-                            return ChatShoutBubble(
-                              isPeer: isPeer,
-                              content: message.content,
-                              peer: isPeer
-                                  ? widget.peer
-                                  : Repo.currentProfile.user,
-                              onTapped: isPeer
-                                  ? () => Navigator.of(context)
-                                      .push(MaterialPageRoute(
-                                          builder: (context) => ShoutScreen(
-                                                chatId: chatId,
-                                                message: message,
-                                                challenger: widget.peer,
-                                              )))
-                                  : () {},
-                              isLast: showPeerAvatar,
-                            );
-                          case Bubbles.shout_complete:
-                            return ChatShoutResponseBubble(
-                              isPeer: isPeer,
-                              content: message.content,
-                              response: message.metadata['responding_to'],
-                              peer: widget.peer,
-                              isLast: showPeerAvatar,
-                              onTapped: () {
-                                print('tapped shout response');
+                                switch (message.type) {
+                                  case Bubbles.text:
+                                    return ChatTextBubble(
+                                      isPeer: isPeer,
+                                      message: message,
+                                      isLast: showPeerAvatar,
+                                      peer: widget.peer,
+                                      showDate: showDate,
+                                    );
+                                  case Bubbles.photo:
+                                    return SizedBox();
+                                  case Bubbles.shout_challenge:
+                                    return ChatShoutBubble(
+                                      isPeer: isPeer,
+                                      message: message,
+                                      peer: isPeer
+                                          ? widget.peer
+                                          : Repo.currentProfile.user,
+                                      onTapped: isPeer
+                                          ? () => Navigator.of(context).push(
+                                              MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      ShoutScreen(
+                                                        chatId: chatId,
+                                                        message: message,
+                                                        challenger: widget.peer,
+                                                      )))
+                                          : () {},
+                                      isLast: showPeerAvatar,
+                                    );
+                                  case Bubbles.shout_complete:
+                                    return ChatShoutResponseBubble(
+                                      isPeer: isPeer,
+                                      response: message,
+                                      message:
+                                          message.metadata['responding_to'],
+                                      peer: widget.peer,
+                                      isLast: showPeerAvatar,
+                                      onTapped: () {
+                                        print('tapped shout response');
+                                      },
+                                    );
+
+                                  case Bubbles.text_temp:
+                                    return ChatPlaceholderBubble(message);
+                                  case Bubbles.photo_temp:
+                                    return SizedBox();
+                                  case Bubbles.shout_challenge_temp:
+                                    return SizedBox();
+                                  case Bubbles.shout_complete_temp:
+                                    return SizedBox();
+                                  case Bubbles.isTyping:
+                                    return TypingIndicator(
+                                      user: widget.peer,
+                                    );
+                                  case Bubbles.loadMore:
+                                    return LoadMoreIndicator();
+
+                                  default:
+                                    return SizedBox();
+                                }
                               },
-                            );
-
-                          case Bubbles.text_temp:
-                            return ChatPlaceholderBubble(message);
-                          case Bubbles.photo_temp:
-                            return SizedBox();
-                          case Bubbles.shout_challenge_temp:
-                            return SizedBox();
-                          case Bubbles.shout_complete_temp:
-                            return SizedBox();
-                          case Bubbles.isTyping:
-                            return TypingIndicator(
-                              user: widget.peer,
-                            );
-                          case Bubbles.loadMore:
-                            return LoadMoreIndicator();
-
-                          default:
-                            return SizedBox();
-                        }
-                      },
-                    ),
+                            ),
+                          ),
                   ),
                 ),
               ),
@@ -461,6 +454,10 @@ class _ChatScreenState extends State<ChatScreen> {
 
                     Repo.uploadMessage(
                         messageRef, Bubbles.shout_challenge, text, widget.peer);
+
+                    shoutController.clear();
+
+                    Navigator.pop(context);
                   },
                   controller: shoutController,
                 )),

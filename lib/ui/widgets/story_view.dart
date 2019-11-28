@@ -9,6 +9,7 @@ import 'package:nutes/core/services/repository.dart';
 
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+import 'package:nutes/ui/screens/profile_screen.dart';
 import 'package:nutes/ui/shared/avatar_image.dart';
 import 'package:nutes/ui/shared/avatar_list_item.dart';
 import 'package:nutes/ui/shared/buttons.dart';
@@ -123,6 +124,13 @@ class _StoryViewState extends State<StoryView>
   int momentIndex;
   bool isInFullscreenMode = false;
   Story story;
+
+  @override
+  void didUpdateWidget(StoryView oldWidget) {
+    print('didupdatewidget');
+    _play();
+    super.didUpdateWidget(oldWidget);
+  }
 
   @override
   void initState() {
@@ -285,25 +293,6 @@ class _StoryViewState extends State<StoryView>
                       );
                     },
                   ),
-//                  child: CachedNetworkImage(
-//                    fit: BoxFit.cover,
-//                    imageUrl: story.moments[momentIndex].url,
-//                    placeholder: (context, _) => Container(
-//                      width: 50,
-//                      child: SpinKitCircle(color: Colors.white),
-//                    ),
-//                    imageBuilder: (context, provider) {
-//                      provider
-//                          .resolve(ImageConfiguration())
-//                          .addListener(ImageStreamListener((info, b) {
-//                        if (mounted) {
-//                          story.moments[momentIndex].isLoaded = true;
-//                          _play();
-//                        }
-//                      }));
-//                      return Image.network(story.moments[momentIndex].url);
-//                    },
-//                  ),
                 ),
                 Align(
                   alignment: Alignment.topCenter,
@@ -323,7 +312,7 @@ class _StoryViewState extends State<StoryView>
                   ),
                 ),
                 Positioned(
-                  top: topOffset + 8,
+                  top: topOffset + 40,
                   left: 8.0 - widget.progressSegmentGap / 2,
                   right: 8.0 - widget.progressSegmentGap / 2,
                   child: AnimatedOpacity(
@@ -361,36 +350,46 @@ class _StoryViewState extends State<StoryView>
                             ),
                           ],
                         ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8.0),
-                          child: AvatarListItem(
-                            avatar: AvatarImage(
-                              bordered: false,
-                              url: widget.uploader.photoUrl,
-                              spacing: 0,
-                              padding: 12,
-                              addStory: false,
-                            ),
-                            title: widget.uploader.username,
-                            onAvatarTapped: () {
-                              print('story view avatar '
-                                  'tapped');
-                              _stop();
-                              return widget.onAvatarTapped(widget.uploader);
-                            },
-                            onBodyTapped: () {
-                              _stop();
-                              return widget.onAvatarTapped(widget.uploader);
-                            },
-                            trailingWidget: CancelButton(
-                              onPressed: () {
-                                SystemChrome.setEnabledSystemUIOverlays(
-                                    SystemUiOverlay.values);
+                        Container(
+                          height: 60,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: <Widget>[
+                              GestureDetector(
+                                onTap: () {
+                                  _stop();
+                                  Navigator.of(context).push(
+                                      ProfileScreen.route(widget.uploader.uid));
+                                },
+                                child: Row(
+                                  children: <Widget>[
+                                    AvatarImage(
+                                      bordered: false,
+                                      url: widget.uploader.photoUrl,
+                                      spacing: 0,
+                                      padding: 10,
+                                      addStory: false,
+                                    ),
+                                    Text(
+                                      widget.uploader.username,
+                                      style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w500),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              CancelButton(
+                                onPressed: () {
+                                  SystemChrome.setEnabledSystemUIOverlays(
+                                      SystemUiOverlay.values);
 
-                                if (mounted) Navigator.of(context).pop();
-                                return;
-                              },
-                            ),
+                                  if (mounted) Navigator.of(context).pop();
+                                  return;
+                                },
+                              ),
+                            ],
                           ),
                         )
                       ],

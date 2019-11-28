@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:nutes/core/models/comment.dart';
 import 'package:nutes/core/services/auth.dart';
 import 'package:nutes/ui/shared/comment_list_item.dart';
+import 'package:nutes/ui/shared/comment_text_field.dart';
 import 'package:nutes/utils/timeAgo.dart';
 import 'package:preload_page_view/preload_page_view.dart';
 import 'package:nutes/core/models/post_type.dart';
@@ -22,6 +23,7 @@ import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:nutes/ui/shared/dots_indicator.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'avatar_list_item.dart';
+import 'package:emoji_picker/emoji_picker.dart';
 
 //enum PostHeight { small, medium, large }
 //
@@ -112,6 +114,11 @@ class _PostListItemState extends State<PostListItem> {
 
   bool isCommenting = false;
 
+  final commentController = TextEditingController();
+  final commentNode = FocusNode();
+
+  final auth = Auth.instance;
+
   _getPostComplete() async {
     print('get post compelte');
 
@@ -122,6 +129,109 @@ class _PostListItemState extends State<PostListItem> {
     setState(() {
       post = result;
     });
+  }
+
+  _showBottomModalSheet(BuildContext context) {
+    return showModalBottomSheet(
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        context: context,
+        builder: (BuildContext context) {
+          return GestureDetector(
+            onHorizontalDragUpdate: (val) {},
+            child: Padding(
+                padding: EdgeInsets.only(
+                    bottom: MediaQuery.of(context).viewInsets.bottom),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.blue[300],
+                    borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(16),
+                        topRight: Radius.circular(16)),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Container(
+                          height: 40,
+                          child: Align(
+                            alignment: Alignment.topCenter,
+                            child: Container(
+                              margin: const EdgeInsets.only(top: 10),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(32),
+                                color: Colors.white,
+                              ),
+                              width: 40,
+                              height: 4,
+                            ),
+                          ),
+                        ),
+                      ),
+                      Divider(),
+                      EmojiPicker(
+                        onEmojiSelected: (val, _) => commentController.text =
+                            commentController.text + val.emoji,
+                        rows: 1,
+                        recommendKeywords: [
+                          'Crying Face',
+                          'Face With Tears of Joy',
+                          'Clapping Hands',
+                          'Raising Hands',
+                          'Winking Face With Tongue',
+                          'Face With Open Mouth',
+                          'Smiling Face With Heart-Eyes',
+                          'OK Hand',
+                          'Victory Hand',
+                          'Folded Hands',
+                          'Love-You Gesture',
+                          'Middle Finger',
+                          'Thumbs Up',
+                          'Thumbs Down',
+                          'Red Heart',
+                        ],
+                        numRecommended: 60,
+                        columns: 8,
+                        bgColor: Colors.white,
+                        indicatorColor: Colors.grey,
+//                        buttonMode: ButtonMode.MATERIAL,
+                      ),
+                      CommentTextField(
+                        controller: commentController,
+                        focusNode: commentNode,
+                        hint: 'Add comment as ${auth.profile.user.username}...',
+                        onSendPressed: (val) {
+                          final text = commentController.text;
+
+                          final comment = Comment(
+                            timestamp: Timestamp.now(),
+                            text: text,
+                            owner: auth.profile.user,
+                          );
+
+                          final comments = (post.topComments ?? [])
+                            ..add(comment);
+
+                          setState(() {
+                            post = post.copyWith(topComments: comments);
+                            Repo.uploadComment(
+                              post: post,
+                              comment: comment,
+                            );
+                          });
+
+                          commentController.clear();
+
+                          Navigator.pop(context);
+                        },
+                      ),
+                    ],
+                  ),
+                )),
+          );
+        });
   }
 
   @override
@@ -324,25 +434,13 @@ class _PostListItemState extends State<PostListItem> {
                               Navigator.of(context, rootNavigator: true).push(
                             CupertinoPageRoute(
                               fullscreenDialog: false,
-                              builder: (context) => CommentScreen(),
+                              builder: (context) => CommentScreen(
+                                postId: post.id,
+                              ),
                             ),
                           ),
                           onSendTapped: () {
                             print('send tpped');
-                            if (mounted)
-                              setState(() {
-                                post = post.copyWith(
-                                  comments: [
-                                    Comment(
-                                        id: '',
-                                        postId: '',
-                                        text: 'New '
-                                            'comment',
-                                        uploader: Auth.instance.profile.user,
-                                        timestamp: Timestamp.now())
-                                  ],
-                                );
-                              });
                           },
                           controller: _controller,
                           itemCount: post.type == PostType.shout
@@ -352,15 +450,41 @@ class _PostListItemState extends State<PostListItem> {
                         LikeCountBar(
                           post: post,
                         ),
+
+                        ///Caption
                         if (post.caption.isNotEmpty)
                           CommentPostListItem(
                             uploader: post.owner,
                             text: post.caption,
                           ),
-                        if (post.comments != null && post.comments.isNotEmpty)
-                          for (final c in post.comments)
+
+                        ///View more comments button
+                        if (post.stats.commentCount > 0)
+                          Material(
+                            color: Colors.white,
+                            child: InkWell(
+                              onTap: () => Navigator.push(
+                                context,
+                                CommentScreen.route(post.id),
+                              ),
+                              child: Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 8.0),
+                                child: Text(
+                                  'View all ${post.stats.commentCount} comments',
+                                  style: TextStyles.w300Display.copyWith(
+                                      fontSize: 14, color: Colors.grey),
+                                ),
+                              ),
+                            ),
+                          ),
+                        if (post.topComments != null &&
+                            post.topComments.isNotEmpty)
+                          for (final c in post.topComments)
                             CommentPostListItem(
-                                uploader: c.uploader, text: c.text),
+                                uploader: c.owner, text: c.text),
+
+                        ///Timestamp
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 8.0),
                           child: Text(
@@ -369,22 +493,22 @@ class _PostListItemState extends State<PostListItem> {
                                 .copyWith(fontSize: 14, color: Colors.grey),
                           ),
                         ),
-                        isCommenting
-                            ? TextField()
-                            : FlatButton(
-                                focusColor: Colors.blue,
-                                highlightColor: Colors.white,
-//                          splashColor: Colors.blue[100],
-                                onPressed: () {
-                                  setState(() {
-                                    isCommenting = true;
-                                  });
-                                },
-                                child: Text(
-                                  'Add comment...',
-                                  style: TextStyle(color: Colors.blueAccent),
-                                ),
+                        Material(
+                          color: Colors.white,
+                          child: InkWell(
+                            splashColor: Colors.white,
+                            highlightColor: Colors.grey[100],
+                            onTap: () => _showBottomModalSheet(context),
+                            child: Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 8.0),
+                              child: Text(
+                                'Add comment...',
+                                style: TextStyle(color: Colors.blueAccent[100]),
                               ),
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),

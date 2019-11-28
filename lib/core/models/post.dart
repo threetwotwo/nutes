@@ -76,7 +76,7 @@ class Post {
   PostStats stats;
   final Map metadata;
   final String caption;
-  final List<Comment> comments;
+  final List<Comment> topComments;
 
   ///List of users who are also my followings who liked this post
   final List<User> myFollowingLikes;
@@ -95,7 +95,7 @@ class Post {
     this.stats,
     this.metadata,
     this.caption,
-    this.comments,
+    this.topComments,
     this.myFollowingLikes = const [],
   });
 
@@ -108,7 +108,7 @@ class Post {
     List<User> myFollowingLikes,
     String caption,
     User uploader,
-    List<Comment> comments,
+    List<Comment> topComments,
   }) {
     return Post(
       type: this.type,
@@ -122,10 +122,19 @@ class Post {
       stats: stats ?? this.stats,
       metadata: this.metadata,
       caption: caption ?? this.caption,
-      comments: comments ?? this.comments,
+      topComments: topComments ?? this.topComments,
       myLikes: myLikes ?? this.myLikes,
       myFollowingLikes: myFollowingLikes ?? this.myFollowingLikes ?? [],
     );
+  }
+
+  Map toMap() {
+    return {
+      'post_id': id,
+      'media_url': urls.first.medium,
+      'metadata': metadata,
+      'owner': owner.toMap(),
+    };
   }
 
   factory Post.fromDoc(DocumentSnapshot doc) {
@@ -178,6 +187,7 @@ class PostStats {
 
   ///uid of post owner
   final String ownerId;
+//  final List<Comment> topComments;
 
   PostStats({
     this.ownerId,
@@ -186,6 +196,7 @@ class PostStats {
     this.commentCount = 0,
     this.challengerCount = 0,
     this.challengedCount = 0,
+//    this.topComments,
   });
 
   PostStats copyWith({
@@ -193,6 +204,7 @@ class PostStats {
     int commentCount,
     int challengerCount,
     int challengedCount,
+    List<Comment> comments,
   }) {
     return PostStats(
       postId: this.postId,
@@ -201,11 +213,13 @@ class PostStats {
       commentCount: commentCount ?? this.commentCount,
       challengerCount: challengerCount ?? this.challengerCount,
       challengedCount: challengedCount ?? this.challengedCount,
+//      topComments: comments ?? this.topComments,
     );
   }
 
   factory PostStats.fromDoc(DocumentSnapshot doc) {
     final data = doc.data;
+    final List comments = (data['top_comments'] ?? []);
     return PostStats(
       ownerId: data['owner_id'],
       postId: doc.documentID,
@@ -213,6 +227,7 @@ class PostStats {
       commentCount: data['comment_count'] ?? 0,
       challengerCount: data['left_like_count'] ?? 0,
       challengedCount: data['right_like_count'] ?? 0,
+//      topComments: comments.map((c) => Comment.fromDoc(doc));
     );
   }
 
@@ -226,18 +241,18 @@ class PostStats {
     );
   }
 
-  factory PostStats.fromSnap(DataSnapshot snap) {
-    final data = snap.value;
-
-    if (snap.value == null) {
-      return PostStats(likeCount: 0, commentCount: 0);
-    }
-
-    return PostStats(
-      likeCount: data['like_count'] ?? 0,
-      commentCount: data['comment_count'] ?? 0,
-      challengerCount: data['challenger_like_count'] ?? 0,
-      challengedCount: data['challenged_like_count'] ?? 0,
-    );
-  }
+//  factory PostStats.fromSnap(DataSnapshot snap) {
+//    final data = snap.value;
+//
+//    if (snap.value == null) {
+//      return PostStats(likeCount: 0, commentCount: 0);
+//    }
+//
+//    return PostStats(
+//      likeCount: data['like_count'] ?? 0,
+//      commentCount: data['comment_count'] ?? 0,
+//      challengerCount: data['challenger_like_count'] ?? 0,
+//      challengedCount: data['challenged_like_count'] ?? 0,
+//    );
+//  }
 }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+//import 'package:line_icons/line_icons.dart';
 import 'package:nutes/ui/shared/logos.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class FeedPageAppBar extends StatelessWidget implements PreferredSizeWidget {
   final Function onCreatePressed;
@@ -11,7 +13,7 @@ class FeedPageAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     return AppBar(
       leading: IconButton(
-        icon: Icon(Icons.create),
+        icon: Icon(MdiIcons.pencilPlus),
         onPressed: onCreatePressed,
         color: Colors.black,
         tooltip: 'Camera',

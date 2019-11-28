@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:meta/meta.dart';
 import 'package:nutes/core/models/activity.dart';
 import 'package:nutes/core/models/chat_message.dart';
+import 'package:nutes/core/models/comment.dart';
 import 'package:nutes/core/models/post.dart';
 import 'package:nutes/core/models/post_type.dart';
 import 'package:nutes/core/models/story.dart';
@@ -130,6 +131,16 @@ class FirestoreService {
   CollectionReference _challengedLikesRef({String uid, String postId}) {
     assert(uid != null);
     return _userPostsRef(uid).document(postId).collection('challenged_likes');
+  }
+
+  Future<UserProfile> getUserProfileFromUsername(String username) async {
+    final q = await shared
+        .collection('users')
+        .where('username', isEqualTo: username)
+        .limit(1)
+        .getDocuments();
+
+    return q.documents.isEmpty ? null : UserProfile.fromDoc(q.documents.first);
   }
 
   Future<UserProfile> getUserProfile(String uid) async {
@@ -864,6 +875,75 @@ class FirestoreService {
     return story;
   }
 
+  Comment newComment(
+      {@required String text, @required String postId, Comment parentComment}) {
+    final ref = shared
+        .collection('posts')
+        .document(postId)
+        .collection('comments')
+        .document();
+
+    return Comment(
+      id: ref.documentID,
+      text: text,
+      timestamp: Timestamp.now(),
+      owner: auth.profile.user,
+      parentId: parentComment?.id ?? null,
+      parentOwner: parentComment?.owner ?? null,
+    );
+  }
+
+  Future<List<Comment>> getComments(String postId) async {
+    final commentsRef = shared
+        .collection('posts')
+        .document(postId)
+        .collection('comments')
+        .orderBy('like_count', descending: true)
+        .limit(30);
+
+    final docs = await commentsRef.getDocuments();
+
+    print('comments: ${docs.documents.length} for post $postId');
+
+    return docs.documents.map((doc) => Comment.fromDoc(doc)).toList();
+  }
+
+  Future uploadComment({
+    @required Post post,
+    @required Comment comment,
+
+//                         @required User owner,
+//    @required String text,
+//    String parentId,
+  }) async {
+    final postRef = shared.collection('posts').document(post.id);
+    final commentRef = postRef.collection('comments').document();
+
+//    final timestamp = Timestamp.now();
+
+    final batch = shared.batch();
+
+    final commentPayload = {
+      'parent_id': comment.parentId,
+      'owner': comment.owner.toMap(),
+      'text': comment.text,
+      'published': comment.timestamp,
+      'like_count': 0,
+    };
+
+    batch.setData(commentRef, commentPayload);
+
+    batch.setData(
+      postRef,
+      {
+        'comment_count': FieldValue.increment(1),
+      },
+      merge: true,
+    );
+
+    return batch.commit();
+  }
+
   Future uploadStory(
       {@required DocumentReference storyRef, @required String url}) async {
     return await storyRef.setData({
@@ -1386,6 +1466,7 @@ class FirestoreService {
     final post = await getPost(postId, ownerId);
 
     return post.copyWith(
+      topComments: await getPostTopComments(post.id),
       stats: await getPostStats(post.id),
       myLikes: await getMyLikesForPost(post.id),
       myFollowingLikes: await getFollowingLikesOfPost(post.id, userFollowings),
@@ -1411,6 +1492,7 @@ class FirestoreService {
 
     final futures = posts.map((p) async {
       return p.copyWith(
+        topComments: await getPostTopComments(p.id),
         stats: await getPostStats(p.id),
         myLikes: await getMyLikesForPost(p.id),
         myFollowingLikes: await getFollowingLikesOfPost(p.id, userFollowings),
@@ -1578,6 +1660,19 @@ class FirestoreService {
       return UserProfile.fromDoc(qs.documents.first);
 
     return null;
+  }
+
+  Future<List<Comment>> getPostTopComments(String postId) async {
+    final ref = shared
+        .collection('posts')
+        .document(postId)
+        .collection('comments')
+        .orderBy('like_count', descending: true)
+        .limit(2);
+
+    final docs = await ref.getDocuments();
+
+    return docs.documents.map((doc) => Comment.fromDoc(doc)).toList();
   }
 
   Future<PostStats> getPostStats(String id) async {

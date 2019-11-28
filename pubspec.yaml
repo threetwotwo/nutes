@@ -49,7 +49,10 @@ dependencies:
   #for dm screen
   flutter_slidable: ^0.5.3
 
+  emoji_picker: ^0.0.2
+
   bubble: ^1.1.8+2
+  indexed_list_view: ^1.0.8
 
   line_icons: ^0.2.0
   material_design_icons_flutter: ^3.2.3595

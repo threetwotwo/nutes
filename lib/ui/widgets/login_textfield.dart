@@ -141,7 +141,7 @@ class UsernameTextField extends StatelessWidget {
     return BaseTextField(
       maxLength: 30,
       inputFormatters: [
-        WhitelistingTextInputFormatter(RegExp("[a-z._0-9]")),
+        WhitelistingTextInputFormatter(RegExp("[a-z\._0-9]")),
       ],
 
       ///ensure lowercase
@@ -221,7 +221,7 @@ class BaseTextField extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.all(8.0),
           child: Text(
-            message,
+            message ?? '',
             style: TextStyles.defaultText.copyWith(
                 color: Colors.black87,
                 fontSize: 15,

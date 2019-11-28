@@ -92,6 +92,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.1.2"
+  device_info:
+    dependency: transitive
+    description:
+      name: device_info
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.4.1+1"
   email_validator:
     dependency: "direct main"
     description:
@@ -99,6 +106,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.0.0"
+  emoji_picker:
+    dependency: "direct main"
+    description:
+      name: emoji_picker
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.0.2"
   equatable:
     dependency: "direct main"
     description:
@@ -235,6 +249,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.5.4+3"
+  indexed_list_view:
+    dependency: "direct main"
+    description:
+      name: indexed_list_view
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "1.0.8"
   intl:
     dependency: "direct main"
     description:

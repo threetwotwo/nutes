@@ -7,6 +7,7 @@ import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/screens/profile_screen.dart';
 import 'package:nutes/ui/shared/avatar_image.dart';
 import 'package:intl/intl.dart';
+import 'package:nutes/utils/timeAgo.dart';
 
 const kPeerBubbleColor = Colors.white;
 const kPeerTextColor = Colors.black;
@@ -167,8 +168,8 @@ class TypingIndicator extends StatelessWidget {
 
 class ChatShoutResponseBubble extends StatelessWidget {
   final bool isPeer;
-  final String content;
-  final String response;
+  final ChatItem response;
+  final String message;
   final User peer;
   final VoidCallback onTapped;
   final bool isLast;
@@ -176,8 +177,8 @@ class ChatShoutResponseBubble extends StatelessWidget {
   const ChatShoutResponseBubble(
       {Key key,
       @required this.isPeer,
-      @required this.content,
       @required this.response,
+      @required this.message,
       @required this.peer,
       @required this.onTapped,
       @required this.isLast})
@@ -190,9 +191,8 @@ class ChatShoutResponseBubble extends StatelessWidget {
           padding: const EdgeInsets.all(8.0),
           child: Center(
             child: Text(
-              isPeer
-                  ? '${peer.username} responded to your shout'
-                  : 'You responded to a shout',
+              '${isPeer ? '${peer.username} responded to your shout' : 'You '
+                  'responded to a shout'} · ${TimeAgo.formatShort(response.timestamp.toDate())}',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(color: Colors.grey),
@@ -249,7 +249,7 @@ class ChatShoutResponseBubble extends StatelessWidget {
                             ),
                             SizedBox(height: 8),
                             Text(
-                              response,
+                              message,
                               maxLines: 4,
                               overflow: TextOverflow.fade,
                               style: TextStyle(
@@ -288,7 +288,7 @@ class ChatShoutResponseBubble extends StatelessWidget {
                               ),
                               SizedBox(height: 8),
                               Text(
-                                content,
+                                response.content,
                                 style: TextStyle(
                                   color:
                                       !isPeer ? kMyTextColor : kPeerTextColor,
@@ -313,14 +313,14 @@ class ChatShoutResponseBubble extends StatelessWidget {
 
 class ChatShoutBubble extends StatelessWidget {
   final bool isPeer;
-  final String content;
+  final ChatItem message;
   final VoidCallback onTapped;
   final User peer;
   final bool isLast;
 
   const ChatShoutBubble({
     @required this.isPeer,
-    @required this.content,
+    @required this.message,
     @required this.onTapped,
     @required this.peer,
     @required this.isLast,
@@ -338,10 +338,9 @@ class ChatShoutBubble extends StatelessWidget {
             padding: const EdgeInsets.all(8.0),
             child: Center(
               child: Text(
-                isPeer
-                    ? '${peer.username} started a shout'
-                    : 'You started a '
-                        'shout',
+                '${isPeer ? '${peer.username} started a shout' : 'You started'
+                        ' a shout'}' +
+                    ' · ${TimeAgo.formatShort(message.timestamp.toDate())}',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(color: Colors.grey),
@@ -393,7 +392,7 @@ class ChatShoutBubble extends StatelessWidget {
                             ),
                             SizedBox(height: 8),
                             Text(
-                              content,
+                              message.content,
                               style: TextStyle(
                                 color: isPeer ? kPeerTextColor : kMyTextColor,
                                 fontSize: 16,

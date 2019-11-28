@@ -61,8 +61,14 @@ class _InlineStoriesState extends State<InlineStories> {
 
                 Repo.updateStoryIndex(index);
 
-                Navigator.of(context, rootNavigator: true)
-                    .push(StoryPageView.route(index, widget.userStories));
+                final topOffset = MediaQuery.of(context).padding.top;
+
+                print(topOffset);
+
+                StoryPageView.show(context, index, widget.userStories);
+
+//                Navigator.of(context, rootNavigator: true)
+//                    .push(StoryPageView.route(index, widget.userStories));
 
                 setState(() {
                   buttonTapped = null;

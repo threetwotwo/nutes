@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:nutes/core/services/auth.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/shared/avatar_image.dart';
 import 'package:nutes/ui/shared/styles.dart';
@@ -50,7 +51,7 @@ class ShoutTextField extends StatelessWidget {
                       child: Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: AvatarImage(
-                        url: Repo.currentProfile.user.photoUrl, spacing: 0),
+                        url: Auth.instance.profile.user.photoUrl, spacing: 0),
                   )),
                   Expanded(
                     flex: 5,

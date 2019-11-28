@@ -61,10 +61,9 @@ class CommentTextField extends StatelessWidget {
                             if (this.controller.text.isEmpty ||
                                 this.controller.text == null) return;
                             final comment = Comment(
-                                postId: '',
                                 timestamp: null,
                                 text: controller.text,
-                                uploader: Repo.currentProfile.user);
+                                owner: Repo.currentProfile.user);
                             model.addComment(comment);
                           },
                           child: Padding(
