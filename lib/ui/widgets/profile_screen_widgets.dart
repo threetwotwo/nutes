@@ -41,7 +41,7 @@ class BioHeader extends StatelessWidget {
             children: <Widget>[
               Text(
                 user.user.displayName ?? '',
-                style: TextStyles.W500Text15.copyWith(fontSize: 15),
+                style: TextStyles.w600Text.copyWith(fontSize: 15),
               ),
               IconButton(
                 onPressed: onMorePressed,

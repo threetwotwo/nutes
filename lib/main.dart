@@ -1,3 +1,4 @@
+import 'package:bot_toast/bot_toast.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -19,6 +20,8 @@ void main() async {
 
   setUpLocator();
 
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+
   await initCurrentUser();
   runApp(MyApp());
 }
@@ -27,7 +30,6 @@ Future initCurrentUser() async {
   UserProfile user;
 
   ///check FIRAuth if user is signed in
-//  final authUser = await locator<FirebaseAuth>().currentUser();
 
   final authUser = await FirebaseAuth.instance.currentUser();
   print('FIRUser = $authUser');
@@ -42,9 +44,6 @@ Future initCurrentUser() async {
     LocalCache.instance = LocalCache();
 
     return;
-
-//      Repo.myUserFollowings = await Repo.getMyUserFollowings(user.uid);
-
   }
 }
 
@@ -54,8 +53,6 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-//  final observer = locator<RouteObserver<PageRoute>>();
-
   bool isLoaded = false;
 
   @override
@@ -67,26 +64,12 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     SystemChrome.setEnabledSystemUIOverlays(SystemUiOverlay.values);
-    return MaterialApp(debugShowCheckedModeBanner: false, home: MainBuilder()
-//          :
-//            Scaffold(
-//              body: Container(
-//                  color: Colors.white,
-//                  child: Center(
-//                      child: Text(
-//                    'nutes',
-//                    style: TextStyles.large600Display.copyWith(fontSize: 38),
-//                  ))),
-//            ),
-//      theme: ThemeData(
-//          fontFamily: '.SF UI Display',
-//          iconTheme: IconThemeData(
-//            color: Colors.black,
-//          ),
-//          buttonTheme: ButtonThemeData(
-//            buttonColor: Colors.black,
-//          )),
-        );
+    return BotToastInit(
+        child: MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: MainBuilder(),
+      navigatorObservers: [BotToastNavigatorObserver()],
+    ));
   }
 }
 
@@ -98,13 +81,6 @@ class MainBuilder extends StatefulWidget {
 class _MainBuilderState extends State<MainBuilder> {
   final _auth = locator<LoginModel>();
   final auth = Auth.instance;
-
-  @override
-  void initState() {
-    // TODO: implement initState
-
-    super.initState();
-  }
 
   @override
   void dispose() {
@@ -125,15 +101,6 @@ class _MainBuilderState extends State<MainBuilder> {
         stream: _auth.auth.onAuthStateChanged,
         builder: (context, snapshot) {
           print(snapshot);
-//          if (!snapshot.hasData) {
-//            print(' auth user not initialized');
-//            return Scaffold(
-//              body: Container(
-////                color: Colors.white,
-//                child: Center(child: Text('HOHOHOH')),
-//              ),
-//            );
-//          }
 
           if (snapshot.hasData) {
             return AppPageView(

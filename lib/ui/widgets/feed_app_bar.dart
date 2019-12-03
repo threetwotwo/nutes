@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
-//import 'package:line_icons/line_icons.dart';
+import 'package:flutter_vector_icons/flutter_vector_icons.dart';
+import 'package:line_icons/line_icons.dart';
 import 'package:nutes/ui/shared/logos.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
-class FeedPageAppBar extends StatelessWidget implements PreferredSizeWidget {
+class FeedAppBar extends StatelessWidget implements PreferredSizeWidget {
   final Function onCreatePressed;
   final Function onLogoutPressed;
+  final Function onDM;
 
-  const FeedPageAppBar({Key key, this.onCreatePressed, this.onLogoutPressed})
+  const FeedAppBar(
+      {Key key, this.onCreatePressed, this.onLogoutPressed, this.onDM})
       : super(key: key);
   @override
   Widget build(BuildContext context) {
@@ -16,15 +19,21 @@ class FeedPageAppBar extends StatelessWidget implements PreferredSizeWidget {
         icon: Icon(MdiIcons.pencilPlus),
         onPressed: onCreatePressed,
         color: Colors.black,
-        tooltip: 'Camera',
       ),
       title: NutesLogoPlain(),
       actions: <Widget>[
         IconButton(
-          icon: Icon(Icons.exit_to_app),
+          icon: Icon(SimpleLineIcons.logout),
           onPressed: onLogoutPressed,
           color: Colors.black,
-        )
+        ),
+        IconButton(
+          icon: Icon(
+            SimpleLineIcons.paper_plane,
+          ),
+          onPressed: onDM,
+          color: Colors.black,
+        ),
       ],
       elevation: 1.5,
       brightness: Brightness.light,

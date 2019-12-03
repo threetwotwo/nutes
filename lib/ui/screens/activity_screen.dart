@@ -23,6 +23,7 @@ class ActivityScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Container(
           child: DefaultTabController(
@@ -33,8 +34,7 @@ class ActivityScreen extends StatelessWidget {
                 TabBar(
                   indicatorColor: Colors.black,
                   labelColor: Colors.black,
-                  labelStyle:
-                      TextStyles.W500Text15.copyWith(color: Colors.black),
+                  labelStyle: TextStyles.w600Text.copyWith(color: Colors.black),
                   unselectedLabelStyle:
                       TextStyles.w300Text.copyWith(color: Colors.grey[300]),
                   tabs: [
@@ -135,39 +135,37 @@ class _SelfActivityViewState extends State<SelfActivityView> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      child: ListView(
-        children: <Widget>[
-          StreamBuilder<QuerySnapshot>(
-              stream: stream,
-              builder: (context, snapshot) {
-                if (!snapshot.hasData)
-                  return ListTile(
-                    title: Text('Loading...'),
-                  );
-                return snapshot.data.documents.length > 0
-                    ? GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                              builder: (context) => FollowRequestScreen()),
+    return ListView(
+      children: <Widget>[
+        StreamBuilder<QuerySnapshot>(
+            stream: stream,
+            builder: (context, snapshot) {
+              if (!snapshot.hasData)
+                return ListTile(
+                  title: Text('Loading...'),
+                );
+              return snapshot.data.documents.length > 0
+                  ? GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                            builder: (context) => FollowRequestScreen()),
+                      ),
+                      child: AvatarListItem(
+                        avatar: AvatarImage(
+                          url: Repo.currentProfile.user.photoUrl,
+                          spacing: 0,
                         ),
-                        child: AvatarListItem(
-                          avatar: AvatarImage(
-                            url: Repo.currentProfile.user.photoUrl,
-                            spacing: 0,
-                          ),
-                          title: 'Follow Requests',
-                          subtitle: 'Accept or ignore requests',
-                          trailingWidget: Icon(Icons.chevron_right),
-                        ),
-                      )
-                    : ListTile(
-                        title: Text('no follow requests'),
-                      );
-              }),
-        ],
-      ),
+                        title: 'Follow Requests',
+                        subtitle: 'Accept or ignore requests',
+                        trailingWidget: Icon(Icons.chevron_right),
+                      ),
+                    )
+                  : ListTile(
+                      title: Text('no follow requests'),
+                    );
+            }),
+      ],
     );
   }
 }

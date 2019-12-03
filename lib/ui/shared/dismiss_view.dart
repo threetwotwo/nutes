@@ -14,15 +14,5 @@ class DismissView extends StatelessWidget {
         child: child,
       ),
     );
-    return Dismissible(
-      direction: DismissDirection.startToEnd,
-      onDismissed: (_) => onDismiss(),
-      key: Key(''),
-      child: Container(
-//        color: Colors.red,
-        height: double.infinity,
-        child: child,
-      ),
-    );
   }
 }

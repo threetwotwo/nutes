@@ -7,9 +7,10 @@ import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/screens/profile_screen.dart';
 import 'package:nutes/ui/shared/avatar_image.dart';
 import 'package:intl/intl.dart';
+import 'package:nutes/ui/shared/styles.dart';
 import 'package:nutes/utils/timeAgo.dart';
 
-const kPeerBubbleColor = Colors.white;
+final kPeerBubbleColor = Colors.grey[100];
 const kPeerTextColor = Colors.black;
 final kMyBubbleColor = Colors.blueAccent[400];
 const kMyTextColor = Colors.white;
@@ -30,17 +31,14 @@ class ChatPeerAvatar extends StatelessWidget {
           builder: (context) => ProfileScreen(
                 uid: peer.uid,
               ))),
-      child: Padding(
-        padding: const EdgeInsets.only(right: 8.0),
-        child: SizedBox(
-          width: 36,
-          child: Visibility(
-            visible: isVisible,
-            child: AvatarImage(
-              url: peer.photoUrl,
-              spacing: 0,
-              padding: 0,
-            ),
+      child: SizedBox(
+        width: 36,
+        child: Visibility(
+          visible: isVisible,
+          child: AvatarImage(
+            url: peer.photoUrl,
+            spacing: 0,
+            padding: 0,
           ),
         ),
       ),
@@ -133,10 +131,9 @@ class ChatTextBubble extends StatelessWidget {
               child: Bubble(
                 alignment:
                     isPeer ? Alignment.centerLeft : Alignment.centerRight,
-                shadowColor: isPeer ? Colors.transparent : Colors.transparent,
-                color: isPeer ? Colors.grey[100] : Colors.blueAccent[400],
+                shadowColor: isPeer ? Colors.black : Colors.black,
+                color: isPeer ? kPeerBubbleColor : kMyBubbleColor,
                 padding: BubbleEdges.symmetric(vertical: 10, horizontal: 10),
-//            margin: BubbleEdges.only(top: 10),
                 child: Text(
                   message.content,
                   style: TextStyle(
@@ -160,9 +157,13 @@ class TypingIndicator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FlatButton(
-        onPressed: () {},
-        child: Text('${user.username} is '
-            'typing...'));
+      onPressed: () {},
+      child: Text(
+        '${user.username} is '
+        'typing...',
+        style: TextStyle(color: Colors.grey),
+      ),
+    );
   }
 }
 
@@ -215,7 +216,7 @@ class ChatShoutResponseBubble extends StatelessWidget {
                 child: Container(
                   padding: EdgeInsets.all(15.0),
                   decoration: BoxDecoration(
-                    color: Colors.grey[200],
+                    color: Colors.white,
                     border: Border.all(color: Colors.grey, width: 0.5),
                     borderRadius: BorderRadius.circular(16),
                   ),

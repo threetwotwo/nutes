@@ -7,7 +7,7 @@ import 'package:nutes/ui/shared/comment_text.dart';
 import 'package:nutes/ui/shared/styles.dart';
 import 'package:nutes/utils/timeAgo.dart';
 
-final _greyTextStyle = TextStyles.w300Text.copyWith(
+final _greyTextStyle = TextStyles.defaultText.copyWith(
   fontSize: 14,
   color: Colors.grey,
 );
@@ -65,7 +65,7 @@ class CommentListItem extends StatelessWidget {
                     return Navigator.of(context)
                         .push(ProfileScreen.routeUsername(name));
                   },
-                  style: TextStyles.w300Text,
+                  style: TextStyles.defaultText,
                 ),
               ),
               IconButton(

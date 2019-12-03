@@ -17,6 +17,7 @@ class AvatarListItem extends StatelessWidget {
   final Function onAvatarTapped;
   final Function onBodyTapped;
   final int trailingFlexFactor;
+  final Color color;
 
   const AvatarListItem({
     Key key,
@@ -30,10 +31,12 @@ class AvatarListItem extends StatelessWidget {
     this.style,
     this.trailingFlexFactor = 3,
     this.richTitle,
+    this.color,
   }) : super(key: key);
   @override
   Widget build(BuildContext context) {
     return Container(
+      color: color ?? Colors.white,
       height: 64,
       child: Row(
         mainAxisSize: MainAxisSize.max,
@@ -65,7 +68,7 @@ class AvatarListItem extends StatelessWidget {
                                 title,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: style ?? TextStyles.W500Text15,
+                                style: style ?? TextStyles.w600Text,
                                 textAlign: TextAlign.left,
                               ),
                         if (subtitle != null && subtitle.isNotEmpty)
@@ -73,7 +76,7 @@ class AvatarListItem extends StatelessWidget {
                             subtitle,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyles.w300Text
+                            style: TextStyles.defaultText
                                 .copyWith(color: Colors.grey),
                           ),
                       ],

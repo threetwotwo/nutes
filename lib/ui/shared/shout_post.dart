@@ -114,8 +114,7 @@ class GridShoutBubble extends StatelessWidget {
 //          SizedBox(height: 4),
                 Text(
                   content,
-                  style: TextStyles.w300Text.copyWith(
-                    fontSize: 14,
+                  style: TextStyles.defaultText.copyWith(
                     color: isChallenger ? Colors.black : Colors.white,
                   ),
 //                  maxLines: 4,
@@ -169,7 +168,7 @@ class ShoutPostBubble extends StatelessWidget {
         isChallenger ? data['challenger'] ?? {} : data['challenged'] ?? {});
 
     return Container(
-      color: Colors.grey[50].withOpacity(0.5),
+      color: Colors.white,
       child: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Row(
@@ -180,12 +179,9 @@ class ShoutPostBubble extends StatelessWidget {
                 onTap: () =>
                     Navigator.push(context, ProfileScreen.route(user.uid)),
                 child: Container(
-                  decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey[100], width: 0.6)),
                   padding: const EdgeInsets.symmetric(horizontal: 4.0),
                   child: CircleAvatar(
-                      foregroundColor: Colors.grey[100],
-//                    radius: 14,
+                      backgroundColor: Colors.grey[100],
                       backgroundImage:
                           CachedNetworkImageProvider(user.photoUrl)),
                 ),
@@ -199,7 +195,7 @@ class ShoutPostBubble extends StatelessWidget {
                       ? Alignment.centerLeft
                       : Alignment.centerRight,
                   shadowColor: Colors.black,
-                  color: isChallenger ? Colors.white : Colors.blueAccent,
+                  color: isChallenger ? Colors.grey[100] : Colors.blueAccent,
                   padding: BubbleEdges.symmetric(vertical: 10, horizontal: 10),
                   margin: BubbleEdges.only(top: 10),
                   nip: isChallenger
@@ -211,18 +207,26 @@ class ShoutPostBubble extends StatelessWidget {
                         ? CrossAxisAlignment.start
                         : CrossAxisAlignment.end,
                     children: <Widget>[
-                      Text(
-                        user.username,
-                        style: TextStyle(
-                            color: isChallenger ? Colors.black : Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500),
+                      Material(
+                        color:
+                            isChallenger ? Colors.grey[100] : Colors.blueAccent,
+                        child: InkWell(
+                          onTap: () => Navigator.push(
+                              context, ProfileScreen.route(user.uid)),
+                          child: Text(
+                            user.username,
+                            style: TextStyle(
+                                color:
+                                    isChallenger ? Colors.black : Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500),
+                          ),
+                        ),
                       ),
                       SizedBox(height: 8),
                       Text(
                         content,
-                        style: TextStyles.w300Text.copyWith(
-                            fontSize: 15,
+                        style: TextStyles.defaultText.copyWith(
                             color: isChallenger ? Colors.black : Colors.white),
                       ),
                       SizedBox(height: 8),
@@ -266,11 +270,9 @@ class ShoutPostBubble extends StatelessWidget {
                 onTap: () =>
                     Navigator.push(context, ProfileScreen.route(user.uid)),
                 child: Container(
-                  decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey[100], width: 0.6)),
                   padding: const EdgeInsets.symmetric(horizontal: 4.0),
                   child: CircleAvatar(
-                      foregroundColor: Colors.grey[100],
+                      backgroundColor: Colors.grey[100],
 //                    radius: 14,
                       backgroundImage:
                           CachedNetworkImageProvider(user.photoUrl)),

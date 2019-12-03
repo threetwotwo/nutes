@@ -43,7 +43,7 @@ class TabNavigator extends StatelessWidget {
   final TabItem tabItem;
   final PageController pageController;
   final VoidCallback onCreatePressed;
-  final VoidCallback onAddStoryPressed;
+  final VoidCallback onDM;
 
   final routeObserver = RouteObserver<PageRoute>();
 
@@ -51,12 +51,13 @@ class TabNavigator extends StatelessWidget {
 
   final auth = Auth.instance;
 
-  TabNavigator(
-      {this.navigatorKey,
-      this.tabItem,
-      this.pageController,
-      this.onCreatePressed,
-      this.onAddStoryPressed});
+  TabNavigator({
+    this.navigatorKey,
+    this.tabItem,
+    this.pageController,
+    this.onCreatePressed,
+    this.onDM,
+  });
 
   Map<String, Widget> _routeBuilders(BuildContext context, TabItem tabItem) {
     switch (tabItem) {
@@ -65,7 +66,7 @@ class TabNavigator extends StatelessWidget {
           HomeRoute.root: FeedScreen(
             navigatorKey: this.navigatorKey,
             onCreatePressed: onCreatePressed,
-            onAddStoryPressed: onAddStoryPressed,
+            onDM: onDM,
             routeObserver: routeObserver,
           ),
 //          HomeRoute.user: (context) => ProfileScreen(),

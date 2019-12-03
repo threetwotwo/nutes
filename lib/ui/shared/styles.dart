@@ -23,6 +23,20 @@ class GradientStyles {
       Colors.purple[800],
     ],
   );
+  static final alihusseinButton = LinearGradient(
+    // Where the linear gradient begins and ends
+    begin: Alignment.bottomCenter,
+    end: Alignment.topRight,
+    // Add one stop for each color. Stops should increase from 0 to 1
+//    stops: [0.05, 0.07, 0.75],
+    colors: [
+      // Colors are easy thanks to Flutter's Colors class.
+//      Colors.pink[300],
+      Colors.pink[500],
+      Colors.redAccent,
+      Colors.redAccent[100],
+    ],
+  );
 }
 
 class ColorStyles {
@@ -40,11 +54,18 @@ class TextStyles {
 
   static final defaultDisplay = TextStyle(
     fontFamily: displayFamily,
+    fontSize: 15,
     color: Colors.black,
   );
 
   static final defaultText = TextStyle(
     fontFamily: textFamily,
+    fontSize: 15,
+    color: Colors.black,
+  );
+  static final header = TextStyle(
+    fontFamily: textFamily,
+    fontSize: 17,
     color: Colors.black,
   );
 
@@ -55,12 +76,18 @@ class TextStyles {
 
   static final w300Text = defaultText.copyWith(
     fontWeight: FontWeight.w300,
-    fontSize: 15,
   );
 
-  static final W500Text15 = defaultText.copyWith(
+  static final w500Text = defaultText.copyWith(
     fontWeight: FontWeight.w500,
-    fontSize: 15,
+  );
+
+  static final w600Display = defaultDisplay.copyWith(
+    fontWeight: FontWeight.w600,
+  );
+  static final w600Text = defaultText.copyWith(
+    fontWeight: FontWeight.w600,
+//    letterSpacing: 0.6,
   );
 
   static final large600Display = defaultDisplay.copyWith(

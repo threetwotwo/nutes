@@ -67,7 +67,7 @@ class _PasswordFieldState extends State<PasswordField> {
           validator: widget.validator,
           onFieldSubmitted: widget.onFieldSubmitted,
           decoration: InputDecoration(
-            labelStyle: TextStyles.W500Text15.copyWith(
+            labelStyle: TextStyles.w600Text.copyWith(
               color: Colors.white,
               fontSize: 15,
             ),

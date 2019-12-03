@@ -54,6 +54,9 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final topPadding = MediaQuery.of(context).padding.top;
+    print('top padding $topPadding');
+
     return Scaffold(
       appBar: ProfileAppBar(
         profile: auth.profile,
@@ -64,7 +67,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
       backgroundColor: Colors.white,
       body: SafeArea(
           child: RefreshListView(
-        controller: cache.profileScrollController,
+        controller: widget.isRoot ? cache.profileScrollController : null,
         children: <Widget>[
           StreamBuilder<DocumentSnapshot>(
               stream: profileStream,
@@ -101,7 +104,8 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
 
                       return ProfileHeader(
                         onAvatarPressed: () => momentDocs.isNotEmpty
-                            ? StoryPageView.show(context, 0, [userStory])
+                            ? StoryPageView.show(
+                                context, 0, [userStory], topPadding)
                             : Navigator.of(context, rootNavigator: true)
                                 .push(EditorPage.route()),
                         onFollowersPressed: () => Navigator.push(context,
@@ -160,14 +164,24 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
 //                                ),
 //                              ),
                               Text(
+                                'You have no posts. \n',
+                                style: TextStyles.defaultDisplay.copyWith(
+                                  color: Colors.grey,
+                                  fontSize: 24,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              Text(
                                 'Create your first post',
-                                style: TextStyles.large600Display.copyWith(
-                                    color: Colors.grey,
-                                    fontWeight: FontWeight.w300),
+                                style: TextStyles.defaultDisplay.copyWith(
+                                  color: Colors.grey,
+//                                  fontSize: 24,
+                                ),
+                                textAlign: TextAlign.center,
                               ),
                               SizedBox(height: 20),
                               RaisedButton.icon(
-                                color: Colors.blueAccent,
+                                color: Colors.blue,
                                 onPressed: () =>
                                     Navigator.of(context, rootNavigator: true)
                                         .push(EditorPage.route()),
@@ -177,8 +191,8 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                                 ),
                                 label: Text(
                                   'Create Post',
-                                  style: TextStyles.W500Text15.copyWith(
-                                      color: Colors.white),
+                                  style: TextStyles.w600Text
+                                      .copyWith(color: Colors.white),
                                 ),
                                 shape: StadiumBorder(),
                               ),

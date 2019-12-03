@@ -67,7 +67,7 @@ class _ExploreScreenState extends State<ExploreScreen>
             onTap: (tab) => cache.searchTabIndex = tab,
             indicatorColor: Colors.black,
             labelColor: Colors.black,
-            labelStyle: TextStyles.W500Text15,
+            labelStyle: TextStyles.w600Text,
             unselectedLabelStyle:
                 TextStyles.w300Text.copyWith(color: Colors.grey[300]),
             tabs: [

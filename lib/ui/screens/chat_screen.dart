@@ -178,7 +178,6 @@ class _ChatScreenState extends State<ChatScreen> {
         ///Ensure that only one typing indicator is visible
 
         if (!peerIsTyping) {
-          print('should say peer is typing');
           peerIsTyping = true;
           setState(() {
             messages.insert(
@@ -276,8 +275,8 @@ class _ChatScreenState extends State<ChatScreen> {
                     child: !initialMessagedFinishedLoading
                         ? LoadingIndicator()
                         : Padding(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 8.0),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8.0, vertical: 4.0),
                             child: ListView.builder(
                               physics: AlwaysScrollableScrollPhysics(),
                               reverse: true,
@@ -385,7 +384,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   ),
                 ),
               ),
-              ChatScreenInput(
+              ChatTextField(
                 controller: textController,
                 onImagePressed: () {},
                 onSendPressed: onSendPressed,

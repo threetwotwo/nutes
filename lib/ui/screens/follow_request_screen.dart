@@ -13,10 +13,11 @@ class FollowRequestScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: BaseAppBar(
         title: Text(
           'Follow Requests',
-          style: TextStyles.W500Text15,
+          style: TextStyles.w600Text,
         ),
       ),
       body: SafeArea(

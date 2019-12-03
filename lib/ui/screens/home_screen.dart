@@ -12,9 +12,14 @@ import 'package:nutes/ui/widgets/tab_navigation.dart';
 class HomeScreen extends StatefulWidget {
   final Function onTabTapped;
   final Function onCreatePressed;
+  final VoidCallback onDM;
 
-  const HomeScreen({Key key, this.onTabTapped, this.onCreatePressed})
-      : super(key: key);
+  const HomeScreen({
+    Key key,
+    this.onTabTapped,
+    this.onCreatePressed,
+    this.onDM,
+  }) : super(key: key);
 
   @override
   _HomeScreenState createState() => _HomeScreenState();
@@ -120,7 +125,8 @@ class _HomeScreenState extends State<HomeScreen>
       navigatorKey: _navigatorKeys[tabItem],
       tabItem: tabItem,
       onCreatePressed: widget.onCreatePressed,
-      onAddStoryPressed: widget.onCreatePressed,
+//      onAddStoryPressed: widget.onCreatePressed,
+      onDM: widget.onDM,
     );
   }
 }

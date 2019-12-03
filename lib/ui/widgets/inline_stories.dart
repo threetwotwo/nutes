@@ -7,8 +7,10 @@ import 'package:nutes/ui/widgets/story_page_view.dart';
 class InlineStories extends StatefulWidget {
   final List<UserStory> userStories;
   final VoidCallback onCreateStory;
+  final double topPadding;
 
-  const InlineStories({Key key, this.userStories, this.onCreateStory})
+  const InlineStories(
+      {Key key, this.userStories, this.onCreateStory, this.topPadding})
       : super(key: key);
 
   @override
@@ -61,11 +63,8 @@ class _InlineStoriesState extends State<InlineStories> {
 
                 Repo.updateStoryIndex(index);
 
-                final topOffset = MediaQuery.of(context).padding.top;
-
-                print(topOffset);
-
-                StoryPageView.show(context, index, widget.userStories);
+                StoryPageView.show(
+                    context, index, widget.userStories, widget.topPadding);
 
 //                Navigator.of(context, rootNavigator: true)
 //                    .push(StoryPageView.route(index, widget.userStories));

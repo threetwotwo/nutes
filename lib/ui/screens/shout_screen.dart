@@ -58,7 +58,7 @@ class _ShoutScreenState extends State<ShoutScreen> {
         title: Text(
           'Shout with ${widget.challenger.username}',
           overflow: TextOverflow.fade,
-          style: TextStyles.W500Text15,
+          style: TextStyles.w600Text,
         ),
         trailing: Padding(
           padding: const EdgeInsets.all(8.0),
@@ -142,8 +142,8 @@ class _ShoutScreenState extends State<ShoutScreen> {
                             children: <Widget>[
                               Text(
                                 Repo.currentProfile.user.username,
-                                style: TextStyles.W500Text15.copyWith(
-                                    color: Colors.white),
+                                style: TextStyles.w600Text
+                                    .copyWith(color: Colors.white),
                                 maxLines: 1,
                               ),
                               SizedBox(height: 10),
@@ -202,7 +202,7 @@ class _ShoutScreenState extends State<ShoutScreen> {
                                                       const EdgeInsets.all(8.0),
                                                   child: Text(
                                                     'Send',
-                                                    style: TextStyles.W500Text15
+                                                    style: TextStyles.w600Text
                                                         .copyWith(
                                                             color:
                                                                 Colors.white),

@@ -88,8 +88,8 @@ class ShoutTextField extends StatelessWidget {
                                 padding: const EdgeInsets.all(8.0),
                                 child: Text(
                                   'Send',
-                                  style: TextStyles.W500Text15.copyWith(
-                                      color: Colors.blueAccent),
+                                  style: TextStyles.w600Text
+                                      .copyWith(color: Colors.blueAccent),
                                 ),
                               ),
                             ),

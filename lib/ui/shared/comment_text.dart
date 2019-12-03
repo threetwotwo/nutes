@@ -185,7 +185,7 @@ class CommentText extends StatelessWidget {
       } else if (element is LeadingElement) {
         return LinkTextSpan(
           text: element.text,
-          style: style.copyWith(fontWeight: FontWeight.w500),
+          style: style.copyWith(fontWeight: FontWeight.w600),
           onPressed: () => _onOpen(uid),
         );
       } else if (element is MentionElement) {
@@ -219,7 +219,7 @@ class CommentText extends StatelessWidget {
             .body1
             .merge(style)
             .copyWith(
-              color: Colors.blueAccent,
+              color: Colors.blue[800],
               decoration: TextDecoration.underline,
             )
             .merge(linkStyle),
@@ -228,7 +228,7 @@ class CommentText extends StatelessWidget {
             .body1
             .merge(style)
             .copyWith(
-              color: Colors.blueAccent,
+              color: Colors.blue[900],
             )
             .merge(linkStyle),
         onOpen: onOpen,

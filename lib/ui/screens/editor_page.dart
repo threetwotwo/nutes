@@ -46,7 +46,7 @@ class _EditorPageState extends State<EditorPage>
   @override
   void initState() {
     ///hide system overlays when not in story mode
-    if (!widget.isStoryMode) SystemChrome.setEnabledSystemUIOverlays([]);
+//    if (!widget.isStoryMode) SystemChrome.setEnabledSystemUIOverlays([]);
     super.initState();
   }
 
@@ -196,9 +196,9 @@ class _EditorPageState extends State<EditorPage>
 
       switch (filter.type) {
         case FilterType.urban:
-          if (text > 230)
+          if (text > 210)
             aspectRatio = 0.8;
-          else if (text > 150)
+          else if (text > 110)
             aspectRatio = 1;
           else
             aspectRatio = 1.4;
@@ -206,9 +206,9 @@ class _EditorPageState extends State<EditorPage>
 
         case FilterType.canvas:
         case FilterType.ego:
-          if (text > 300)
+          if (text > 260)
             aspectRatio = 0.8;
-          else if (text > 200)
+          else if (text > 150)
             aspectRatio = 1;
           else
             aspectRatio = 1.4;
@@ -436,8 +436,8 @@ class _EditorDefaultTopButtonsState extends State<EditorDefaultTopButtons> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            Colors.black.withOpacity(0.05),
-            Colors.black12,
+            Colors.black.withOpacity(0.18),
+            Colors.transparent,
           ],
           begin: FractionalOffset.topCenter,
           end: FractionalOffset.bottomCenter,
@@ -465,10 +465,11 @@ class _EditorDefaultTopButtonsState extends State<EditorDefaultTopButtons> {
                       DeleteButton(
                         onPressed: widget.onDeletePressed,
                       ),
-                    if (widget.currentPage != 6)
-                      AddButton(
-                        onPressed: widget.onAddPressed,
-                      ),
+//                    if (widget.currentPage != 6)
+                    AddButton(
+                      onPressed:
+                          widget.currentPage == 6 ? null : widget.onAddPressed,
+                    ),
                   ],
                 ),
         ],
@@ -480,10 +481,21 @@ class _EditorDefaultTopButtonsState extends State<EditorDefaultTopButtons> {
     return Expanded(
       child: Column(
         children: <Widget>[
+          ///Current avatar label
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Text(
+              filters[filterIndex].avatar.title,
+              style:
+                  TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+            ),
+          ),
           Container(
+            margin: const EdgeInsets.only(bottom: 8),
             height: 60,
             child: Stack(
               children: <Widget>[
+                ///Filter avatars
                 PageView.builder(
                   onPageChanged: (filter) {
 //                    print('change to page $page');
@@ -527,7 +539,6 @@ class _EditorDefaultTopButtonsState extends State<EditorDefaultTopButtons> {
                             value = (1 - (value.abs() * .35)).clamp(0.0, 1.0);
                           }
                           return Container(
-//                            color: Colors.red,
                             child: Padding(
                               padding: const EdgeInsets.all(5.0),
                               child: Transform.scale(
@@ -583,14 +594,6 @@ class _EditorDefaultTopButtonsState extends State<EditorDefaultTopButtons> {
                   ),
                 )
               ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Text(
-              filters[filterIndex].avatar.title,
-              style:
-                  TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
             ),
           ),
         ],

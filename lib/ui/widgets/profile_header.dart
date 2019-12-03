@@ -136,7 +136,7 @@ class ProfileHeader extends StatelessWidget {
               children: <Widget>[
                 Text(
                   profile.user.displayName ?? '',
-                  style: TextStyles.W500Text15.copyWith(fontSize: 15),
+                  style: TextStyles.w600Text.copyWith(fontSize: 15),
                 ),
                 IconButton(
                   onPressed: null,
@@ -302,7 +302,7 @@ class LoadingButton extends StatelessWidget {
       borderColor: Colors.grey[300],
       child: Text(
         'Loading',
-        style: TextStyles.W500Text15.copyWith(
+        style: TextStyles.w600Text.copyWith(
             color: Colors.grey,
             fontSize: defaultSize(15, context, defaultTo: 12)),
       ),
@@ -321,7 +321,7 @@ class EditProfileButton extends StatelessWidget {
       onPressed: onEditPressed,
       child: Text(
         'Edit profile',
-        style: TextStyles.W500Text15.copyWith(color: Colors.grey, fontSize: 14),
+        style: TextStyles.w600Text.copyWith(color: Colors.grey, fontSize: 14),
       ),
     );
   }

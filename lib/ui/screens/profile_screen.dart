@@ -145,7 +145,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         appBar: BaseAppBar(
           title: Text(
             profile == null ? '' : profile.user.username,
-            style: TextStyles.W500Text15.copyWith(fontSize: 16),
+            style: TextStyles.w600Text.copyWith(fontSize: 16),
           ),
           onTrailingPressed: () {
             final route = ModalRoute.of(context);
@@ -337,7 +337,7 @@ class PrivateAccount extends StatelessWidget {
             SizedBox(height: 10),
             Text(
               'This Account is Private',
-              style: TextStyles.W500Text15.copyWith(fontSize: 16),
+              style: TextStyles.w600Text.copyWith(fontSize: 16),
             ),
             SizedBox(height: 10),
             Text(

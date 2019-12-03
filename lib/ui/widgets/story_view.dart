@@ -11,8 +11,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:nutes/ui/screens/profile_screen.dart';
 import 'package:nutes/ui/shared/avatar_image.dart';
-import 'package:nutes/ui/shared/avatar_list_item.dart';
 import 'package:nutes/ui/shared/buttons.dart';
+import 'package:nutes/utils/timeAgo.dart';
 //import 'package:cached_network_image/cached_network_image.dart';
 
 ///
@@ -39,6 +39,7 @@ class StoryView extends StatefulWidget {
     this.onMomentChanged,
     this.uploader,
     this.onAvatarTapped,
+    this.topPadding,
   })  : assert(startAt != null),
         assert(startAt >= 0),
 //        assert(startAt == 0 || startAt < story?.moments.length),
@@ -95,6 +96,9 @@ class StoryView extends StatefulWidget {
 
   final bool isFirstStory;
 
+  ///Top padding for phones with notches etc
+  final double topPadding;
+
   static Widget instagramProgressSegmentBuilder(
       BuildContext context, int index, double progress, double gap) {
     return Container(
@@ -134,10 +138,6 @@ class _StoryViewState extends State<StoryView>
 
   @override
   void initState() {
-    SystemChrome.setEnabledSystemUIOverlays([]);
-
-    print('initState StoryView ${widget.uploader.username}');
-
     if (widget.story == null) {
       print('story is null, get story');
       _getStory();
@@ -256,8 +256,6 @@ class _StoryViewState extends State<StoryView>
 
   @override
   Widget build(BuildContext context) {
-    final topOffset = MediaQuery.of(context).padding.top;
-
     return Scaffold(
       backgroundColor: Colors.grey[600],
       body: story == null
@@ -300,19 +298,23 @@ class _StoryViewState extends State<StoryView>
                     opacity: isInFullscreenMode ? 0.0 : 1.0,
                     duration: widget.progressOpacityDuration,
                     child: Container(
-                      height: 120,
+                      height: 72 + widget.topPadding ?? 24,
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [Colors.black26, Colors.transparent],
-                          begin: FractionalOffset.topCenter,
-                          end: FractionalOffset.bottomCenter,
+                          colors: [
+                            Colors.black.withOpacity(0.18),
+                            Colors.transparent,
+                          ],
+                          stops: [0.15, 0.85],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
                         ),
                       ),
                     ),
                   ),
                 ),
                 Positioned(
-                  top: topOffset + 40,
+                  top: (widget.topPadding ?? 24.0),
                   left: 8.0 - widget.progressSegmentGap / 2,
                   right: 8.0 - widget.progressSegmentGap / 2,
                   child: AnimatedOpacity(
@@ -351,7 +353,7 @@ class _StoryViewState extends State<StoryView>
                           ],
                         ),
                         Container(
-                          height: 60,
+                          height: 44,
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: <Widget>[
@@ -367,16 +369,39 @@ class _StoryViewState extends State<StoryView>
                                       bordered: false,
                                       url: widget.uploader.photoUrl,
                                       spacing: 0,
-                                      padding: 10,
+                                      padding: 8,
                                       addStory: false,
                                     ),
-                                    Text(
-                                      widget.uploader.username,
-                                      style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.w500),
+                                    RichText(
+                                      text: TextSpan(children: [
+                                        TextSpan(
+                                          text: widget.uploader.username,
+                                          style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w500),
+                                        ),
+                                        TextSpan(text: '  '),
+                                        TextSpan(
+                                          text: TimeAgo.formatShort(widget.story
+                                              .moments[momentIndex].timestamp
+                                              .toDate()),
+                                          style: TextStyle(
+                                              color:
+                                                  Colors.white.withOpacity(0.9),
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w300),
+                                        ),
+                                      ]),
                                     ),
+//                                    Text(
+//                                      '${widget.uploader.username} • '
+//                                      '${TimeAgo.formatShort(widget.story.moments[momentIndex].timestamp.toDate())}',
+//                                      style: TextStyle(
+//                                          color: Colors.white,
+//                                          fontSize: 15,
+//                                          fontWeight: FontWeight.w500),
+//                                    ),
                                   ],
                                 ),
                               ),

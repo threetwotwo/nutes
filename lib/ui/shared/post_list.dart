@@ -1,11 +1,11 @@
+import 'package:bot_toast/bot_toast.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:nutes/core/models/comment.dart';
 import 'package:nutes/core/services/auth.dart';
+import 'package:nutes/ui/screens/edit_post_screen.dart';
 import 'package:nutes/ui/shared/comment_list_item.dart';
-import 'package:nutes/ui/shared/comment_text_field.dart';
 import 'package:nutes/utils/timeAgo.dart';
 import 'package:preload_page_view/preload_page_view.dart';
 import 'package:nutes/core/models/post_type.dart';
@@ -23,56 +23,34 @@ import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:nutes/ui/shared/dots_indicator.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'avatar_list_item.dart';
-import 'package:emoji_picker/emoji_picker.dart';
-
-//enum PostHeight { small, medium, large }
-//
-//PostHeight calculatePostHeight(int charLength) {
-//  if (charLength < 150) {
-//    return PostHeight.small;
-//  } else if (charLength < 400) {
-//    return PostHeight.medium;
-//  } else
-//    return PostHeight.large;
-//}
-//
-//double getPostAspectRatio(PostHeight postHeight) {
-//  return <PostHeight, double>{
-//    PostHeight.small: 1.4,
-//    PostHeight.medium: 1,
-//    PostHeight.large: 0.8,
-//  }[postHeight];
-//}
 
 class PostListView extends StatefulWidget {
   final List<Post> posts;
   final bool pushNavigationEnabled;
+  final Function(String) onAddComment;
 
   const PostListView({
     Key key,
     @required this.posts,
     this.pushNavigationEnabled = true,
+    this.onAddComment,
   }) : super(key: key);
 
   @override
   _PostListViewState createState() => _PostListViewState();
 }
 
-class _PostListViewState extends State<PostListView>
-    with AutomaticKeepAliveClientMixin<PostListView> {
-  @override
-  bool get wantKeepAlive => true;
-
+class _PostListViewState extends State<PostListView> {
   @override
   Widget build(BuildContext context) {
-    super.build(context);
-
     return ListView.builder(
+        shrinkWrap: true,
         physics: NeverScrollableScrollPhysics(),
         itemCount: widget.posts == null ? 0 : widget.posts.length,
         itemBuilder: (context, index) {
           return PostListItem(
             post: widget.posts[index],
+            onAddComment: (postId) => widget.onAddComment(postId),
             shouldNavigate: widget.pushNavigationEnabled,
           );
         });
@@ -84,6 +62,7 @@ class PostListItem extends StatefulWidget {
   final bool shouldNavigate;
   final Function onProfileTapped;
   final Function onCommentTapped;
+  final Function(String) onAddComment;
 
   PostListItem({
     Key key,
@@ -91,6 +70,7 @@ class PostListItem extends StatefulWidget {
     this.shouldNavigate = true,
     this.onCommentTapped,
     this.onProfileTapped,
+    this.onAddComment,
   }) : super(key: key);
 
   @override
@@ -129,109 +109,6 @@ class _PostListItemState extends State<PostListItem> {
     setState(() {
       post = result;
     });
-  }
-
-  _showBottomModalSheet(BuildContext context) {
-    return showModalBottomSheet(
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        context: context,
-        builder: (BuildContext context) {
-          return GestureDetector(
-            onHorizontalDragUpdate: (val) {},
-            child: Padding(
-                padding: EdgeInsets.only(
-                    bottom: MediaQuery.of(context).viewInsets.bottom),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.blue[300],
-                    borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(16),
-                        topRight: Radius.circular(16)),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      GestureDetector(
-                        onTap: () => Navigator.pop(context),
-                        child: Container(
-                          height: 40,
-                          child: Align(
-                            alignment: Alignment.topCenter,
-                            child: Container(
-                              margin: const EdgeInsets.only(top: 10),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(32),
-                                color: Colors.white,
-                              ),
-                              width: 40,
-                              height: 4,
-                            ),
-                          ),
-                        ),
-                      ),
-                      Divider(),
-                      EmojiPicker(
-                        onEmojiSelected: (val, _) => commentController.text =
-                            commentController.text + val.emoji,
-                        rows: 1,
-                        recommendKeywords: [
-                          'Crying Face',
-                          'Face With Tears of Joy',
-                          'Clapping Hands',
-                          'Raising Hands',
-                          'Winking Face With Tongue',
-                          'Face With Open Mouth',
-                          'Smiling Face With Heart-Eyes',
-                          'OK Hand',
-                          'Victory Hand',
-                          'Folded Hands',
-                          'Love-You Gesture',
-                          'Middle Finger',
-                          'Thumbs Up',
-                          'Thumbs Down',
-                          'Red Heart',
-                        ],
-                        numRecommended: 60,
-                        columns: 8,
-                        bgColor: Colors.white,
-                        indicatorColor: Colors.grey,
-//                        buttonMode: ButtonMode.MATERIAL,
-                      ),
-                      CommentTextField(
-                        controller: commentController,
-                        focusNode: commentNode,
-                        hint: 'Add comment as ${auth.profile.user.username}...',
-                        onSendPressed: (val) {
-                          final text = commentController.text;
-
-                          final comment = Comment(
-                            timestamp: Timestamp.now(),
-                            text: text,
-                            owner: auth.profile.user,
-                          );
-
-                          final comments = (post.topComments ?? [])
-                            ..add(comment);
-
-                          setState(() {
-                            post = post.copyWith(topComments: comments);
-                            Repo.uploadComment(
-                              post: post,
-                              comment: comment,
-                            );
-                          });
-
-                          commentController.clear();
-
-                          Navigator.pop(context);
-                        },
-                      ),
-                    ],
-                  ),
-                )),
-          );
-        });
   }
 
   @override
@@ -307,7 +184,7 @@ class _PostListItemState extends State<PostListItem> {
                                   text: TextSpan(children: [
                                     TextSpan(
                                       text: challenger.username,
-                                      style: TextStyles.W500Text15,
+                                      style: TextStyles.w600Text,
                                       recognizer: TapGestureRecognizer()
                                         ..onTap = (() => Navigator.push(
                                             context,
@@ -316,11 +193,11 @@ class _PostListItemState extends State<PostListItem> {
                                     ),
                                     TextSpan(
                                       text: ' and ',
-                                      style: TextStyles.w300Text,
+                                      style: TextStyles.defaultText,
                                     ),
                                     TextSpan(
                                       text: challenged.username,
-                                      style: TextStyles.W500Text15,
+                                      style: TextStyles.w600Text,
                                       recognizer: TapGestureRecognizer()
                                         ..onTap = (() => Navigator.push(
                                             context,
@@ -346,7 +223,62 @@ class _PostListItemState extends State<PostListItem> {
                           onDisplayNameTapped: () => widget.shouldNavigate
                               ? _navigateToProfile(context)
                               : null,
-                          onMorePressed: () {},
+                          onMorePressed: () => showCupertinoModalPopup(
+                              context: context,
+                              builder: (context) {
+                                final isOwner =
+                                    post.owner.uid == auth.profile.uid;
+                                return CupertinoActionSheet(
+                                  actions: <Widget>[
+                                    if (isOwner)
+                                      CupertinoActionSheetAction(
+                                        child: Text('Delete',
+                                            style: TextStyles.defaultDisplay
+                                                .copyWith(
+                                              color: Colors.red,
+                                            )),
+                                        onPressed: () {
+                                          BotToast.showText(
+                                            text: 'Deleted post',
+                                            align: Alignment.center,
+                                          );
+                                        },
+                                      ),
+                                    if (isOwner)
+                                      CupertinoActionSheetAction(
+                                        child: Text('Edit',
+                                            style: TextStyles.defaultDisplay),
+                                        onPressed: () => Navigator.push(context,
+                                            EditPostScreen.route(post)),
+                                      ),
+                                    if (!isOwner) ...[
+                                      CupertinoActionSheetAction(
+                                        child: Text('Mute',
+                                            style: TextStyles.defaultDisplay),
+                                        onPressed: () {},
+                                      ),
+                                      CupertinoActionSheetAction(
+                                        child: Text('Unfollow',
+                                            style: TextStyles.defaultDisplay),
+                                        onPressed: () {
+                                          Repo.unfollowUser(post.owner.uid);
+                                          BotToast.showText(
+                                            text:
+                                                'Unfollowed ${post.owner.username}',
+                                            align: Alignment.center,
+                                          );
+                                          return Navigator.pop(context);
+                                        },
+                                      ),
+                                    ]
+                                  ],
+                                  cancelButton: FlatButton(
+                                    onPressed: () => Navigator.pop(context),
+                                    child: Text('Cancel',
+                                        style: TextStyles.defaultDisplay),
+                                  ),
+                                );
+                              }),
                         ),
                   Divider(height: 0, thickness: 1),
                   if (isShout) ...[
@@ -400,8 +332,18 @@ class _PostListItemState extends State<PostListItem> {
                             fit: BoxFit.cover,
                             placeholder: (context, url) => Container(
                               color: Colors.grey[100],
+                              child: CircularProgressIndicator(
+                                value: 1.0,
+                                valueColor:
+                                    AlwaysStoppedAnimation(Colors.white),
+                                strokeWidth: 1.0,
+                              ),
                             ),
-                            imageUrl: post.urls[index].medium,
+//                              placeholder: (context, url) => Image.network(
+//                                post.urls[index].small,
+//                                fit: BoxFit.cover,
+//                              ),
+                            imageUrl: post.urls[index].original,
                           );
                         },
                       ),
@@ -441,14 +383,21 @@ class _PostListItemState extends State<PostListItem> {
                           ),
                           onSendTapped: () {
                             print('send tpped');
+                            BotToast.showText(
+                              text: 'Unfollowed ${post.owner.username}',
+                              align: Alignment.center,
+                            );
                           },
                           controller: _controller,
                           itemCount: post.type == PostType.shout
                               ? 1
                               : post.urls.length,
                         ),
-                        LikeCountBar(
-                          post: post,
+                        Visibility(
+                          visible: post.stats.likeCount > 0,
+                          child: LikeCountBar(
+                            post: post,
+                          ),
                         ),
 
                         ///Caption
@@ -458,26 +407,60 @@ class _PostListItemState extends State<PostListItem> {
                             text: post.caption,
                           ),
 
-                        ///View more comments button
-                        if (post.stats.commentCount > 0)
-                          Material(
-                            color: Colors.white,
-                            child: InkWell(
-                              onTap: () => Navigator.push(
-                                context,
-                                CommentScreen.route(post.id),
+                        Row(
+                          children: <Widget>[
+                            ///View more comments button
+                            if (post.stats.commentCount > 0) ...[
+                              Material(
+                                color: Colors.white,
+                                child: InkWell(
+                                  onTap: () => Navigator.push(
+                                    context,
+                                    CommentScreen.route(post.id),
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 8.0),
+                                    child: Text(
+                                      'View all ${post.stats.commentCount} comments',
+                                      style: TextStyles.defaultText
+                                          .copyWith(color: Colors.grey),
+                                    ),
+                                  ),
+                                ),
                               ),
-                              child: Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 8.0),
+                              Center(
                                 child: Text(
-                                  'View all ${post.stats.commentCount} comments',
-                                  style: TextStyles.w300Display.copyWith(
-                                      fontSize: 14, color: Colors.grey),
+                                  '  ·  ',
+                                  style: TextStyles.defaultText
+                                      .copyWith(color: Colors.blueAccent[400]),
+                                ),
+                              ),
+                            ],
+
+                            ///Add Comment Button
+                            Material(
+                              color: Colors.white,
+                              child: InkWell(
+                                splashColor: Colors.white,
+                                highlightColor: Colors.grey[100],
+                                onTap: () =>
+                                    widget.onAddComment(widget.post.id),
+                                child: Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 8.0),
+                                  child: Text(
+                                    'Add comment',
+                                    style: TextStyles.defaultText.copyWith(
+                                        color:
+                                            Colors.blue[900].withOpacity(0.8)),
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
+                          ],
+                        ),
+
                         if (post.topComments != null &&
                             post.topComments.isNotEmpty)
                           for (final c in post.topComments)
@@ -489,24 +472,8 @@ class _PostListItemState extends State<PostListItem> {
                           padding: const EdgeInsets.symmetric(vertical: 8.0),
                           child: Text(
                             TimeAgo.formatLong(post.timestamp.toDate()),
-                            style: TextStyles.w300Display
-                                .copyWith(fontSize: 14, color: Colors.grey),
-                          ),
-                        ),
-                        Material(
-                          color: Colors.white,
-                          child: InkWell(
-                            splashColor: Colors.white,
-                            highlightColor: Colors.grey[100],
-                            onTap: () => _showBottomModalSheet(context),
-                            child: Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 8.0),
-                              child: Text(
-                                'Add comment...',
-                                style: TextStyle(color: Colors.blueAccent[100]),
-                              ),
-                            ),
+                            style: TextStyles.defaultText
+                                .copyWith(fontSize: 13, color: Colors.grey),
                           ),
                         ),
                       ],
@@ -538,10 +505,7 @@ class LikeCountBar extends StatelessWidget {
         child: post.myFollowingLikes.isNotEmpty
             ? RichText(
                 text: TextSpan(children: [
-                  TextSpan(
-                      text: 'Liked by ',
-                      style: TextStyles.W500Text15.copyWith(
-                          fontWeight: FontWeight.w300)),
+                  TextSpan(text: 'Liked by ', style: TextStyles.defaultText),
                   ...post.myFollowingLikes
                       .asMap()
                       .map((index, user) => MapEntry(
@@ -550,7 +514,7 @@ class LikeCountBar extends StatelessWidget {
                             text: index == post.myFollowingLikes.length - 1
                                 ? '${user.username} '
                                 : '${user.username}, ',
-                            style: TextStyles.W500Text15,
+                            style: TextStyles.w600Text,
                             recognizer: TapGestureRecognizer()
                               ..onTap = () {
                                 print('tapped ${user.username}');
@@ -563,16 +527,17 @@ class LikeCountBar extends StatelessWidget {
                   if (stats.likeCount - post.myFollowingLikes.length > 0)
                     TextSpan(
                         text: ' and ',
-                        style: TextStyles.W500Text15.copyWith(
-                            fontWeight: FontWeight.w300)),
+                        style: TextStyles.w600Text
+                            .copyWith(fontWeight: FontWeight.w300)),
                   if (stats.likeCount - post.myFollowingLikes.length > 0)
                     TextSpan(
                         text:
                             '${stats.likeCount - post.myFollowingLikes.length} ${stats.likeCount - post.myFollowingLikes.length > 1 ? 'others' : 'other '}',
-                        style: TextStyles.W500Text15),
+                        style: TextStyles.w600Text),
                 ]),
               )
-            : Text('${stats.likeCount} likes', style: TextStyles.W500Text15),
+            : Text('${stats.likeCount} like${stats.likeCount > 1 ? 's' : ''}',
+                style: TextStyles.w600Text),
       ),
     );
   }

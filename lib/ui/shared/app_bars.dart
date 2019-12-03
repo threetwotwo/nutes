@@ -90,55 +90,17 @@ class EditProfileAppBar extends StatelessWidget implements PreferredSizeWidget {
   }
 }
 
-class CameraAppBar extends StatelessWidget implements PreferredSizeWidget {
-  final Function onCameraPressed;
-  final Function onLogoutPressed;
-
-  const CameraAppBar({Key key, this.onCameraPressed, this.onLogoutPressed})
-      : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return AppBar(
-      leading: IconButton(
-        icon: Icon(Icons.create),
-        onPressed: onCameraPressed,
-        color: Colors.black,
-        tooltip: 'Camera',
-      ),
-      title: NutesLogoPlain(),
-      actions: <Widget>[
-        IconButton(
-          icon: Icon(Icons.exit_to_app),
-          onPressed: onLogoutPressed,
-          color: Colors.black,
-        )
-      ],
-      elevation: 1.5,
-      brightness: Brightness.light,
-      backgroundColor: Colors.white,
-    );
-  }
-
-  @override
-  Size get preferredSize => Size.fromHeight(kToolbarHeight);
-}
-
 class ProfileAppBar extends StatelessWidget implements PreferredSizeWidget {
   final Function onLeadingPressed;
   final Function onTrailingPressed;
   final bool isRoot;
 
-//  final title;
-//  final isVerified;
   final UserProfile profile;
 
   const ProfileAppBar({
     Key key,
     this.onLeadingPressed,
     this.onTrailingPressed,
-//    this.title,
-//    this.isVerified,
     @required this.profile,
     @required this.isRoot,
   }) : super(key: key);
@@ -188,7 +150,7 @@ class ProfileAppBar extends StatelessWidget implements PreferredSizeWidget {
         : BaseAppBar(
             title: Text(
               profile.user.username,
-              style: TextStyles.W500Text15.copyWith(fontSize: 16),
+              style: TextStyles.w600Text.copyWith(fontSize: 16),
             ),
             onTrailingPressed: () {
               final route = ModalRoute.of(context);
@@ -199,158 +161,4 @@ class ProfileAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Size get preferredSize => Size.fromHeight(kToolbarHeight);
-}
-
-class BottomBar extends StatefulWidget {
-  final int currentIndex;
-  final double iconSize;
-  final Color backgroundColor;
-  final List<BottomBarItem> items;
-  final ValueChanged<int> onItemSelected;
-
-  BottomBar(
-      {Key key,
-      this.currentIndex = 0,
-      this.iconSize = 24,
-      this.backgroundColor,
-      @required this.items,
-      @required this.onItemSelected}) {
-    assert(items != null);
-    assert(items.length >= 2 || items.length >= 5);
-    assert(onItemSelected != null);
-  }
-
-  @override
-  _BottomBarState createState() {
-    return _BottomBarState(
-        items: items,
-        backgroundColor: backgroundColor,
-        currentIndex: currentIndex,
-        iconSize: iconSize,
-        onItemSelected: onItemSelected);
-  }
-}
-
-class _BottomBarState extends State<BottomBar> {
-  final int currentIndex;
-  final double iconSize;
-  Color backgroundColor;
-  List<BottomBarItem> items;
-  int _selectedIndex;
-  ValueChanged<int> onItemSelected;
-
-  _BottomBarState(
-      {@required this.items,
-      this.currentIndex,
-      this.backgroundColor,
-      this.iconSize,
-      @required this.onItemSelected});
-
-  Widget _buildItem(BottomBarItem item, bool isSelected) {
-    final expandedWidth = MediaQuery.of(context).size.width / 3.2;
-    return AnimatedContainer(
-      width: isSelected ? expandedWidth : 50,
-      height: double.maxFinite,
-      duration: Duration(milliseconds: 180),
-      padding: EdgeInsets.fromLTRB(12, 8, 12, 8),
-      decoration: BoxDecoration(
-        color:
-            isSelected ? item.activeColor.withOpacity(0.08) : backgroundColor,
-        borderRadius: BorderRadius.all(Radius.circular(50)),
-        border: isSelected
-            ? Border.all(width: 1.25, color: item.activeColor.withOpacity(0.0))
-            : null,
-      ),
-      child: ListView(
-        shrinkWrap: true,
-        padding: EdgeInsets.all(0),
-        physics: NeverScrollableScrollPhysics(),
-        scrollDirection: Axis.horizontal,
-        children: <Widget>[
-          Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: <Widget>[
-              Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: IconTheme(
-                  data: IconThemeData(
-                      size: iconSize,
-                      color: isSelected
-                          ? item.activeColor.withOpacity(1)
-                          : item.inactiveColor == null
-                              ? item.activeColor
-                              : item.inactiveColor),
-                  child: isSelected ? item.activeIcon : item.inactiveIcon,
-                ),
-              ),
-              isSelected
-                  ? DefaultTextStyle.merge(
-                      style: TextStyle(
-                          color: item.activeColor, fontWeight: FontWeight.w600),
-                      child: item.title,
-                    )
-                  : SizedBox.shrink()
-            ],
-          )
-        ],
-      ),
-    );
-  }
-
-  @override
-  void initState() {
-    // TODO: implement initState
-    _selectedIndex = 0;
-    super.initState();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    backgroundColor = (backgroundColor == null)
-        ? Theme.of(context).bottomAppBarColor
-        : backgroundColor;
-
-    return BottomAppBar(
-      color: Colors.white,
-      child: Container(
-        padding: EdgeInsets.all(8),
-        height: 56,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: items.map((item) {
-            var index = items.indexOf(item);
-            return GestureDetector(
-              onTap: () {
-                onItemSelected(index);
-
-                setState(() {
-                  _selectedIndex = index;
-                });
-              },
-              child: _buildItem(item, _selectedIndex == index),
-            );
-          }).toList(),
-        ),
-      ),
-    );
-  }
-}
-
-class BottomBarItem {
-  final Icon inactiveIcon;
-  final Icon activeIcon;
-  final Text title;
-  final Color activeColor;
-  final Color inactiveColor;
-
-  BottomBarItem(
-      {@required this.inactiveIcon,
-      @required this.activeIcon,
-      @required this.title,
-      this.activeColor = Colors.blue,
-      this.inactiveColor}) {
-    assert(inactiveIcon != null);
-    assert(title != null);
-  }
 }

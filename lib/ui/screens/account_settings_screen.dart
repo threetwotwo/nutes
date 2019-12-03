@@ -9,6 +9,11 @@ class AccountSettingsScreen extends StatefulWidget {
   final UserProfile profile;
 
   const AccountSettingsScreen({Key key, this.profile}) : super(key: key);
+
+  static Route route(UserProfile profile) => MaterialPageRoute(
+      builder: (context) => AccountSettingsScreen(
+            profile: profile,
+          ));
   @override
   _AccountSettingsScreenState createState() => _AccountSettingsScreenState();
 }
@@ -25,7 +30,12 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: BaseAppBar(),
+      appBar: BaseAppBar(
+        title: Text(
+          'Account Settings',
+          style: TextStyles.header,
+        ),
+      ),
       body: Container(
         child: ListView(
           children: <Widget>[
@@ -41,9 +51,12 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                   }),
               title: Text(
                 'Private Account',
-                style: TextStyles.w300Display,
+                style: TextStyles.defaultDisplay.copyWith(fontSize: 17),
               ),
-              subtitle: Text(isPrivate ? 'private' : 'public'),
+              subtitle: Text(isPrivate
+                  ? 'Only people you approve '
+                      'can see your photos and stories'
+                  : 'Anyone can see your photos and stories'),
             )
           ],
         ),

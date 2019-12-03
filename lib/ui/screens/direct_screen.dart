@@ -25,24 +25,21 @@ class DirectScreen extends StatefulWidget {
 }
 
 class _DirectScreenState extends State<DirectScreen> {
-  Stream<QuerySnapshot> _chatStream;
-
   @override
   void initState() {
-//    _chatStream = Repo.DMStream();
-
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: BaseAppBar(
         onLeadingPressed: widget.onLeadingPressed,
         onTrailingPressed: widget.onTrailingPressed,
         title: Text(
           Repo.currentProfile.user.username,
-          style: TextStyles.W500Text15.copyWith(fontSize: 18),
+          style: TextStyles.w600Text.copyWith(fontSize: 18),
         ),
         trailing: Icon(
           LineIcons.edit,
@@ -54,7 +51,6 @@ class _DirectScreenState extends State<DirectScreen> {
         child: Container(
           child: Center(
             child: ListView(
-//              crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Padding(
                   padding: const EdgeInsets.all(8.0),
@@ -67,14 +63,14 @@ class _DirectScreenState extends State<DirectScreen> {
                         onPressed: () {},
                         child: Text(
                           'Messages',
-                          style: TextStyles.W500Text15.copyWith(fontSize: 18),
+                          style: TextStyles.w600Text.copyWith(fontSize: 18),
                         )),
                     FlatButton(
                         onPressed: () {},
                         child: Text(
                           '5 Requests',
-                          style: TextStyles.W500Text15.copyWith(
-                              fontSize: 14, color: Colors.blueAccent),
+                          style: TextStyles.w600Text
+                              .copyWith(fontSize: 14, color: Colors.blueAccent),
                         )),
                   ],
                 ),

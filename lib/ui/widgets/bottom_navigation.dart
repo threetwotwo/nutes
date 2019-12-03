@@ -90,12 +90,17 @@ class BottomNavigation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BottomNavigationBar(
-      type: BottomNavigationBarType.fixed,
-      currentIndex: currentTab.index,
-      items: items,
-      onTap: (index) => onSelectTab(
-        TabHelper.item(index),
+    return Container(
+      decoration: BoxDecoration(
+          border: Border(top: BorderSide(color: Colors.grey[100]))),
+      child: BottomNavigationBar(
+        backgroundColor: Colors.white,
+        type: BottomNavigationBarType.fixed,
+        currentIndex: currentTab.index,
+        items: items,
+        onTap: (index) => onSelectTab(
+          TabHelper.item(index),
+        ),
       ),
     );
   }

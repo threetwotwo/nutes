@@ -39,9 +39,10 @@ class CommentTextField extends StatelessWidget {
                       maxLines: 4,
                       maxLength: 800,
                       decoration: InputDecoration(
-                          border: InputBorder.none,
-                          counterText: '',
-                          hintText: hint),
+                        border: InputBorder.none,
+                        counterText: '',
+                        hintText: hint,
+                      ),
                     ),
                   ),
                   InkWell(
@@ -56,8 +57,8 @@ class CommentTextField extends StatelessWidget {
                       padding: const EdgeInsets.all(8.0),
                       child: Text(
                         'Send',
-                        style: TextStyles.W500Text15.copyWith(
-                            color: Colors.blueAccent),
+                        style: TextStyles.w600Text
+                            .copyWith(color: Colors.blueAccent),
                       ),
                     ),
                   ),

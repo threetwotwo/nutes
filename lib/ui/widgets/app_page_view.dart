@@ -54,6 +54,7 @@ class _AppPageViewState extends State<AppPageView> {
 
     ///listen to page scroll
     cache.appScrollController.addListener(() {
+      if (context == null) return;
       if (cache.appScrollController.page.floor() != 0) {
         FocusScope.of(context).requestFocus(FocusNode());
       } else {
@@ -78,8 +79,8 @@ class _AppPageViewState extends State<AppPageView> {
                 children: <Widget>[
                   _editorStoryScreen,
                   HomeScreen(
-//              onCreatePressed: () => _animateToPage(0),
                     onCreatePressed: () => cache.animateTo(0),
+                    onDM: () => cache.animateTo(2),
 
                     ///Page view is scrollable only when on feed page
                     ///TODO: disable scroll on push @@@ Make use of Dismissible to

@@ -154,6 +154,29 @@ class FirestoreService {
     return User.fromDoc(doc);
   }
 
+  Future<List<User>> searchUsers(String text) async {
+    if (text == null) return [];
+    if (text.isEmpty) return [];
+
+    final length = text.length - 1;
+    final char = text[length];
+
+    final end = text.replaceRange(
+        length, length + 1, String.fromCharCode(char.codeUnitAt(0) + 1));
+
+    print('start: $text, end: $end');
+
+    final query = shared
+        .collection('users')
+        .where('username', isGreaterThanOrEqualTo: text)
+        .where('username', isLessThan: end)
+        .limit(5);
+
+    final result = await query.getDocuments();
+
+    return result.documents.map((doc) => User.fromDoc(doc)).toList();
+  }
+
   Future<bool> usernameExists(String username) async {
     final qs = await shared
         .collection('users')
@@ -252,10 +275,18 @@ class FirestoreService {
   }
 
   Stream<QuerySnapshot> DMStream() {
+//    final timestamp = Timestamp.now();
+
+//    final todayInSeconds = timestamp.seconds;
+//    final todayInNanoSeconds = timestamp.nanoseconds;
+
+    ///24 hours ago since now
+//    final cutOff = Timestamp(todayInSeconds - 2628000000, todayInNanoSeconds);
+
     return userRef(Repo.currentProfile.uid)
         .collection('chats')
         .where('is_persisted', isEqualTo: true)
-//        .orderBy('last_checked_timestamp', descending: true)
+//        .where('last_checked_timestamp', isGreaterThanOrEqualTo: cutOff)
         .snapshots();
 //        .snapshots(includeMetadataChanges: true);
   }

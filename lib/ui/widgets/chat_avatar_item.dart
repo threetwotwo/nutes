@@ -46,12 +46,12 @@ class _DMListItemState extends State<DMListItem> {
         key: UniqueKey(),
         actionPane: SlidableBehindActionPane(),
         secondaryActions: <Widget>[
-          IconSlideAction(
-            caption: 'More',
-            color: Colors.black45,
-            icon: Icons.more_horiz,
-            onTap: () => print('More'),
-          ),
+//          IconSlideAction(
+//            caption: 'More',
+//            color: Colors.black45,
+//            icon: Icons.more_horiz,
+//            onTap: () => print('More'),
+//          ),
           IconSlideAction(
             caption: 'Delete',
             color: Colors.red,

@@ -12,9 +12,11 @@ class StoryPageView extends StatefulWidget {
   final List<UserStory> userStories;
   final Function(int) onPageChanged;
   final Widget bgWidget;
+  final double topPadding;
 //  final String heroTag;
 
-  static show(context, int initialPage, List<UserStory> userStories) =>
+  static show(context, int initialPage, List<UserStory> userStories,
+          double topPadding) =>
       showModalBottomSheet(
         context: context,
         isScrollControlled: true,
@@ -25,6 +27,7 @@ class StoryPageView extends StatefulWidget {
             initialPage: initialPage,
             userStories: userStories,
             onPageChanged: (val) {},
+            topPadding: topPadding,
           ),
         ),
       );
@@ -47,6 +50,7 @@ class StoryPageView extends StatefulWidget {
     this.initialPage,
     this.onPageChanged,
     this.bgWidget,
+    this.topPadding,
 //    this.heroTag,
   }) : super(key: key);
 
@@ -109,6 +113,7 @@ class _StoryPageViewState extends State<StoryPageView> {
               ///max number of items that can be shown
               final maxItemCount = (screenWidth ~/ 80.0);
 
+              ///Story avatar offset
               final offset = Repo.storiesScrollController.offset;
 
               ///Estimation of the index of the last item
@@ -129,6 +134,7 @@ class _StoryPageViewState extends State<StoryPageView> {
               final userStory = snap.userStories[storyIdx];
               print('user story: $userStory, story: ${userStory.story}');
               return StoryView(
+                topPadding: widget.topPadding,
                 onAvatarTapped: (user) => Navigator.of(context).push(
                     MaterialPageRoute(
                         builder: (context) =>

@@ -103,8 +103,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     },
                     child: Text(
                       'Change Photo',
-                      style: TextStyles.W500Text15.copyWith(
-                          color: Colors.blueAccent),
+                      style: TextStyles.w600Text
+                          .copyWith(color: Colors.blueAccent),
                     )),
               ],
             ),

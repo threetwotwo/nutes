@@ -7,9 +7,10 @@ import 'package:nutes/core/services/auth.dart';
 import 'package:nutes/core/services/local_cache.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/core/view_models/home_model.dart';
+import 'package:nutes/ui/shared/comment_overlay.dart';
 import 'package:nutes/ui/shared/refresh_list_view.dart';
 import 'package:nutes/ui/shared/story_avatar.dart';
-import 'package:nutes/ui/widgets/feed_page_app_bar.dart';
+import 'package:nutes/ui/widgets/feed_app_bar.dart';
 import 'package:nutes/ui/shared/post_list.dart';
 import 'package:nutes/core/services/locator.dart';
 import 'package:nutes/core/view_models/login_model.dart';
@@ -17,16 +18,17 @@ import 'package:nutes/ui/widgets/inline_stories.dart';
 import 'package:flutter/cupertino.dart';
 
 class FeedScreen extends StatefulWidget {
-  final Function onCreatePressed;
+  final VoidCallback onCreatePressed;
+  final VoidCallback onDM;
   final GlobalKey<NavigatorState> navigatorKey;
 
-  final VoidCallback onAddStoryPressed;
   final RouteObserver<PageRoute> routeObserver;
   FeedScreen(
       {Key key,
       this.onCreatePressed,
+      this.onDM,
       this.navigatorKey,
-      this.onAddStoryPressed,
+//      this.onAddStoryPressed,
       this.routeObserver})
       : super(key: key);
 
@@ -48,6 +50,11 @@ class _FeedScreenState extends State<FeedScreen>
   List<Post> posts = [];
 
   bool isFetchingPosts = false;
+
+  ///Comment overlay fields
+  bool showCommentTextField = false;
+  final commentController = TextEditingController();
+  final commentFocusNode = FocusNode();
 
   @override
   void didChangeDependencies() {
@@ -98,100 +105,125 @@ class _FeedScreenState extends State<FeedScreen>
   Widget build(BuildContext context) {
     super.build(context);
 
+    final topPadding = MediaQuery.of(context).padding.top;
+
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: FeedPageAppBar(
+      appBar: FeedAppBar(
+        onDM: widget.onDM,
         onCreatePressed: widget.onCreatePressed,
         onLogoutPressed: () => Repo.logout(),
       ),
-      body: RefreshListView(
-        controller: cache.homeScrollController,
-        onRefresh: () {
-          _getSnapshotUserStories();
-          return _getPosts();
+      body: CommentOverlay(
+        controller: commentController,
+        focusNode: commentFocusNode,
+        showTextField: showCommentTextField,
+        onScroll: () {
+          setState(() {
+            showCommentTextField = false;
+          });
+          return;
         },
-        children: <Widget>[
-          StreamBuilder<StorySnapshot>(
-              stream: Repo.stream(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) return SizedBox();
+        child: RefreshListView(
+          controller: cache.homeScrollController,
+          onRefresh: () {
+            _getSnapshotUserStories();
+            return _getPosts();
+          },
+          children: <Widget>[
+            StreamBuilder<StorySnapshot>(
+                stream: Repo.stream(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) return SizedBox();
 
-                final data = snapshot.data;
+                  final data = snapshot.data;
 
-                return Container(
-                  height: 120,
-                  width: MediaQuery.of(context).size.width,
-                  color: Colors.white,
-                  child: SingleChildScrollView(
-                    physics: AlwaysScrollableScrollPhysics(),
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: <Widget>[
-                        Visibility(
-                          visible: Repo.myStory == null
-                              ? false
-                              : Repo.myStory.moments.isEmpty &&
-                                  data.userStories.firstWhere(
-                                          (us) =>
-                                              us.uploader.uid ==
-                                              auth.profile.uid,
-                                          orElse: () => null) ==
-                                      null,
-                          child: Container(
+                  return Container(
+                    height: 120,
+                    width: MediaQuery.of(context).size.width,
+                    color: Colors.white,
+                    child: SingleChildScrollView(
+                      physics: AlwaysScrollableScrollPhysics(),
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: <Widget>[
+                          Visibility(
+                            visible: Repo.myStory == null
+                                ? false
+                                : Repo.myStory.moments.isEmpty &&
+                                    data.userStories.firstWhere(
+                                            (us) =>
+                                                us.uploader.uid ==
+                                                auth.profile.uid,
+                                            orElse: () => null) ==
+                                        null,
+                            child: Container(
 //                                color: Colors.red,
-                            child: StoryAvatar(
-                              user: auth.profile.user,
-                              isEmpty: true,
-                              isFinished: true,
-                              onTap: widget.onAddStoryPressed,
-                              onLongPress: widget.onAddStoryPressed,
+                              child: StoryAvatar(
+                                user: auth.profile.user,
+                                isEmpty: true,
+                                isFinished: true,
+                                onTap: widget.onCreatePressed,
+                                onLongPress: widget.onCreatePressed,
+                              ),
                             ),
                           ),
-                        ),
-                        InlineStories(
-                          userStories: snapshot.data.userStories,
-                          onCreateStory: widget.onAddStoryPressed,
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }),
-          Divider(),
-          isFetchingPosts
-              ? Padding(
-                  padding: EdgeInsets.all(8),
-                  child: CupertinoActivityIndicator(),
-                )
-              : posts.isEmpty
-                  ? Container(
-                      padding: EdgeInsets.all(24),
-//                          color: Colors.red,
-                      child: Center(
-                          child: Text(
-                        'No posts to show. \n Start '
-                        'following users to see their posts.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                            color: Colors.grey[700],
-                            fontSize: 20,
-                            fontWeight: FontWeight.w300),
-                      )),
-                    )
-                  : ListView.builder(
-                      shrinkWrap: true,
-                      physics: NeverScrollableScrollPhysics(),
-                      itemCount: posts.length,
-                      itemBuilder: (context, index) {
-                        return Container(
-                          color: Colors.white,
-                          child: PostListItem(
-                            post: posts[index],
-                            shouldNavigate: true,
+                          InlineStories(
+                            userStories: snapshot.data.userStories,
+                            onCreateStory: widget.onCreatePressed,
+                            topPadding: topPadding,
                           ),
-                        );
-                      }),
-        ],
+                        ],
+                      ),
+                    ),
+                  );
+                }),
+            Divider(),
+            isFetchingPosts
+                ? Padding(
+                    padding: EdgeInsets.all(8),
+                    child: CupertinoActivityIndicator(),
+                  )
+                : posts.isEmpty
+                    ? Container(
+                        padding: EdgeInsets.all(24),
+//                          color: Colors.red,
+                        child: Center(
+                            child: Text(
+                          'No posts to show. \n Start '
+                          'following users to see their posts.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                              color: Colors.grey[700],
+                              fontSize: 20,
+                              fontWeight: FontWeight.w300),
+                        )),
+                      )
+                    : PostListView(
+                        posts: posts,
+                        onAddComment: (postId) {
+                          print('add comment for post $postId');
+                          setState(() {
+                            showCommentTextField = true;
+                          });
+                          FocusScope.of(context).requestFocus(commentFocusNode);
+                          return;
+                        })
+//                  : ListView.builder(
+//                      shrinkWrap: true,
+//                      physics: NeverScrollableScrollPhysics(),
+//                      itemCount: posts.length,
+//                      itemBuilder: (context, index) {
+//                        return Container(
+//                          color: Colors.white,
+//                          child: PostListItem(
+//                            post: posts[index],
+//                            shouldNavigate: true,
+//                          ),
+//                        );
+//                      }),
+          ],
+        ),
       ),
     );
   }

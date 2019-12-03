@@ -474,7 +474,7 @@ class Repo {
   }
 
   /// unfollow a user
-  static unfollowUser(String uid) {
+  static void unfollowUser(String uid) {
     _instance._firestore.unfollow(uid);
   }
 
@@ -488,6 +488,9 @@ class Repo {
 
   static Future<UserProfile> getUserProfile(String uid) =>
       _instance._firestore.getUserProfile(uid);
+
+  static Future<List<User>> searchUsers(String text) =>
+      _instance._firestore.searchUsers(text);
 
   static Future<bool> usernameExists(String name) =>
       _instance._firestore.usernameExists(name);

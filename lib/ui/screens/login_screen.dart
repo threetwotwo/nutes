@@ -281,7 +281,7 @@ class _LoginButtonState extends State<LoginButton>
                         )
                       : Text(
                           model.isSigningIn ? 'LOGIN' : 'SIGNUP',
-                          style: TextStyles.W500Text15.copyWith(
+                          style: TextStyles.w600Text.copyWith(
                             color: Colors.white,
                             fontSize: widget.textSize,
                           ),

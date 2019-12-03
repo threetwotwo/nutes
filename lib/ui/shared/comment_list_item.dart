@@ -19,11 +19,11 @@ class CommentPostListItem extends StatelessWidget {
         text: TextSpan(children: [
           TextSpan(
             text: uploader.username,
-            style: TextStyles.W500Text15,
+            style: TextStyles.defaultText.copyWith(fontWeight: FontWeight.w600),
           ),
           TextSpan(
             text: ' $text',
-            style: TextStyles.w300Text,
+            style: TextStyles.defaultText,
           ),
         ]),
       ),

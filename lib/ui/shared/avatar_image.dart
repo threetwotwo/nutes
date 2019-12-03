@@ -78,10 +78,13 @@ class AvatarImage extends StatelessWidget {
               if (!showStoryIndicator && addStory)
                 Align(
                   alignment: Alignment.bottomCenter,
-                  child: AddStoryIndicator(
+                  child: GestureDetector(
+                    onTap: onTap,
+                    child: AddStoryIndicator(
 //                  shouldHugBorder: addStoryIndicatorShouldHugBorder,
-                    size: addStoryIndicatorSize,
-                    spacing: spacing,
+                      size: addStoryIndicatorSize,
+                      spacing: spacing,
+                    ),
                   ),
                 ),
             ],
@@ -111,7 +114,7 @@ class PhotoImage extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Colors.grey[100],
           shape: BoxShape.circle,
         ),
         child: Transform.rotate(

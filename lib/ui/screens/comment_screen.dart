@@ -1,13 +1,14 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:emoji_picker/emoji_picker.dart';
+//import 'package:emoji_picker/emoji_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:line_icons/line_icons.dart';
 import 'package:nutes/core/models/comment.dart';
 import 'package:nutes/core/services/auth.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/shared/app_bars.dart';
+import 'package:nutes/ui/shared/comment_overlay.dart';
 import 'package:nutes/ui/shared/comment_text_field.dart';
 import 'package:nutes/ui/shared/refresh_list_view.dart';
+import 'package:nutes/ui/shared/search_overlay.dart';
 import 'package:nutes/ui/widgets/comment_list_item.dart';
 
 class CommentScreen extends StatefulWidget {
@@ -37,25 +38,25 @@ class _CommentScreenState extends State<CommentScreen> {
   final listController = ScrollController();
 
   final GlobalKey globalKey = GlobalKey();
-  Offset offset;
 
-  bool showSearchScreen = false;
+//  bool showSearchScreen = false;
 
   @override
   void initState() {
     _getComments();
-    commentController.addListener(() {
-      ///TODO: regex for mentions
-      if (commentController.text
-          .contains(RegExp(r"(?<!@)\B@[a-z\._0-9]*?$", caseSensitive: false)))
-        setState(() {
-          showSearchScreen = true;
-        });
-      else
-        setState(() {
-          showSearchScreen = false;
-        });
-    });
+
+    final regex = RegExp(r"(?<!@)\B@[a-z\._0-9]*?$", caseSensitive: false);
+
+//    commentController.addListener(() {
+//      if (commentController.text.contains(regex))
+//        setState(() {
+//          showSearchScreen = true;
+//        });
+//      else
+//        setState(() {
+//          showSearchScreen = false;
+//        });
+//    });
     super.initState();
   }
 
@@ -82,167 +83,81 @@ class _CommentScreenState extends State<CommentScreen> {
         ),
       ),
       body: SafeArea(
-          child: Stack(
-        children: <Widget>[
-          NotificationListener(
-            onNotification: (t) {
-              if (t is UserScrollNotification) {
-                FocusScope.of(context).requestFocus(FocusNode());
-              }
-              return;
-            },
-            child: RefreshListView(
-              onRefresh: () => _getComments(),
-              onLoadMore: () {},
-              children: <Widget>[
-                ListView.separated(
-                    controller: listController,
-                    shrinkWrap: true,
-                    physics: NeverScrollableScrollPhysics(),
-                    separatorBuilder: (context, index) => Container(
-                          height: 10,
-                        ),
-                    itemCount: comments.length,
-                    itemBuilder: (context, index) => CommentListItem(
-                          comment: comments[index],
-                          onReply: (comment) {
-                            print('reply to ${comment.text}');
-                            setState(() {
-                              replyingTo = comment;
-                              commentController.text =
-                                  '@${comment.owner.username} ';
-                            });
+        child: CommentOverlay(
+          showTextField: true,
+          controller: commentController,
+          replyingTo: replyingTo,
+          focusNode: commentNode,
+          onClear: () {
+            print('on clear');
+            setState(() {
+              replyingTo = null;
+            });
 
-                            FocusScope.of(context).requestFocus(commentNode);
-                          },
-                        )),
-                SizedBox(height: 16),
-                Divider(),
+            return;
+          },
+          child: RefreshListView(
+            onRefresh: () => _getComments(),
+            onLoadMore: () {},
+            children: <Widget>[
+              ListView.separated(
+                  controller: listController,
+                  shrinkWrap: true,
+                  physics: NeverScrollableScrollPhysics(),
+                  separatorBuilder: (context, index) => Container(
+                        height: 10,
+                      ),
+                  itemCount: comments.length,
+                  itemBuilder: (context, index) => CommentListItem(
+                        comment: comments[index],
+                        onReply: (comment) {
+                          print('reply to ${comment.text}');
+                          setState(() {
+                            replyingTo = comment;
+                            commentController.text =
+                                '@${comment.owner.username} ';
+                          });
 
-                ///Spacer
-                Container(
-                  height: 200,
-                ),
-              ],
-            ),
+                          FocusScope.of(context).requestFocus(commentNode);
+                        },
+                      )),
+              SizedBox(height: 16),
+              Divider(),
+
+              ///Spacer
+              Container(
+                height: 200,
+              ),
+            ],
           ),
-          if (showSearchScreen)
-            Positioned.fill(
-                child: Container(
-              color: Colors.pink,
-            )),
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                if (replyingTo != null)
-                  Container(
-                    color: Colors.grey[200],
-                    height: 50,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: <Widget>[
-                        Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: Text(
-                              'Replying to ${replyingTo.owner.username}',
-                              style: TextStyle(color: Colors.grey),
-                            )),
-                        IconButton(
-                          onPressed: () {
-                            setState(() {
-                              replyingTo = null;
-                              commentController.clear();
-                            });
-                          },
-                          icon: Icon(
-                            LineIcons.close,
-                            size: 20,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                EmojiPicker(
-                  onEmojiSelected: (val, _) => commentController.text =
-                      commentController.text + val.emoji,
-                  rows: 1,
-                  recommendKeywords: [
-                    'Crying Face',
-                    'Face With Tears of Joy',
-                    'Clapping Hands',
-                    'Raising Hands',
-                    'Winking Face With Tongue',
-                    'Face With Open Mouth',
-                    'Smiling Face With Heart-Eyes',
-                    'OK Hand',
-                    'Victory Hand',
-                    'Folded Hands',
-                    'Love-You Gesture',
-                    'Middle Finger',
-                    'Thumbs Up',
-                    'Thumbs Down',
-                    'Red Heart',
-                  ],
-                  numRecommended: 60,
-                  columns: 8,
-                  bgColor: Colors.white,
-                  indicatorColor: Colors.grey,
-//                        buttonMode: ButtonMode.MATERIAL,
-                ),
-                CommentTextField(
-                  controller: commentController,
-                  focusNode: commentNode,
-                  hint: 'Add comment as ${auth.profile.user.username}...',
-                  onSendPressed: (val) {
-                    final text = commentController.text;
+          onSend: (text) {
+            final comment = Repo.newComment(
+                text: text, postId: widget.postId, parentComment: replyingTo);
 
-                    final comment = Repo.newComment(
-                        text: text,
-                        postId: widget.postId,
-                        parentComment: replyingTo);
+            print(comment.parentId);
 
-//                    final comment = Comment(
-//                      parentId: replyingTo?.id ?? null,
-//                      timestamp: Timestamp.now(),
-//                      text: text,
-//                      owner: auth.profile.user,
-//                    );
+            int insertIndex;
 
-                    ///TODO: find where to insert new comment
+            final itemHeight = 70.0;
 
-                    int insertIndex;
+            insertIndex = comment.parentId == null
+                ? 0
+                : comments.indexWhere((c) => c.id == comment.parentId) + 1;
 
-                    final itemHeight = 70.0;
+            if (mounted) {
+              setState(() {
+                comments.insert(insertIndex, comment);
 
-                    insertIndex = comment.parentId == null
-                        ? 0
-                        : comments.indexWhere((c) => c.id == comment.parentId) +
-                            1;
+                replyingTo = null;
+              });
 
-                    if (mounted) {
-                      setState(() {
-                        comments.insert(insertIndex, comment);
-
-                        replyingTo = null;
-                      });
-
-                      listController.animateTo(insertIndex * itemHeight,
-                          curve: Curves.easeInOut,
-                          duration: Duration(milliseconds: 300));
-                    }
-                    commentController.clear();
-
-//                    Navigator.pop(context);
-                  },
-                ),
-              ],
-            ),
-          )
-        ],
-      )),
+              listController.animateTo(insertIndex * itemHeight,
+                  curve: Curves.easeInOut,
+                  duration: Duration(milliseconds: 300));
+            }
+          },
+        ),
+      ),
     );
   }
 }

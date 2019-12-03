@@ -47,7 +47,7 @@ class _LikeScreenState extends State<LikeScreen> {
       appBar: BaseAppBar(
         title: Text(
           'Likes',
-          style: TextStyles.W500Text15,
+          style: TextStyles.w600Text,
         ),
       ),
       body: SafeArea(
