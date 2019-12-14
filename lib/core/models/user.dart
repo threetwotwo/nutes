@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/foundation.dart';
+import 'package:nutes/utils/image_file_bundle.dart';
 
 class UserProfile {
   final String uid;
@@ -25,7 +26,11 @@ class UserProfile {
       uid: doc.documentID,
       username: doc['username'] ?? '',
       displayName: doc['display_name'] ?? '',
-      photoUrl: doc['photo_url'] ?? '',
+//      photoUrl: doc['photo_url'] ?? '',
+      urls: ImageUrlBundle(
+          original: doc['photo_url'] ?? '',
+          medium: doc['photo_url_medium'] ?? '',
+          small: doc['photo_url_small'] ?? ''),
     );
 
     final stats = UserStats(
@@ -48,7 +53,7 @@ class UserProfile {
     String username,
     String displayName,
     String email,
-    String photoUrl,
+    ImageUrlBundle bundle,
     String bio,
     UserStats stats,
     bool isPrivate,
@@ -63,7 +68,8 @@ class UserProfile {
       user: this.user.copyWith(
             username: username,
             displayName: displayName,
-            photoUrl: photoUrl,
+//            photoUrl: photoUrl,
+            urls: bundle,
             isPrivate: isPrivate,
             hasRequestedFollow: hasRequestedFollow,
           ),
@@ -85,7 +91,7 @@ class UserProfile {
       'user': user.toMap(),
       'username': user.username,
       'display_name': user.displayName,
-      'photo_url': user.photoUrl,
+      'photo_url': user.urls.small,
       'bio': bio,
       'is_verified': isVerified,
 //      'is_private': isPrivate,
@@ -96,38 +102,42 @@ class UserProfile {
   }
 }
 
-enum UStoryState { seen, unseen, none }
-
 ///For when there is no need to display any other data
 ///other than user's username and photo
 class User {
   final String uid;
   final String username;
   final String displayName;
-  final String photoUrl;
+//  final String photoUrl;
+  final ImageUrlBundle urls;
   final bool isPrivate;
-  final UStoryState storyState;
   final bool hasRequestedFollow;
 
   User({
     @required this.uid,
     @required this.username,
     @required this.displayName,
-    @required this.photoUrl,
+//    @required this.photoUrl,
     @required this.isPrivate,
-    this.storyState,
+    @required this.urls,
     this.hasRequestedFollow,
   });
 
   factory User.fromDoc(DocumentSnapshot doc) {
     final data = doc.data;
     if (data == null || doc.documentID == 'list') return null;
+
+    final urlBundle = ImageUrlBundle.fromUserDoc(doc);
+
+//    final urlBundles = urlBundle
+//        .map((e) => ImageUrlBundle.fromMap(urlBundle.indexOf(e), e))
+//        .toList();
     return User(
       isPrivate: data['is_private'] ?? false,
       uid: doc.documentID,
       username: data['username'] ?? '',
       displayName: data['display_name'] ?? '',
-      photoUrl: data['photo_url'] ?? '',
+      urls: urlBundle,
     );
   }
 
@@ -137,17 +147,25 @@ class User {
       uid: uid ?? map['uid'] ?? '',
       username: map['username'] ?? '',
       displayName: map['display_name'] ?? '',
-      photoUrl: map['photo_url'] ?? '',
+      urls: ImageUrlBundle(
+        original: map['photo_url'] ?? '',
+        medium: map['photo_url_medium'] ?? '',
+        small: map['photo_url_small'] ?? '',
+      ),
+//      photoUrl: map['photo_url'] ?? '',
     );
   }
 
-  Map toMap() {
+  Map<String, dynamic> toMap() {
     return {
       'is_private': isPrivate,
       'uid': uid,
       'username': username,
       'display_name': displayName,
-      'photo_url': photoUrl,
+      'photo_url': urls.original,
+      'photo_url_medium': urls.medium,
+      'photo_url_small': urls.small,
+//      'photo_url': photoUrl,
     };
   }
 
@@ -155,9 +173,9 @@ class User {
     String username,
     String displayName,
     String email,
-    String photoUrl,
+//    String photoUrl,
+    ImageUrlBundle urls,
     bool isPrivate,
-    storyState,
     hasRequestedFollow,
   }) {
     return User(
@@ -165,8 +183,8 @@ class User {
       uid: this.uid,
       username: username ?? this.username,
       displayName: displayName ?? this.displayName,
-      photoUrl: photoUrl ?? this.photoUrl,
-      storyState: storyState ?? this.storyState,
+//      photoUrl: photoUrl ?? this.photoUrl,
+      urls: urls ?? this.urls,
       hasRequestedFollow: hasRequestedFollow ?? this.hasRequestedFollow,
     );
   }

@@ -25,37 +25,6 @@ class PostContent {
   }
 }
 
-///Idea on how to have a 'harmonized' post object built from data
-///strewn all over firestore
-class PostV2 {
-  final String id;
-  final User owner;
-  final PostContent content;
-  final PostStats stats;
-
-  PostV2({this.id, this.owner, this.content, this.stats});
-}
-
-class PostMyLikes {
-  final bool didLike;
-  final bool challengerDidLike;
-  final bool challengedDidLike;
-
-  PostMyLikes({
-    @required this.didLike,
-    @required this.challengerDidLike,
-    @required this.challengedDidLike,
-  });
-
-  factory PostMyLikes.fromList(List list) {
-    return PostMyLikes(
-      didLike: list.contains('post') ?? false,
-      challengerDidLike: list.contains('left_like') ?? false,
-      challengedDidLike: list.contains('right_like') ?? false,
-    );
-  }
-}
-
 ///For pagination
 class PostCursor {
   final List<Post> posts;
@@ -67,12 +36,12 @@ class PostCursor {
 class Post {
   final String id;
   final User owner;
-  final List<ImageUrlBundle> urls;
+  final List<ImageUrlBundle> urlBundles;
   final Timestamp timestamp;
-  final bool didLike;
-  final bool challengerDidLike;
-  final bool challengedDidLike;
-  final PostMyLikes myLikes;
+//  final bool didLike;
+//  final bool challengerDidLike;
+//  final bool challengedDidLike;
+//  final PostMyLikes myLikes;
   PostStats stats;
   final Map metadata;
   final String caption;
@@ -87,11 +56,11 @@ class Post {
     @required this.id,
     @required this.owner,
     @required this.timestamp,
-    @required this.urls,
-    @required this.didLike,
-    this.myLikes,
-    this.challengerDidLike,
-    this.challengedDidLike,
+    @required this.urlBundles,
+//    @required this.didLike,
+//    this.myLikes,
+//    this.challengerDidLike,
+//    this.challengedDidLike,
     this.stats,
     this.metadata,
     this.caption,
@@ -100,11 +69,11 @@ class Post {
   });
 
   Post copyWith({
-    bool didLike,
-    bool challengerDidLike,
-    bool challengedDidLike,
+//    bool didLike,
+//    bool challengerDidLike,
+//    bool challengedDidLike,
+//    PostMyLikes myLikes,
     PostStats stats,
-    PostMyLikes myLikes,
     List<User> myFollowingLikes,
     String caption,
     User uploader,
@@ -114,33 +83,48 @@ class Post {
       type: this.type,
       id: this.id,
       owner: this.owner,
-      urls: this.urls,
+      urlBundles: this.urlBundles,
       timestamp: this.timestamp,
-      didLike: didLike ?? this.didLike,
-      challengerDidLike: challengerDidLike ?? this.challengerDidLike ?? false,
-      challengedDidLike: challengedDidLike ?? this.challengedDidLike ?? false,
+
       stats: stats ?? this.stats,
       metadata: this.metadata,
       caption: caption ?? this.caption,
       topComments: topComments ?? this.topComments,
-      myLikes: myLikes ?? this.myLikes,
       myFollowingLikes: myFollowingLikes ?? this.myFollowingLikes ?? [],
+//      myLikes: myLikes ?? this.myLikes,
+      //      didLike: didLike ?? this.didLike,
+//      challengerDidLike: challengerDidLike ?? this.challengerDidLike ?? false,
+//      challengedDidLike: challengedDidLike ?? this.challengedDidLike ?? false,
     );
   }
 
-  Map toMap() {
+  Map<String, dynamic> toMap() {
+    final bundleMaps = urlBundles
+            .map((b) => {
+                  'original': b.original,
+                  'medium': b.medium,
+                  'small': b.small,
+                  'aspect_ratio': b.aspectRatio ?? 1,
+                })
+            .toList() ??
+        {};
     return {
+      'type': PostHelper.stringValue(type),
       'post_id': id,
-      'media_url': urls.first.medium,
+      'urls': bundleMaps,
       'metadata': metadata,
       'owner': owner.toMap(),
+      'caption': caption,
+//      'published': timestamp,
     };
   }
 
   factory Post.fromDoc(DocumentSnapshot doc) {
     final List urlBundle = doc['urls'] ?? [];
+
     if (urlBundle.isEmpty && doc['data'] == null) return null;
-    final urls = urlBundle
+
+    final urlBundles = urlBundle
         .map((e) => ImageUrlBundle.fromMap(urlBundle.indexOf(e), e))
         .toList();
     final uploaderData = doc['uploader'] ?? {};
@@ -159,18 +143,14 @@ class Post {
 
     if (type == null) return null;
 
-//    final stats = PostStats.fromDoc(doc);
-
     final post = Post(
       id: doc.documentID,
       type: type,
       owner: uploader,
-      urls: urls,
+      urlBundles: urlBundles,
       timestamp: doc['timestamp'] ?? Timestamp.now(),
       metadata: doc['data'] ?? {},
       caption: caption,
-      didLike: false,
-//      stats: stats,
     );
     return post;
   }
@@ -182,8 +162,8 @@ class PostStats {
   final int commentCount;
 
   ///for shouts
-  final int challengerCount;
-  final int challengedCount;
+  final int shoutLeftLikeCount;
+  final int shoutRightLikeCount;
 
   ///uid of post owner
   final String ownerId;
@@ -194,16 +174,16 @@ class PostStats {
     @required this.postId,
     this.likeCount = 0,
     this.commentCount = 0,
-    this.challengerCount = 0,
-    this.challengedCount = 0,
+    this.shoutLeftLikeCount = 0,
+    this.shoutRightLikeCount = 0,
 //    this.topComments,
   });
 
   PostStats copyWith({
     int likeCount,
     int commentCount,
-    int challengerCount,
-    int challengedCount,
+    int shoutLeftLikeCount,
+    int shoutRightLikeCount,
     List<Comment> comments,
   }) {
     return PostStats(
@@ -211,8 +191,8 @@ class PostStats {
       ownerId: this.ownerId,
       likeCount: likeCount ?? this.likeCount,
       commentCount: commentCount ?? this.commentCount,
-      challengerCount: challengerCount ?? this.challengerCount,
-      challengedCount: challengedCount ?? this.challengedCount,
+      shoutLeftLikeCount: shoutLeftLikeCount ?? this.shoutLeftLikeCount,
+      shoutRightLikeCount: shoutRightLikeCount ?? this.shoutRightLikeCount,
 //      topComments: comments ?? this.topComments,
     );
   }
@@ -225,8 +205,8 @@ class PostStats {
       postId: doc.documentID,
       likeCount: data['like_count'] ?? 0,
       commentCount: data['comment_count'] ?? 0,
-      challengerCount: data['left_like_count'] ?? 0,
-      challengedCount: data['right_like_count'] ?? 0,
+      shoutLeftLikeCount: data['shout_left_like_count'] ?? 0,
+      shoutRightLikeCount: data['shout_right_like_count'] ?? 0,
 //      topComments: comments.map((c) => Comment.fromDoc(doc));
     );
   }
@@ -236,8 +216,8 @@ class PostStats {
       postId: postId,
       likeCount: 0,
       commentCount: 0,
-      challengerCount: 0,
-      challengedCount: 0,
+      shoutLeftLikeCount: 0,
+      shoutRightLikeCount: 0,
     );
   }
 

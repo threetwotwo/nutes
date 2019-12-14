@@ -26,17 +26,20 @@ class LocalCache {
   ScrollController searchSubmittedScrollController = ScrollController();
   ScrollController profileScrollController = ScrollController();
 
-  static const scrollDuration = Duration(milliseconds: 300);
+  static const scrollDuration = Duration(milliseconds: 400);
   static const scrollCurve = Curves.easeInOut;
 
   void reset() {
     LocalCache.instance = LocalCache();
   }
 
-  void animateTo(int page) {
+  Future animateTo(int page) {
     print('animate app to page $page');
-    appScrollController.animateToPage(page,
-        duration: scrollDuration, curve: scrollCurve);
+    if (appScrollController.hasClients)
+      return appScrollController.animateToPage(page,
+          duration: scrollDuration, curve: scrollCurve);
+    else
+      return null;
   }
 
   void animateToTop(TabItem tabItem) {
@@ -63,6 +66,7 @@ class LocalCache {
     }
 
     ///Scroll up
-    controller.animateTo(0, duration: scrollDuration, curve: scrollCurve);
+    if (controller.hasClients)
+      controller.animateTo(0, duration: scrollDuration, curve: scrollCurve);
   }
 }

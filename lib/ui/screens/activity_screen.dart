@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:nutes/core/models/activity.dart';
@@ -69,6 +68,8 @@ class _FollowingsActivityScreenState extends State<FollowingsActivityScreen> {
   List<User> followings = [];
   List<Activity> activities = [];
 
+  final auth = Auth.instance;
+
   @override
   void initState() {
     _getMyFollowings();
@@ -76,7 +77,7 @@ class _FollowingsActivityScreenState extends State<FollowingsActivityScreen> {
   }
 
   _getMyFollowings() async {
-    final result = await Repo.getMyUserFollowings(Repo.currentProfile.uid);
+    final result = await Repo.getMyUserFollowings(auth.profile.uid);
     setState(() {
       followings = result;
     });
@@ -118,7 +119,7 @@ class SelfActivityView extends StatefulWidget {
 }
 
 class _SelfActivityViewState extends State<SelfActivityView> {
-  String uid = Auth.instance.profile.uid;
+  final auth = Auth.instance;
 
   Stream<QuerySnapshot> stream;
 
@@ -126,7 +127,7 @@ class _SelfActivityViewState extends State<SelfActivityView> {
   void initState() {
     stream = Firestore.instance
         .collection('users')
-        .document(uid)
+        .document(auth.profile.uid)
         .collection('follow_requests')
         .snapshots();
 
@@ -153,7 +154,7 @@ class _SelfActivityViewState extends State<SelfActivityView> {
                       ),
                       child: AvatarListItem(
                         avatar: AvatarImage(
-                          url: Repo.currentProfile.user.photoUrl,
+                          url: auth.profile.user.urls.small,
                           spacing: 0,
                         ),
                         title: 'Follow Requests',
@@ -180,7 +181,7 @@ class ActivityListItem extends StatelessWidget {
       children: <Widget>[
         AvatarListItem(
             avatar: AvatarImage(
-              url: activity.owner.photoUrl,
+              url: activity.owner.urls.small,
             ),
             richTitle: TextSpan(children: [
               TextSpan(
@@ -204,19 +205,23 @@ class ActivityListItem extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.end,
             children: <Widget>[
               GestureDetector(
-                onTap: () => Navigator.push(
-                    context,
-                    PostDetailScreen.route(
-                        Post(id: activity.postId, owner: activity.owner))),
+                onTap: () => Navigator.push(context, PostDetailScreen.route(
+
+                    ///TODO: make this possible
+                    Post(id: activity.postId, owner: activity.owner))),
                 child: Container(
                   color: Colors.grey[100],
                   height: 110,
                   width: 110,
                   child: activity.metadata == null
-                      ? CachedNetworkImage(
-                          imageUrl: activity.postUrl,
+                      ? Image.network(
+                          activity.postUrl,
                           fit: BoxFit.cover,
                         )
+//                  CachedNetworkImage(
+//                          imageUrl: activity.postUrl,
+//                          fit: BoxFit.cover,
+//                        )
                       : Text('shout'),
                 ),
               )

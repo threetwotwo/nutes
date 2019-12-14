@@ -2,8 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
-//import 'package:fluttertoast/fluttertoast.dart';
 import 'package:nutes/core/models/user.dart';
+import 'package:nutes/core/services/auth.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/screens/chat_screen.dart';
 import 'package:nutes/ui/shared/avatar_image.dart';
@@ -24,10 +24,7 @@ class DMListItem extends StatefulWidget {
 }
 
 class _DMListItemState extends State<DMListItem> {
-  @override
-  void initState() {
-    super.initState();
-  }
+  final auth = Auth.instance;
 
   @override
   Widget build(BuildContext context) {
@@ -85,12 +82,12 @@ class _DMListItemState extends State<DMListItem> {
         ],
         child: AvatarListItem(
           avatar: AvatarImage(
-            url: widget.user.photoUrl,
+            url: widget.user.urls.small,
             spacing: 0,
           ),
           title: widget.user.username,
           subtitle: (lastChecked['type'] == 1
-                  ? lastChecked['sender_id'] == Repo.currentProfile.uid
+                  ? lastChecked['sender_id'] == auth.profile.uid
                       ? 'You sent a message'
                       : 'Sent you a message'
                   : lastChecked['content'] ?? '') +

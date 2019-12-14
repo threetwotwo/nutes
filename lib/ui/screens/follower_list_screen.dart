@@ -3,10 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:nutes/core/models/user.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/shared/app_bars.dart';
-import 'package:nutes/ui/shared/avatar_image.dart';
 import 'package:nutes/ui/shared/avatar_list_extended.dart';
-import 'package:nutes/ui/shared/avatar_list_item.dart';
-import 'package:nutes/ui/shared/dismiss_view.dart';
 import 'package:nutes/ui/shared/refresh_list_view.dart';
 import 'package:nutes/ui/shared/styles.dart';
 
@@ -48,10 +45,14 @@ class _FollowerListScreenState extends State<FollowerListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+        backgroundColor: Colors.white,
         appBar: BaseAppBar(
           title: FlatButton(
             onPressed: () {},
-            child: Text(widget.user.username),
+            child: Text(
+              widget.user.username,
+              style: TextStyles.w600Text.copyWith(fontSize: 17),
+            ),
           ),
         ),
         body: DefaultTabController(

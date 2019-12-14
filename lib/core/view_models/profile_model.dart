@@ -1,3 +1,4 @@
+import 'package:nutes/core/services/auth.dart';
 import 'package:nutes/ui/widgets/profile_screen_widgets.dart';
 import 'package:nutes/core/models/post.dart';
 import 'package:nutes/core/models/user.dart';
@@ -18,10 +19,12 @@ class ProfileModel extends BaseModel {
 
   bool hasFollowRequest = false;
 
+  final auth = Auth.instance;
+
   void redactFollowRequest() {
     this.hasFollowRequest = false;
 
-    Repo.redactFollowRequest(user.uid, Repo.currentProfile.uid);
+    Repo.redactFollowRequest(user.uid, auth.profile.uid);
 
     notifyListeners();
   }

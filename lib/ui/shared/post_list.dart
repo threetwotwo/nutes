@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:bot_toast/bot_toast.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
@@ -5,14 +7,15 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:nutes/core/services/auth.dart';
 import 'package:nutes/ui/screens/edit_post_screen.dart';
-import 'package:nutes/ui/shared/comment_list_item.dart';
+import 'package:nutes/ui/shared/comment_post_list_item.dart';
+import 'package:nutes/ui/shared/loading_indicator.dart';
+import 'package:nutes/ui/widgets/like_count_bar.dart';
 import 'package:nutes/utils/timeAgo.dart';
 import 'package:preload_page_view/preload_page_view.dart';
 import 'package:nutes/core/models/post_type.dart';
 import 'package:nutes/core/models/user.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/screens/comment_screen.dart';
-import 'package:nutes/ui/screens/likes_screen.dart';
 import 'package:nutes/ui/shared/avatar_image.dart';
 import 'package:nutes/ui/shared/page_viewer.dart';
 import 'package:nutes/core/models/post.dart';
@@ -21,19 +24,21 @@ import 'package:nutes/ui/shared/shout_post.dart';
 import 'package:nutes/ui/shared/styles.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:nutes/ui/shared/dots_indicator.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'avatar_list_item.dart';
+import 'package:vibrate/vibrate.dart';
 
 class PostListView extends StatefulWidget {
   final List<Post> posts;
   final bool pushNavigationEnabled;
   final Function(String) onAddComment;
+  final Function(String) onUnfollow;
 
   const PostListView({
     Key key,
     @required this.posts,
     this.pushNavigationEnabled = true,
     this.onAddComment,
+    this.onUnfollow,
   }) : super(key: key);
 
   @override
@@ -41,17 +46,33 @@ class PostListView extends StatefulWidget {
 }
 
 class _PostListViewState extends State<PostListView> {
+  List<Post> posts;
+
+  @override
+  void initState() {
+    posts = widget.posts;
+
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
         shrinkWrap: true,
         physics: NeverScrollableScrollPhysics(),
-        itemCount: widget.posts == null ? 0 : widget.posts.length,
+        itemCount: posts == null ? 0 : posts.length,
         itemBuilder: (context, index) {
           return PostListItem(
-            post: widget.posts[index],
+            post: posts[index],
             onAddComment: (postId) => widget.onAddComment(postId),
             shouldNavigate: widget.pushNavigationEnabled,
+            onUnfollow: (uid) {
+//              setState(() {
+//                posts = List.from(posts)
+//                  ..removeWhere((post) => post.owner.uid == uid);
+//              });
+              return widget.onUnfollow(uid);
+            },
           );
         });
   }
@@ -63,6 +84,7 @@ class PostListItem extends StatefulWidget {
   final Function onProfileTapped;
   final Function onCommentTapped;
   final Function(String) onAddComment;
+  final Function(String) onUnfollow;
 
   PostListItem({
     Key key,
@@ -71,6 +93,7 @@ class PostListItem extends StatefulWidget {
     this.onCommentTapped,
     this.onProfileTapped,
     this.onAddComment,
+    this.onUnfollow,
   }) : super(key: key);
 
   @override
@@ -85,10 +108,16 @@ class _PostListItemState extends State<PostListItem> {
     Navigator.of(context).push(ProfileScreen.route(widget.post.owner.uid));
   }
 
-  bool didLike;
+  ///Helper fields to calculate like count correctly
+  ///This value will not change once set
+  bool likedPost;
+  bool likedShoutLeft;
+  bool likedShoutRight;
 
-  bool didLikeChallenger = false;
-  bool didLikeChallenged = false;
+  ///Flag to ensure the above field is unchanged
+  bool postLikeIsInitiated = false;
+  bool shoutLeftLikeIsInitiated = false;
+  bool shoutRightLikeIsInitiated = false;
 
   Post post;
 
@@ -99,10 +128,12 @@ class _PostListItemState extends State<PostListItem> {
 
   final auth = Auth.instance;
 
+  double biggestAspectRatio;
+
   _getPostComplete() async {
     print('get post compelte');
 
-    final result = widget.post.urls == null
+    final result = widget.post.urlBundles == null
         ? await Repo.getPostComplete(widget.post.id, widget.post.owner.uid)
         : await Repo.getPostStatsAndLikes(widget.post);
 
@@ -114,22 +145,27 @@ class _PostListItemState extends State<PostListItem> {
   @override
   void initState() {
     post = widget.post;
+
+    ///Get complete post if any info is incomplete
     if (post == null || post.stats == null || post.myFollowingLikes == null)
       _getPostComplete();
-    didLike = post.myLikes?.didLike ?? false;
+//    liked = post.myLikes?.didLike ?? false;
+
+    ///Get aspect ratio for [PageViewer] from the biggest image
+    ///ie. lowest aspect ratio
+
+    if (post.type == PostType.text) {
+      final aspectRatios = post.urlBundles.map((b) => b.aspectRatio).toList();
+      biggestAspectRatio = aspectRatios.reduce(min);
+    }
+
+//    print(aspectRatios);
+
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (post == null || post.urls == null)
-      return Container(
-        padding: const EdgeInsets.all(30),
-        child: Align(
-            alignment: Alignment.topCenter,
-            child: CupertinoActivityIndicator()),
-      );
-
     final isShout = post.type == PostType.shout;
 
     final data = post.metadata;
@@ -137,409 +173,324 @@ class _PostListItemState extends State<PostListItem> {
     final challenger = User.fromMap(data['challenger'] ?? {});
     final challenged = User.fromMap(data['challenged'] ?? {});
 
-    final String challengerText = data['challenger_text'] ?? '';
-    final String challengedText = data['challenged_text'] ?? '';
-
-    final totalChars = challengedText.length + challengerText.length;
-
-//    final postHeight = calculatePostHeight(totalChars);
-
     return post.stats == null || post.myFollowingLikes == null
-        ? Container(
-            padding: const EdgeInsets.all(30),
-            child: Align(
-                alignment: Alignment.topCenter,
-                child: CupertinoActivityIndicator()),
-          )
-        : StreamBuilder<DocumentSnapshot>(
-            stream: null,
-            builder: (context, snapshot) {
-              if (isShout) {
-                didLikeChallenger = !snapshot.hasData
-                    ? false
-                    : (snapshot.data.exists &&
-                            snapshot.data['challenger_likes'] != null)
-                        ? snapshot.data['challenger_likes'][post.id] != null
-                        : false;
-                didLikeChallenged = !snapshot.hasData
-                    ? false
-                    : (snapshot.data.exists &&
-                            snapshot.data['challenged_likes'] != null)
-                        ? snapshot.data['challenged_likes'][post.id] != null
-                        : false;
-              }
-
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  isShout
-                      ? Container(
-                          child: Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: <Widget>[
-                                RichText(
-                                  text: TextSpan(children: [
-                                    TextSpan(
-                                      text: challenger.username,
-                                      style: TextStyles.w600Text,
-                                      recognizer: TapGestureRecognizer()
-                                        ..onTap = (() => Navigator.push(
-                                            context,
-                                            ProfileScreen.route(
-                                                challenger.uid))),
-                                    ),
-                                    TextSpan(
-                                      text: ' and ',
-                                      style: TextStyles.defaultText,
-                                    ),
-                                    TextSpan(
-                                      text: challenged.username,
-                                      style: TextStyles.w600Text,
-                                      recognizer: TapGestureRecognizer()
-                                        ..onTap = (() => Navigator.push(
-                                            context,
-                                            ProfileScreen.route(
-                                                challenged.uid))),
-                                    ),
-                                  ]),
-                                ),
-                                SizedBox(height: 3),
-                                Text(
-                                  post.id,
-                                  style: TextStyle(
-                                      color: Colors.grey,
-                                      fontWeight: FontWeight.w400,
-                                      fontSize: 14),
-                                ),
-                              ],
-                            ),
-                          ),
-                        )
-                      : PostHeader(
-                          post: post,
-                          onDisplayNameTapped: () => widget.shouldNavigate
-                              ? _navigateToProfile(context)
-                              : null,
-                          onMorePressed: () => showCupertinoModalPopup(
-                              context: context,
-                              builder: (context) {
-                                final isOwner =
-                                    post.owner.uid == auth.profile.uid;
-                                return CupertinoActionSheet(
-                                  actions: <Widget>[
-                                    if (isOwner)
-                                      CupertinoActionSheetAction(
-                                        child: Text('Delete',
-                                            style: TextStyles.defaultDisplay
-                                                .copyWith(
-                                              color: Colors.red,
-                                            )),
-                                        onPressed: () {
-                                          BotToast.showText(
-                                            text: 'Deleted post',
-                                            align: Alignment.center,
-                                          );
-                                        },
-                                      ),
-                                    if (isOwner)
-                                      CupertinoActionSheetAction(
-                                        child: Text('Edit',
-                                            style: TextStyles.defaultDisplay),
-                                        onPressed: () => Navigator.push(context,
-                                            EditPostScreen.route(post)),
-                                      ),
-                                    if (!isOwner) ...[
-                                      CupertinoActionSheetAction(
-                                        child: Text('Mute',
-                                            style: TextStyles.defaultDisplay),
-                                        onPressed: () {},
-                                      ),
-                                      CupertinoActionSheetAction(
-                                        child: Text('Unfollow',
-                                            style: TextStyles.defaultDisplay),
-                                        onPressed: () {
-                                          Repo.unfollowUser(post.owner.uid);
-                                          BotToast.showText(
-                                            text:
-                                                'Unfollowed ${post.owner.username}',
-                                            align: Alignment.center,
-                                          );
-                                          return Navigator.pop(context);
-                                        },
-                                      ),
-                                    ]
-                                  ],
-                                  cancelButton: FlatButton(
-                                    onPressed: () => Navigator.pop(context),
-                                    child: Text('Cancel',
-                                        style: TextStyles.defaultDisplay),
-                                  ),
-                                );
-                              }),
-                        ),
-                  Divider(height: 0, thickness: 1),
-                  if (isShout) ...[
-                    ShoutPostBubble(
-                      isChallenger: true,
-                      post: post,
-                      stats: post.stats,
-                      didLike: didLikeChallenger,
-                      onHeartTapped: () {
-                        setState(() {
-                          didLikeChallenger = !didLikeChallenger;
-                          final val = didLikeChallenger ? 1 : -1;
-                          post.stats = post.stats.copyWith(
-                              challengerCount:
-                                  post.stats.challengerCount + val);
-                        });
-
-                        didLikeChallenger
-                            ? Repo.likeShoutBubble(true, post)
-                            : Repo.unlikeShoutBubble(true, post);
-                      },
-                    ),
-                    ShoutPostBubble(
-                      isChallenger: false,
-                      stats: post.stats,
-                      post: post,
-                      didLike: didLikeChallenged,
-                      onHeartTapped: () {
-                        setState(() {
-                          didLikeChallenged = !didLikeChallenged;
-                          final val = didLikeChallenged ? 1 : -1;
-                          post.stats = post.stats.copyWith(
-                              challengedCount:
-                                  post.stats.challengedCount + val);
-                        });
-                        didLikeChallenged
-                            ? Repo.likeShoutBubble(false, post)
-                            : Repo.unlikeShoutBubble(false, post);
-                      },
-                    ),
-                  ],
-                  if (!isShout)
-                    AspectRatio(
-                      aspectRatio: post.urls.first.aspectRatio ?? 1,
-                      child: PageViewer(
-                        controller: _controller,
-                        length: post.urls.length,
-                        builder: (context, index) {
-//                          return Container();
-                          return CachedNetworkImage(
-                            fit: BoxFit.cover,
-                            placeholder: (context, url) => Container(
-                              color: Colors.grey[100],
-                              child: CircularProgressIndicator(
-                                value: 1.0,
-                                valueColor:
-                                    AlwaysStoppedAnimation(Colors.white),
-                                strokeWidth: 1.0,
-                              ),
-                            ),
-//                              placeholder: (context, url) => Image.network(
-//                                post.urls[index].small,
-//                                fit: BoxFit.cover,
-//                              ),
-                            imageUrl: post.urls[index].original,
-                          );
-                        },
-                      ),
-                    ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        PostActionBar(
-                          didLike: didLike,
-                          onHeartTapped: () async {
-                            setState(() {
-                              didLike = !didLike;
-
-                              final val = didLike ? 1 : -1;
-                              post.stats = post.stats.copyWith(
-                                  likeCount: post.stats.likeCount + val);
-                            });
-
-                            didLike
-                                ? Repo.likePost(post)
-                                : Repo.unlikePost(post);
-
-                            print(
-                                'heart tapped, ${didLike ? 'like' : 'unlike'} '
-                                'post ${post.id}');
-                          },
-                          onCommentTapped: () =>
-                              Navigator.of(context, rootNavigator: true).push(
-                            CupertinoPageRoute(
-                              fullscreenDialog: false,
-                              builder: (context) => CommentScreen(
-                                postId: post.id,
-                              ),
-                            ),
-                          ),
-                          onSendTapped: () {
-                            print('send tpped');
-                            BotToast.showText(
-                              text: 'Unfollowed ${post.owner.username}',
-                              align: Alignment.center,
-                            );
-                          },
-                          controller: _controller,
-                          itemCount: post.type == PostType.shout
-                              ? 1
-                              : post.urls.length,
-                        ),
-                        Visibility(
-                          visible: post.stats.likeCount > 0,
-                          child: LikeCountBar(
-                            post: post,
-                          ),
-                        ),
-
-                        ///Caption
-                        if (post.caption.isNotEmpty)
-                          CommentPostListItem(
-                            uploader: post.owner,
-                            text: post.caption,
-                          ),
-
-                        Row(
+        ? LoadingIndicator()
+        : Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              isShout
+                  ? Container(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: <Widget>[
-                            ///View more comments button
-                            if (post.stats.commentCount > 0) ...[
-                              Material(
-                                color: Colors.white,
-                                child: InkWell(
-                                  onTap: () => Navigator.push(
-                                    context,
-                                    CommentScreen.route(post.id),
+                            RichText(
+                              text: TextSpan(children: [
+                                TextSpan(
+                                  text: challenger.username,
+                                  style: TextStyles.w600Text,
+                                  recognizer: TapGestureRecognizer()
+                                    ..onTap = (() => Navigator.push(context,
+                                        ProfileScreen.route(challenger.uid))),
+                                ),
+                                TextSpan(
+                                  text: ' and ',
+                                  style: TextStyles.defaultText,
+                                ),
+                                TextSpan(
+                                  text: challenged.username,
+                                  style: TextStyles.w600Text,
+                                  recognizer: TapGestureRecognizer()
+                                    ..onTap = (() => Navigator.push(context,
+                                        ProfileScreen.route(challenged.uid))),
+                                ),
+                              ]),
+                            ),
+                            SizedBox(height: 3),
+                            Text(
+                              post.id,
+                              style: TextStyle(
+                                  color: Colors.grey,
+                                  fontWeight: FontWeight.w400,
+                                  fontSize: 14),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  : PostHeader(
+                      post: post,
+                      onDisplayNameTapped: () => widget.shouldNavigate
+                          ? _navigateToProfile(context)
+                          : null,
+                      onMorePressed: () => showCupertinoModalPopup(
+                          context: context,
+                          builder: (context) {
+                            final isOwner = post.owner.uid == auth.profile.uid;
+                            return CupertinoActionSheet(
+                              actions: <Widget>[
+                                if (isOwner)
+                                  CupertinoActionSheetAction(
+                                    child: Text('Delete',
+                                        style:
+                                            TextStyles.defaultDisplay.copyWith(
+                                          color: Colors.red,
+                                        )),
+                                    onPressed: () {
+                                      BotToast.showText(
+                                        text: 'Deleted post',
+                                        align: Alignment.center,
+                                      );
+                                    },
                                   ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 8.0),
+                                if (isOwner)
+                                  CupertinoActionSheetAction(
+                                    child: Text('Edit',
+                                        style: TextStyles.defaultDisplay),
+                                    onPressed: () async {
+                                      Navigator.pop(context);
+                                      final result = await Navigator.push(
+                                          context, EditPostScreen.route(post));
+
+                                      if (result is Post) {
+                                        setState(() {
+                                          post = result;
+                                        });
+                                      }
+                                      return;
+                                    },
+                                  ),
+                                if (!isOwner) ...[
+                                  CupertinoActionSheetAction(
+                                    child: Text('Unfollow',
+                                        style: TextStyles.defaultDisplay),
+                                    onPressed: () {
+                                      Repo.unfollowUser(post.owner.uid);
+                                      BotToast.showText(
+                                        text:
+                                            'Unfollowed ${post.owner.username}',
+                                        align: Alignment.center,
+                                      );
+                                      widget.onUnfollow(post.owner.uid);
+                                      return Navigator.pop(context);
+                                    },
+                                  ),
+                                ]
+                              ],
+                              cancelButton: FlatButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: Text('Cancel',
+                                    style: TextStyles.defaultDisplay),
+                              ),
+                            );
+                          }),
+                    ),
+              Divider(height: 0, thickness: 1),
+              if (isShout) ...[
+                StreamBuilder<DocumentSnapshot>(
+                    stream: Repo.myShoutLeftLikeStream(post),
+                    builder: (context, snapshot) {
+                      final liked = snapshot.data?.exists;
+                      if (!shoutLeftLikeIsInitiated && liked != null) {
+                        likedShoutLeft = liked;
+                        shoutLeftLikeIsInitiated = true;
+                      }
+
+                      return ShoutPostBubble(
+                        isChallenger: true,
+                        post: post,
+                        stats: post.stats,
+                        didLike: liked,
+                        likeCount: liked == null
+                            ? 0
+                            : post.stats.shoutLeftLikeCount +
+                                (likedShoutLeft ? 0 : 1) +
+                                (liked ? 0 : -1),
+                        onHeartTapped: () {
+                          liked
+                              ? Repo.unlikeShout(true, post)
+                              : Repo.likeShout(true, post);
+                        },
+                      );
+                    }),
+                StreamBuilder<DocumentSnapshot>(
+                    stream: Repo.myShoutRightLikeStream(post),
+                    builder: (context, snapshot) {
+//                      if (!snapshot.hasData) return SizedBox();
+
+                      final liked = snapshot.data?.exists;
+                      if (!shoutRightLikeIsInitiated && liked != null) {
+                        likedShoutRight = liked;
+                        shoutRightLikeIsInitiated = true;
+                      }
+
+                      return ShoutPostBubble(
+                        isChallenger: false,
+                        post: post,
+                        stats: post.stats,
+                        didLike: liked,
+                        likeCount: liked == null
+                            ? 0
+                            : post.stats.shoutRightLikeCount +
+                                (likedShoutRight ? 0 : 1) +
+                                (liked ? 0 : -1),
+                        onHeartTapped: () {
+                          liked
+                              ? Repo.unlikeShout(false, post)
+                              : Repo.likeShout(false, post);
+                        },
+                      );
+                    }),
+              ],
+              if (!isShout)
+                AspectRatio(
+                  aspectRatio: biggestAspectRatio ?? 1,
+                  child: PageViewer(
+                    controller: _controller,
+                    length: post.urlBundles.length,
+                    builder: (context, index) {
+                      return FadeInImage(
+                        image: NetworkImage(post.urlBundles[index].medium),
+                        placeholder: NetworkImage(post.urlBundles[index].small),
+                        fit: BoxFit.cover,
+                      );
+//                      return CachedNetworkImage(
+//                        fit: BoxFit.cover,
+//                        placeholder: (context, url) => Container(
+//                          color: Colors.grey[100],
+//                        ),
+//                        imageUrl: post.urlBundles[index].medium,
+//                      );
+                    },
+                  ),
+                ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: StreamBuilder<DocumentSnapshot>(
+                    stream: Repo.myPostLikeStream(widget.post),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) return SizedBox();
+                      final liked = snapshot.data.exists;
+                      if (!postLikeIsInitiated) {
+                        likedPost = liked;
+                        postLikeIsInitiated = true;
+                      }
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          PostActionBar(
+                            didLike: liked,
+                            onHeartTapped: () async {
+                              liked
+                                  ? Repo.unlikePost(post)
+                                  : Repo.likePost(post);
+                            },
+                            onCommentTapped: () =>
+                                Navigator.of(context, rootNavigator: true).push(
+                              CommentScreen.route(post),
+                            ),
+                            onSendTapped: () {
+                              print('send tpped');
+                            },
+                            controller: _controller,
+                            itemCount: post.type == PostType.shout
+                                ? 1
+                                : post.urlBundles.length,
+                          ),
+                          Visibility(
+                            visible: post.stats.likeCount +
+                                    (likedPost ? 0 : 1) +
+                                    (liked ? 0 : -1) >
+                                0,
+                            child: LikeCountBar(
+                              post: post,
+                              likeCount: post.stats.likeCount +
+                                  (likedPost ? 0 : 1) +
+                                  (liked ? 0 : -1),
+                            ),
+                          ),
+
+                          ///Caption
+                          if (post.caption.isNotEmpty)
+                            CommentPostListItem(
+                              uploader: post.owner,
+                              text: post.caption,
+                            ),
+
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4.0),
+                            child: Row(
+                              children: <Widget>[
+                                ///View more comments button
+                                if (post.stats.commentCount > 0) ...[
+                                  Material(
+                                    color: Colors.white,
+                                    child: InkWell(
+                                      onTap: () => Navigator.push(
+                                        context,
+                                        CommentScreen.route(post),
+                                      ),
+                                      child: Text(
+                                        'View all ${post.stats.commentCount} comments',
+                                        style: TextStyles.defaultText
+                                            .copyWith(color: Colors.grey),
+                                      ),
+                                    ),
+                                  ),
+                                  Center(
                                     child: Text(
-                                      'View all ${post.stats.commentCount} comments',
+                                      ' · ',
                                       style: TextStyles.defaultText
                                           .copyWith(color: Colors.grey),
                                     ),
                                   ),
-                                ),
-                              ),
-                              Center(
-                                child: Text(
-                                  '  ·  ',
-                                  style: TextStyles.defaultText
-                                      .copyWith(color: Colors.blueAccent[400]),
-                                ),
-                              ),
-                            ],
+                                ],
 
-                            ///Add Comment Button
-                            Material(
-                              color: Colors.white,
-                              child: InkWell(
-                                splashColor: Colors.white,
-                                highlightColor: Colors.grey[100],
-                                onTap: () =>
-                                    widget.onAddComment(widget.post.id),
-                                child: Padding(
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 8.0),
-                                  child: Text(
-                                    'Add comment',
-                                    style: TextStyles.defaultText.copyWith(
-                                        color:
-                                            Colors.blue[900].withOpacity(0.8)),
+                                ///Add Comment Button
+                                Material(
+                                  color: Colors.white,
+                                  child: InkWell(
+                                    splashColor: Colors.white,
+                                    highlightColor: Colors.grey[100],
+                                    onTap: () =>
+                                        widget.onAddComment(widget.post.id),
+                                    child: Text(
+                                      '${post.stats.commentCount > 0 ? 'A' : 'A'}dd comment',
+                                      style: TextStyles.defaultText.copyWith(
+                                        color: Colors.grey,
+                                      ),
+                                    ),
                                   ),
                                 ),
-                              ),
+                              ],
                             ),
-                          ],
-                        ),
-
-                        if (post.topComments != null &&
-                            post.topComments.isNotEmpty)
-                          for (final c in post.topComments)
-                            CommentPostListItem(
-                                uploader: c.owner, text: c.text),
-
-                        ///Timestamp
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8.0),
-                          child: Text(
-                            TimeAgo.formatLong(post.timestamp.toDate()),
-                            style: TextStyles.defaultText
-                                .copyWith(fontSize: 13, color: Colors.grey),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              );
-            });
-  }
-}
 
-class LikeCountBar extends StatelessWidget {
-//  final int likeCount;
+                          if (post.topComments != null &&
+                              post.topComments.isNotEmpty)
+                            for (final c in post.topComments)
+                              CommentPostListItem(
+                                  uploader: c.owner, text: c.text),
 
-//  const LikeCountBar({Key key, this.likeCount}) : super(key: key);
-  final Post post;
-
-  const LikeCountBar({Key key, this.post}) : super(key: key);
-  @override
-  Widget build(BuildContext context) {
-    final stats = post.stats ?? PostStats.empty(post.id);
-
-    return Container(
-      child: GestureDetector(
-        onTap: () {
-          print('likes bar tapped');
-          Navigator.push(context, LikeScreen.route(post));
-        },
-        child: post.myFollowingLikes.isNotEmpty
-            ? RichText(
-                text: TextSpan(children: [
-                  TextSpan(text: 'Liked by ', style: TextStyles.defaultText),
-                  ...post.myFollowingLikes
-                      .asMap()
-                      .map((index, user) => MapEntry(
-                          index,
-                          TextSpan(
-                            text: index == post.myFollowingLikes.length - 1
-                                ? '${user.username} '
-                                : '${user.username}, ',
-                            style: TextStyles.w600Text,
-                            recognizer: TapGestureRecognizer()
-                              ..onTap = () {
-                                print('tapped ${user.username}');
-                                Navigator.push(
-                                    context, ProfileScreen.route(user.uid));
-                              },
-                          )))
-                      .values
-                      .toList(),
-                  if (stats.likeCount - post.myFollowingLikes.length > 0)
-                    TextSpan(
-                        text: ' and ',
-                        style: TextStyles.w600Text
-                            .copyWith(fontWeight: FontWeight.w300)),
-                  if (stats.likeCount - post.myFollowingLikes.length > 0)
-                    TextSpan(
-                        text:
-                            '${stats.likeCount - post.myFollowingLikes.length} ${stats.likeCount - post.myFollowingLikes.length > 1 ? 'others' : 'other '}',
-                        style: TextStyles.w600Text),
-                ]),
-              )
-            : Text('${stats.likeCount} like${stats.likeCount > 1 ? 's' : ''}',
-                style: TextStyles.w600Text),
-      ),
-    );
+                          ///Timestamp
+                          Padding(
+                            padding:
+                                const EdgeInsets.only(top: 4.0, bottom: 8.0),
+                            child: Text(
+                              TimeAgo.formatLong(post.timestamp.toDate()),
+                              style: TextStyles.defaultText
+                                  .copyWith(fontSize: 13, color: Colors.grey),
+                            ),
+                          ),
+                        ],
+                      );
+                    }),
+              ),
+            ],
+          );
   }
 }
 
@@ -560,9 +511,7 @@ class PostHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return AvatarListItem(
       avatar: AvatarImage(
-        url: post.owner.photoUrl,
-//        padding: 5,
-        showStoryIndicator: true,
+        url: post.owner.urls.small,
       ),
       title: post.owner.username,
       subtitle: post.id,
@@ -608,7 +557,10 @@ class PostActionBar extends StatelessWidget {
             child: didLike == null
                 ? SizedBox()
                 : PostEngagementButtons(
-                    onHeartTapped: onHeartTapped,
+                    onHeartTapped: () async {
+                      Vibrate.feedback(FeedbackType.selection);
+                      return onHeartTapped();
+                    },
                     onCommentTapped: onCommentTapped,
                     onSendTapped: onSendTapped,
                     didLike: didLike,

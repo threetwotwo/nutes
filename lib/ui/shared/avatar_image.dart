@@ -1,44 +1,47 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:nutes/core/models/user.dart';
 import 'package:nutes/ui/shared/styles.dart';
-import 'package:nutes/utils/responsive.dart';
-//import 'package:extended_image/extended_image.dart';
+import 'package:nutes/ui/widgets/profile_header.dart';
 
 class AvatarImage extends StatelessWidget {
   final String url;
 
-  ///spacing between stories indicator and avatar
+  ///spacing between story ring and avatar
   final double spacing;
+
+  ///width of story ring
+  final double ringWidth;
+
   final double addStoryIndicatorSize;
-  final bool showStoryIndicator;
+
+  ///has story
+//  final bool showStoryIndicator;
+
+  final StoryState storyState;
 
   final Function onTap;
 
   final bool addStory;
-  final String heroTag;
   final double padding;
   final bool bordered;
-  final UStoryState storyState;
 
   const AvatarImage({
     Key key,
     @required this.url,
-    this.spacing = 1.6,
+    this.spacing = 2,
     this.addStoryIndicatorSize = 8,
-    this.showStoryIndicator = false,
+//    this.showStoryIndicator = false,
     this.addStory = false,
     this.onTap,
-    this.heroTag,
     this.padding = 8,
     this.bordered = true,
-    this.storyState = UStoryState.none,
+    this.storyState = StoryState.none,
+    this.ringWidth = 2,
 //    this.radius,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final double outerPadding = screenAwareSize(spacing, context);
+    final double outerPadding = spacing;
     final double innerPadding = outerPadding * 2;
 
     return Transform.rotate(
@@ -49,23 +52,47 @@ class AvatarImage extends StatelessWidget {
           child: Stack(
             alignment: Alignment.bottomRight,
             children: <Widget>[
-              storyState == UStoryState.none
-                  ? Positioned.fill(
-                      child: Padding(
-                      padding: EdgeInsets.all(padding),
-                      child: Container(),
-                    ))
-                  : SizedBox(),
-              if (showStoryIndicator)
+//              storyState == StoryState.none
+//                  ? Positioned.fill(
+//                      child: Padding(
+//                      padding: EdgeInsets.all(padding),
+//                      child: Container(),
+//                    ))
+//                  : SizedBox(),
+              if (storyState == StoryState.loading)
+                Positioned.fill(
+                    child: Padding(
+                  padding: EdgeInsets.all(padding),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 1,
+                    valueColor: AlwaysStoppedAnimation(Colors.grey[400]),
+                  ),
+                )),
+              if (storyState == StoryState.seen)
+                Positioned.fill(
+                    child: Padding(
+                  padding: EdgeInsets.all(padding),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border.all(
+                          color: Colors.grey[300], width: ringWidth / 2),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                )),
+              if (storyState == StoryState.unseen)
                 Positioned.fill(
                     child: Padding(
                   padding: EdgeInsets.all(padding),
                   child: CircleStoryGradient(),
                 )),
               Padding(
-                padding: EdgeInsets.all(outerPadding + padding),
+                padding: EdgeInsets.all(ringWidth + padding),
                 child: CircleSpacer(
-                  color: showStoryIndicator ? Colors.white : Colors.transparent,
+                  color: storyState == StoryState.unseen
+                      ? Colors.white
+                      : Colors.transparent,
                 ),
               ),
               Padding(
@@ -75,13 +102,14 @@ class AvatarImage extends StatelessWidget {
                     url: url ?? '',
                     onTap: onTap,
                   )),
-              if (!showStoryIndicator && addStory)
+
+              ///AddStory Indicator
+              if (addStory)
                 Align(
                   alignment: Alignment.bottomCenter,
                   child: GestureDetector(
                     onTap: onTap,
                     child: AddStoryIndicator(
-//                  shouldHugBorder: addStoryIndicatorShouldHugBorder,
                       size: addStoryIndicatorSize,
                       spacing: spacing,
                     ),
@@ -122,17 +150,14 @@ class PhotoImage extends StatelessWidget {
           child: Container(
             decoration: BoxDecoration(
               border: bordered
-                  ? Border.all(color: Colors.grey[300], width: 1)
+                  ? Border.all(color: Colors.grey[200], width: 1)
                   : null,
               borderRadius: BorderRadius.circular(1000),
             ),
             child: ClipRRect(
-                borderRadius: BorderRadius.circular(1000),
-//              child: FadeInImage(
-//                fit: BoxFit.cover,
-//                placeholder: AssetImage('assets/images/avatar.png'),
-//                image: NetworkImage(url),
-//              ),
+              borderRadius: BorderRadius.circular(1000),
+              child: Container(
+                color: Colors.grey[200],
                 child: url.isEmpty
                     ? Transform.scale(
                         scale: 0.65,
@@ -140,49 +165,25 @@ class PhotoImage extends StatelessWidget {
                           'assets/images/avatar.png',
                           fit: BoxFit.cover,
                         ))
-                    : CachedNetworkImage(
-                        imageUrl: url,
-                        placeholder: (context, _) => Container(
-                          color: Colors.grey[200],
-                        ),
-                        errorWidget: (context, url, obj) => Transform.scale(
-                          scale: 0.65,
-                          child: Image.asset(
-                            'assets/images/avatar.png',
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      )
-
-//                child: ExtendedImage.network(
-//                  url,
-//                  loadStateChanged: (state) {
-//                    switch (state.extendedImageLoadState) {
-//                      case LoadState.loading:
-//                        return Container(
-//                          decoration: BoxDecoration(
-//                            shape: BoxShape.circle,
-//                            color: Colors.grey[300],
-//                          ),
-//                        );
-//                      case LoadState.completed:
-//                        final image = state.extendedImageInfo.image;
-//                        return ExtendedRawImage(image: image);
-//                      case LoadState.failed:
-//                        return Transform.scale(
-//                          scale: 0.7,
+                    : Image.network(
+                        url,
+                        fit: BoxFit.cover,
+                      ),
+              ),
+            ),
+//                CachedNetworkImage(
+//                        imageUrl: url,
+//                        placeholder: (context, _) => Container(
+//                          color: Colors.grey[200],
+//                        ),
+//                        errorWidget: (context, url, obj) => Transform.scale(
+//                          scale: 0.65,
 //                          child: Image.asset(
 //                            'assets/images/avatar.png',
 //                            fit: BoxFit.cover,
 //                          ),
-//                        );
-//
-//                      default:
-//                        return SizedBox();
-//                    }
-//                  },
-//                )
-                ),
+//                        ),
+//                      )),
           ),
         ),
       ),

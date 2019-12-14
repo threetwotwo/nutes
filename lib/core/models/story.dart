@@ -11,67 +11,79 @@ class UserStory {
   final User uploader;
 
   ///Timestamp of most recent moment
+  final Timestamp lastTimestamp;
 
-  UserStory(this.story, this.uploader);
+  UserStory({this.story, this.uploader, this.lastTimestamp});
 
-  ///TODO: getAbridgedUser algorithm is not right, no need to fetch user doc
-  ///everytime
-  static Future<List<UserStory>> fromDoc(DocumentSnapshot doc,
-      {List<UserStory> userStories}) async {
-    final data = doc.data ?? {};
-    final Map followingMap = data['followings'] ?? {};
+  static UserStory fromDoc(
+    DocumentSnapshot doc,
+  ) {
+    final uploader = User.fromMap(doc['uploader'] ?? {});
 
-    final now = Timestamp.now();
-
-    final todayInSeconds = now.seconds;
-    final todayInNanoSeconds = now.nanoseconds;
-
-    ///24 hours ago since now
-    final cutOff = Timestamp(todayInSeconds - 86400, todayInNanoSeconds);
-
-    ///remove old data
-    followingMap.removeWhere((key, value) =>
-        (value['timestamp'] == null) ||
-        (value['timestamp'] as Timestamp).microsecondsSinceEpoch <
-            cutOff.microsecondsSinceEpoch);
-
-//    final uids = followingMap.keys.toList().cast<String>();
-
-    ///sort by timestamp
-    final sortedKeys = followingMap.keys.toList()
-      ..sort((a, b) {
-        print(
-            (followingMap[a]['timestamp'] as Timestamp).millisecondsSinceEpoch);
-        print(
-            (followingMap[b]['timestamp'] as Timestamp).millisecondsSinceEpoch);
-        return (followingMap[b]['timestamp'] as Timestamp)
-            .millisecondsSinceEpoch
-            .compareTo((followingMap[a]['timestamp'] as Timestamp)
-                .millisecondsSinceEpoch);
-      });
-
-    print(sortedKeys);
-
-    final users = await FirestoreService()
-        .getAbridgedUserFromUids(sortedKeys.cast<String>());
-
-    print('user stories: ${users.map((user) => user.username).toList()}');
-
-    return users.map((user) {
-      if (userStories != null) {
-        final match = userStories.firstWhere(
-            (us) => us.uploader.uid == user.uid,
-            orElse: () => null);
-        Story story;
-
-        return UserStory(null, user);
-      } else
-        return UserStory(null, user);
-    }).toList();
+    print(uploader.toMap());
+    return UserStory(
+      story: null,
+      uploader: uploader,
+      lastTimestamp: doc['timestamp'],
+    );
+//    final data = doc.data ?? {};
+//    final Map followingMap = data['followings'] ?? {};
+//
+//    final now = Timestamp.now();
+//
+//    final todayInSeconds = now.seconds;
+//    final todayInNanoSeconds = now.nanoseconds;
+//
+//    ///24 hours ago since now
+//    final cutOff = Timestamp(todayInSeconds - 86400, todayInNanoSeconds);
+//
+//    ///remove old data
+//    followingMap.removeWhere((key, value) =>
+//        (value['timestamp'] == null) ||
+//        (value['timestamp'] as Timestamp).microsecondsSinceEpoch <
+//            cutOff.microsecondsSinceEpoch);
+//
+////    final uids = followingMap.keys.toList().cast<String>();
+//
+//    ///sort by timestamp
+//    final sortedKeys = followingMap.keys.toList()
+//      ..sort((a, b) {
+//        print(
+//            (followingMap[a]['timestamp'] as Timestamp).millisecondsSinceEpoch);
+//        print(
+//            (followingMap[b]['timestamp'] as Timestamp).millisecondsSinceEpoch);
+//        return (followingMap[b]['timestamp'] as Timestamp)
+//            .millisecondsSinceEpoch
+//            .compareTo((followingMap[a]['timestamp'] as Timestamp)
+//                .millisecondsSinceEpoch);
+//      });
+//
+//    print(sortedKeys);
+//
+//    final users = await FirestoreService()
+//        .getAbridgedUserFromUids(sortedKeys.cast<String>());
+//
+//    print('user stories: ${users.map((user) => user.username).toList()}');
+//
+//    return users.map((user) {
+//      if (userStories != null) {
+//        final match = userStories.firstWhere(
+//            (us) => us.uploader.uid == user.uid,
+//            orElse: () => null);
+//        Story story;
+//
+//        return UserStory(null, user);
+//      } else
+//        return UserStory(null, user);
+//    }).toList();
   }
 
-  UserStory copyWith(List<Moment> story) {
-    return UserStory(story ?? this.story, this.uploader);
+  UserStory copyWith({Story story, Timestamp lastTimestamp}) {
+    return UserStory(
+      story: story ?? this.story,
+      uploader: this.uploader,
+      lastTimestamp: lastTimestamp ?? this.lastTimestamp,
+    );
   }
 }
 
@@ -102,15 +114,15 @@ class Story {
   bool isFinished;
 
   ///For continuation when swiping through stories
-  final int startAt;
+//  final int startAt;
 
   ///For start point when story is pressed(Experimental)
-  final int lastLoaded;
+//  final int lastLoaded;
   final List<Moment> moments;
 
   Story({
-    this.startAt,
-    this.lastLoaded,
+//    this.startAt,
+//    this.lastLoaded,
     this.moments,
     this.isFinished = false,
   });
@@ -126,10 +138,18 @@ class Story {
     bool persistSeen,
   }) {
     return Story(
-      startAt: startAt ?? this.startAt,
-      lastLoaded: lastLoaded ?? this.lastLoaded,
+//      startAt: startAt ?? this.startAt,
+//      lastLoaded: lastLoaded ?? this.lastLoaded,
       isFinished: isFinished ?? this.isFinished,
       moments: this.moments,
+    );
+  }
+
+  factory Story.empty() {
+    return Story(
+//      startAt: 0,
+//      lastLoaded: 0,
+      moments: [],
     );
   }
 }

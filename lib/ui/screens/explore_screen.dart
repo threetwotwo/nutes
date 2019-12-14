@@ -4,7 +4,6 @@ import 'package:nutes/core/models/post_type.dart';
 import 'package:nutes/core/services/local_cache.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:nutes/ui/screens/post_detail_page.dart';
 import 'package:nutes/ui/shared/refresh_list_view.dart';
 import 'package:nutes/ui/shared/shout_post.dart';
@@ -27,10 +26,13 @@ class _ExploreScreenState extends State<ExploreScreen>
   final cache = LocalCache.instance;
 
   Future _getTrendingPosts() async {
+    ///Clear posts if cursor is null
+    if (trendingLastDoc == null) trendingPosts.clear();
+
     print('get trending posts');
     final result = await Repo.getTrendingPosts(trendingLastDoc);
 
-    if (result.posts.isNotEmpty)
+    if (result.posts.isNotEmpty && mounted)
       setState(() {
         trendingPosts.addAll(result.posts);
       });
@@ -39,10 +41,13 @@ class _ExploreScreenState extends State<ExploreScreen>
   }
 
   Future _getNewestPosts() async {
+    ///Clear posts if cursor is null
+    if (newestLastDoc == null) newestPosts.clear();
+
     print('get newest posts');
     final result = await Repo.getNewestPosts(newestLastDoc);
 
-    if (result.posts.isNotEmpty)
+    if (result.posts.isNotEmpty && mounted)
       setState(() {
         newestPosts.addAll(result.posts);
       });
@@ -59,6 +64,8 @@ class _ExploreScreenState extends State<ExploreScreen>
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
+
     return DefaultTabController(
       length: 2,
       child: Column(
@@ -81,13 +88,19 @@ class _ExploreScreenState extends State<ExploreScreen>
                 ExploreTabView(
                   controller: cache.searchPopularScrollController,
                   posts: trendingPosts,
-                  onRefresh: _getTrendingPosts,
+                  onRefresh: () {
+                    trendingLastDoc = null;
+                    return _getTrendingPosts();
+                  },
                   onLoadMore: _getTrendingPosts,
                 ),
                 ExploreTabView(
                   controller: cache.searchSubmittedScrollController,
                   posts: newestPosts,
-                  onRefresh: _getNewestPosts,
+                  onRefresh: () {
+                    newestLastDoc = null;
+                    return _getNewestPosts();
+                  },
                   onLoadMore: _getNewestPosts,
                 ),
               ],
@@ -138,8 +151,8 @@ class _ExploreTabViewState extends State<ExploreTabView>
   @override
   Widget build(BuildContext context) {
     return RefreshListView(
-      onLoadMore: widget.onLoadMore,
       onRefresh: widget.onRefresh,
+      onLoadMore: widget.onLoadMore,
       controller: widget.controller,
       children: <Widget>[
         posts == null
@@ -178,10 +191,14 @@ class _ExploreTabViewState extends State<ExploreTabView>
                                 ),
                               ],
                             )
-                          : CachedNetworkImage(
-                              imageUrl: posts[index].urls.first.medium,
+                          : Image.network(
+                              posts[index].urlBundles.first.medium,
                               fit: BoxFit.cover,
                             ),
+//                      CachedNetworkImage(
+//                              imageUrl: posts[index].urlBundles.first.medium,
+//                              fit: BoxFit.cover,
+//                            ),
                     ),
                   );
                 },

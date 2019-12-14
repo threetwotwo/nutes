@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nutes/core/models/filter.dart';
+import 'package:nutes/core/services/auth.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/shared/avatar_image.dart';
 import 'package:nutes/ui/shared/avatar_list_item.dart';
@@ -21,19 +22,14 @@ class CaptureController {
 }
 
 class CapturePage extends StatelessWidget {
-//  final FilterType filterType;
   final Filter filter;
   final CaptureController controller;
-//  final int variantIdx;
 
-  final Function(bool) onKeyboardVisibility;
-
-  const CapturePage({
+  CapturePage({
     Key key,
     @required this.controller,
 //      @required this.filterType,
     @required this.filter,
-    this.onKeyboardVisibility,
 //    this.variantIdx = 0,
   }) : super(key: key);
 
@@ -46,8 +42,6 @@ class CapturePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-//    final filter = getFilter(filterType);
-
     final variant = filter.variants[filter.variantIndex];
 
     return Center(
@@ -91,7 +85,9 @@ class CapturePageBody extends StatelessWidget {
   final CaptureController controller;
   final FocusNode focusNode;
 
-  const CapturePageBody({
+  final auth = Auth.instance;
+
+  CapturePageBody({
     Key key,
     @required this.filter,
     @required this.controller,
@@ -129,10 +125,10 @@ class CapturePageBody extends StatelessWidget {
             children: <Widget>[
               AvatarListItem(
                 avatar: AvatarImage(
-                  url: Repo.currentProfile.user.photoUrl,
+                  url: Auth.instance.profile.user.urls.small,
                 ),
-                title: Repo.currentProfile.user.displayName,
-                subtitle: '@${Repo.currentProfile.user.username}',
+                title: auth.profile.user.displayName,
+                subtitle: '@${auth.profile.user.username}',
                 trailingWidget: Icon(
                   Icons.keyboard_arrow_down,
                   color: Colors.grey,

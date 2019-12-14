@@ -143,9 +143,6 @@ class UsernameTextField extends StatelessWidget {
       inputFormatters: [
         WhitelistingTextInputFormatter(RegExp("[a-z\._0-9]")),
       ],
-
-      ///ensure lowercase
-      textCapitalization: TextCapitalization.none,
       controller: controller,
       textSize: 15,
       hint: 'Username',

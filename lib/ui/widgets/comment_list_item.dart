@@ -17,7 +17,10 @@ class CommentListItem extends StatelessWidget {
 
   final Function(Comment) onReply;
 
-  const CommentListItem({Key key, @required this.comment, this.onReply})
+  final bool isCaption;
+
+  const CommentListItem(
+      {Key key, @required this.comment, this.onReply, this.isCaption = false})
       : super(key: key);
 
   @override
@@ -29,8 +32,7 @@ class CommentListItem extends StatelessWidget {
       child: Column(
         children: <Widget>[
           Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
+            crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.max,
             children: <Widget>[
               Column(
@@ -44,67 +46,119 @@ class CommentListItem extends StatelessWidget {
                     child: AvatarImage(
                       onTap: () => Navigator.of(context)
                           .push(ProfileScreen.route(comment.owner.uid)),
-                      url: comment.owner.photoUrl,
+                      url: comment.owner.urls.small,
                       spacing: 0,
                     ),
                   ),
                 ],
               ),
               Expanded(
-                child: CommentText(
-                  uid: comment.owner.uid,
-                  leading: TextSpan(
-                    text: comment.owner.username,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      CommentText(
+                        uid: comment.owner.uid,
+                        leading: TextSpan(
+                          text: comment.owner.username,
+                        ),
+                        text: comment.text,
+                        onOpen: (uid) => Navigator.of(context)
+                            .push(ProfileScreen.route(uid)),
+                        onTagClick: (tag) => print(tag),
+                        onMention: (name) {
+                          print(name);
+                          return Navigator.of(context)
+                              .push(ProfileScreen.routeUsername(name));
+                        },
+                        style: TextStyles.defaultText,
+                      ),
+                      SizedBox(height: 4),
+                      Container(
+//            color: Colors.red,
+                        child: Row(
+                          children: <Widget>[
+//                SizedBox(width: 48),
+
+                            ///Timestamp
+                            Text(
+                                TimeAgo.formatShort(comment.timestamp.toDate()),
+                                style: _greyTextStyle),
+                            if (!isCaption) ...[
+                              ///Like count
+                              if (comment.stats?.likeCount ?? 0 > 0) ...[
+                                SizedBox(width: 16),
+                                Text('${comment.stats?.likeCount ?? 0} likes',
+                                    style: _greyTextStyle.copyWith(
+                                        fontWeight: FontWeight.w400)),
+                              ],
+                              SizedBox(width: 16),
+
+                              ///Reply button
+                              Material(
+                                color: Colors.white,
+                                child: InkWell(
+                                  onTap: () => onReply(comment),
+                                  child: Text('Reply',
+                                      style: _greyTextStyle.copyWith(
+                                          fontWeight: FontWeight.w400)),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  text: comment.text,
-                  onOpen: (uid) =>
-                      Navigator.of(context).push(ProfileScreen.route(uid)),
-                  onTagClick: (tag) => print(tag),
-                  onMention: (name) {
-                    print(name);
-                    return Navigator.of(context)
-                        .push(ProfileScreen.routeUsername(name));
-                  },
-                  style: TextStyles.defaultText,
                 ),
               ),
               IconButton(
                   icon: Icon(
                     LineIcons.heart_o,
-                    color: Colors.grey,
+                    color: isCaption ? Colors.white : Colors.grey,
                     size: 14,
                   ),
-                  onPressed: () {
-                    print('liked comment');
-                  }),
+                  onPressed: isCaption
+                      ? null
+                      : () {
+                          print('liked comment');
+                        }),
             ],
           ),
-          Container(
-//            color: Colors.red,
-            child: Row(
-              children: <Widget>[
-                SizedBox(width: 50),
-                Text(TimeAgo.formatShort(comment.timestamp.toDate()),
-                    style: _greyTextStyle),
-                if (comment.stats?.likeCount ?? 0 > 0) ...[
-                  SizedBox(width: 20),
-                  Text('${comment.stats?.likeCount ?? 0} likes',
-                      style:
-                          _greyTextStyle.copyWith(fontWeight: FontWeight.w400)),
-                ],
-                SizedBox(width: 20),
-                Material(
-                  child: InkWell(
-                    onTap: () => onReply(comment),
-                    child: Text('Reply',
-                        style: _greyTextStyle.copyWith(
-                            fontWeight: FontWeight.w400)),
-                  ),
-                ),
-//                Text(comment.id ?? ''),
-              ],
-            ),
-          ),
+//          Container(
+////            color: Colors.red,
+//            child: Row(
+//              children: <Widget>[
+////                SizedBox(width: 48),
+//
+//                ///Timestamp
+//                Text(TimeAgo.formatShort(comment.timestamp.toDate()),
+//                    style: _greyTextStyle),
+//                if (!isCaption) ...[
+//                  ///Like count
+//                  if (comment.stats?.likeCount ?? 0 > 0) ...[
+//                    SizedBox(width: 16),
+//                    Text('${comment.stats?.likeCount ?? 0} likes',
+//                        style: _greyTextStyle.copyWith(
+//                            fontWeight: FontWeight.w400)),
+//                  ],
+//                  SizedBox(width: 16),
+//
+//                  ///Reply button
+//                  Material(
+//                    color: Colors.white,
+//                    child: InkWell(
+//                      onTap: () => onReply(comment),
+//                      child: Text('Reply',
+//                          style: _greyTextStyle.copyWith(
+//                              fontWeight: FontWeight.w400)),
+//                    ),
+//                  ),
+//                ],
+//              ],
+//            ),
+//          ),
         ],
       ),
     );

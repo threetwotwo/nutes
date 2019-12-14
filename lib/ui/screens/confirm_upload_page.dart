@@ -1,5 +1,7 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
-import 'package:nutes/core/services/local_cache.dart';
+import 'package:nutes/core/services/auth.dart';
 import 'package:preload_page_view/preload_page_view.dart';
 import 'package:nutes/core/models/post_type.dart';
 import 'package:nutes/ui/shared/app_bars.dart';
@@ -15,14 +17,20 @@ class ConfirmUploadPage extends StatelessWidget {
   final bool enableStory;
   final List<ImageFileBundle> fileBundles;
   final _controller = PreloadPageController();
-  final cache = LocalCache.instance;
 
   final captionController = TextEditingController();
 
-  ConfirmUploadPage({Key key, this.fileBundles, this.enableStory = false})
-      : super(key: key);
+  ConfirmUploadPage({
+    Key key,
+    this.fileBundles,
+    this.enableStory = false,
+  }) : super(key: key);
   @override
   Widget build(BuildContext context) {
+    final aspectRatios = fileBundles.map((b) => b.aspectRatio).toList();
+    final biggestAspectRatio = aspectRatios.reduce(min);
+    final auth = Auth.instance;
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: BaseAppBar(
@@ -49,7 +57,7 @@ class ConfirmUploadPage extends StatelessWidget {
           child: Column(
             children: <Widget>[
               AspectRatio(
-                  aspectRatio: fileBundles.first.aspectRatio ?? 1,
+                  aspectRatio: biggestAspectRatio ?? 1,
                   child: PageViewer(
                     controller: _controller,
                     length: fileBundles.length,
@@ -83,9 +91,8 @@ class ConfirmUploadPage extends StatelessWidget {
               if (enableStory) ...[
                 Container(height: 1, color: Colors.grey[100]),
                 AvatarListItem(
-//                  color: Colors.red[50],
                   avatar: AvatarImage(
-                    url: Repo.currentProfile.user.photoUrl,
+                    url: auth.profile.user.urls.small,
                     spacing: 0,
                     padding: 10,
                     addStoryIndicatorSize: null,
@@ -96,13 +103,12 @@ class ConfirmUploadPage extends StatelessWidget {
                   trailingWidget: Padding(
                     padding: const EdgeInsets.all(8),
                     child: RaisedButton(
-                      onPressed: () {
+                      onPressed: () async {
                         print('posting to story');
+
                         Repo.uploadStory(fileBundle: fileBundles.first);
 
-                        Navigator.popUntil(context, (r) => r.isFirst);
-
-                        cache.animateTo(1);
+                        return Navigator.pop(context, true);
                       },
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(80.0)),
@@ -159,7 +165,7 @@ class ConfirmUploadPage extends StatelessWidget {
               ),
               AvatarListItem(
                 avatar: AvatarImage(
-                  url: Repo.currentProfile.user.photoUrl,
+                  url: auth.profile.user.urls.small,
                   spacing: 0,
                   padding: 10,
                   addStoryIndicatorSize: null,
@@ -174,7 +180,7 @@ class ConfirmUploadPage extends StatelessWidget {
                       Repo.uploadPost(
                         type: PostType.text,
                         fileBundles: fileBundles,
-                        isPrivate: Repo.currentProfile.user.isPrivate,
+                        isPrivate: auth.profile.user.isPrivate,
                         caption: captionController.text,
                       );
                       Navigator.popUntil(context, (r) => r.isFirst);

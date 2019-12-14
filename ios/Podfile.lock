@@ -23,6 +23,9 @@ PODS:
   - Firebase/Firestore (6.12.0):
     - Firebase/CoreOnly
     - FirebaseFirestore (~> 1.7.0)
+  - Firebase/Messaging (6.12.0):
+    - Firebase/CoreOnly
+    - FirebaseMessaging (~> 4.1.8)
   - Firebase/Storage (6.12.0):
     - Firebase/CoreOnly
     - FirebaseStorage (~> 3.4.1)
@@ -36,6 +39,10 @@ PODS:
   - firebase_database (0.0.1):
     - Firebase/Database
     - Flutter
+  - firebase_messaging (0.0.1):
+    - Firebase/Core
+    - Firebase/Messaging
+    - Flutter
   - firebase_storage (0.0.1):
     - Firebase/Storage
     - Flutter
@@ -48,6 +55,7 @@ PODS:
     - GoogleUtilities/Network (~> 6.0)
     - "GoogleUtilities/NSData+zlib (~> 6.0)"
     - nanopb (= 0.3.9011)
+  - FirebaseAnalyticsInterop (1.4.0)
   - FirebaseAuth (6.3.1):
     - FirebaseAuthInterop (~> 1.0)
     - FirebaseCore (~> 6.2)
@@ -90,14 +98,23 @@ PODS:
     - FirebaseCore (~> 6.0)
     - GoogleUtilities/Environment (~> 6.0)
     - GoogleUtilities/UserDefaults (~> 6.0)
+  - FirebaseMessaging (4.1.9):
+    - FirebaseAnalyticsInterop (~> 1.3)
+    - FirebaseCore (~> 6.2)
+    - FirebaseInstanceID (~> 4.1)
+    - GoogleUtilities/AppDelegateSwizzler (~> 6.2)
+    - GoogleUtilities/Environment (~> 6.2)
+    - GoogleUtilities/Reachability (~> 6.2)
+    - GoogleUtilities/UserDefaults (~> 6.2)
+    - Protobuf (>= 3.9.2, ~> 3.9)
   - FirebaseStorage (3.4.1):
     - FirebaseAuthInterop (~> 1.0)
     - FirebaseCore (~> 6.0)
     - GTMSessionFetcher/Core (~> 1.1)
   - Flutter (1.0.0)
-  - FMDB (2.7.5):
-    - FMDB/standard (= 2.7.5)
-  - FMDB/standard (2.7.5)
+  - flutter_image_compress (0.0.1):
+    - Flutter
+    - Mantle
   - GoogleAppMeasurement (6.1.5):
     - GoogleUtilities/AppDelegateSwizzler (~> 6.0)
     - GoogleUtilities/MethodSwizzler (~> 6.0)
@@ -149,6 +166,9 @@ PODS:
   - image_picker (0.0.1):
     - Flutter
   - leveldb-library (1.22)
+  - Mantle (2.1.0):
+    - Mantle/extobjc (= 2.1.0)
+  - Mantle/extobjc (2.1.0)
   - nanopb (0.3.9011):
     - nanopb/decode (= 0.3.9011)
     - nanopb/encode (= 0.3.9011)
@@ -157,28 +177,30 @@ PODS:
   - path_provider (0.0.1):
     - Flutter
   - Protobuf (3.10.0)
-  - sqflite (0.0.1):
-    - Flutter
-    - FMDB (~> 2.7.2)
   - TOCropViewController (2.5.2)
+  - vibrate (0.0.1):
+    - Flutter
 
 DEPENDENCIES:
   - cloud_firestore (from `.symlinks/plugins/cloud_firestore/ios`)
   - firebase_auth (from `.symlinks/plugins/firebase_auth/ios`)
   - firebase_core (from `.symlinks/plugins/firebase_core/ios`)
   - firebase_database (from `.symlinks/plugins/firebase_database/ios`)
+  - firebase_messaging (from `.symlinks/plugins/firebase_messaging/ios`)
   - firebase_storage (from `.symlinks/plugins/firebase_storage/ios`)
-  - Flutter (from `.symlinks/flutter/ios`)
+  - Flutter (from `Flutter`)
+  - flutter_image_compress (from `.symlinks/plugins/flutter_image_compress/ios`)
   - image_cropper (from `.symlinks/plugins/image_cropper/ios`)
   - image_picker (from `.symlinks/plugins/image_picker/ios`)
   - path_provider (from `.symlinks/plugins/path_provider/ios`)
-  - sqflite (from `.symlinks/plugins/sqflite/ios`)
+  - vibrate (from `.symlinks/plugins/vibrate/ios`)
 
 SPEC REPOS:
   trunk:
     - BoringSSL-GRPC
     - Firebase
     - FirebaseAnalytics
+    - FirebaseAnalyticsInterop
     - FirebaseAuth
     - FirebaseAuthInterop
     - FirebaseCore
@@ -187,8 +209,8 @@ SPEC REPOS:
     - FirebaseDatabase
     - FirebaseFirestore
     - FirebaseInstanceID
+    - FirebaseMessaging
     - FirebaseStorage
-    - FMDB
     - GoogleAppMeasurement
     - GoogleDataTransport
     - GoogleDataTransportCCTSupport
@@ -197,6 +219,7 @@ SPEC REPOS:
     - gRPC-Core
     - GTMSessionFetcher
     - leveldb-library
+    - Mantle
     - nanopb
     - Protobuf
     - TOCropViewController
@@ -210,18 +233,22 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/firebase_core/ios"
   firebase_database:
     :path: ".symlinks/plugins/firebase_database/ios"
+  firebase_messaging:
+    :path: ".symlinks/plugins/firebase_messaging/ios"
   firebase_storage:
     :path: ".symlinks/plugins/firebase_storage/ios"
   Flutter:
-    :path: ".symlinks/flutter/ios"
+    :path: Flutter
+  flutter_image_compress:
+    :path: ".symlinks/plugins/flutter_image_compress/ios"
   image_cropper:
     :path: ".symlinks/plugins/image_cropper/ios"
   image_picker:
     :path: ".symlinks/plugins/image_picker/ios"
   path_provider:
     :path: ".symlinks/plugins/path_provider/ios"
-  sqflite:
-    :path: ".symlinks/plugins/sqflite/ios"
+  vibrate:
+    :path: ".symlinks/plugins/vibrate/ios"
 
 SPEC CHECKSUMS:
   BoringSSL-GRPC: db8764df3204ccea016e1c8dd15d9a9ad63ff318
@@ -230,8 +257,10 @@ SPEC CHECKSUMS:
   firebase_auth: 3735c80c0a290fd04a34e9bbbecbeec8f79a216a
   firebase_core: 0a1e2352787dfd0e491e3cc0f207e38443130423
   firebase_database: 03cd65b8e4203286a337877bb3dd744f4817f71e
+  firebase_messaging: 91d52cd5c50c7958db361e4e5a6b43fa5a4c3399
   firebase_storage: d83bfc0e0e849b2f871a34c474466bf5014ff304
   FirebaseAnalytics: 4e53a7eb7b76bc703c4d9239bc964545e9b23361
+  FirebaseAnalyticsInterop: d48b6ab67bcf016a05e55b71fc39c61c0cb6b7f3
   FirebaseAuth: b401a012cc33b04df3b52bb308b04e8766f2693e
   FirebaseAuthInterop: 0ffa57668be100582bb7643d4fcb7615496c41fc
   FirebaseCore: bcd6c112429249d7921e907d661e8955a3549e26
@@ -240,9 +269,10 @@ SPEC CHECKSUMS:
   FirebaseDatabase: 963515d232ded06f36f6ce830507c94551866170
   FirebaseFirestore: 1c7ed32c09d6b0148034e035d0c07783ca45bac3
   FirebaseInstanceID: ebd2ea79ee38db0cb5f5167b17a0d387e1cc7b6e
+  FirebaseMessaging: e8d71368a5c579083da02203146c953f3386d503
   FirebaseStorage: b7c6d00997bc21d4465453bdcc5cc65513110fed
   Flutter: 0e3d915762c693b495b44d77113d4970485de6ec
-  FMDB: 2ce00b547f966261cd18927a3ddb07cb6f3db82a
+  flutter_image_compress: f69d0e0e078ce52b4810695593bc861ee319ae7d
   GoogleAppMeasurement: 037f46d1d8ae8b312720f1042585ab961a1289e3
   GoogleDataTransport: 166f9b9f82cbf60a204e8fe2daa9db3e3ec1fb15
   GoogleDataTransportCCTSupport: f6ab1962e9dc05ab1fb938b795e5b310209edeec
@@ -253,12 +283,13 @@ SPEC CHECKSUMS:
   image_cropper: 966bf742cd9cee8d78010ec5c67dd9e7826e6b19
   image_picker: 16e5fec1fbc87fd3b297c53e4048521eaf17cd06
   leveldb-library: 55d93ee664b4007aac644a782d11da33fba316f7
+  Mantle: 2fa750afa478cd625a94230fbf1c13462f29395b
   nanopb: 18003b5e52dab79db540fe93fe9579f399bd1ccd
   path_provider: fb74bd0465e96b594bb3b5088ee4a4e7bb1f2a9d
   Protobuf: a4dc852ad69c027ca2166ed287b856697814375b
-  sqflite: ff1d9da63c06588cc8d1faf7256d741f16989d5a
   TOCropViewController: e9da34f484aedd4e5d5a8ab230ba217cfe16c729
+  vibrate: 967ba16b8bd87d2fa3646472bb10429f1927c32f
 
-PODFILE CHECKSUM: b6a0a141693093b304368d08511b46cf3d1d0ac5
+PODFILE CHECKSUM: 1b66dae606f75376c5f2135a8290850eeb09ae83
 
 COCOAPODS: 1.8.4

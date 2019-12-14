@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:line_icons/line_icons.dart';
 import 'package:nutes/core/models/user.dart';
+import 'package:nutes/core/services/auth.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/shared/app_bars.dart';
 import 'package:nutes/ui/shared/search_bar.dart';
@@ -25,10 +26,7 @@ class DirectScreen extends StatefulWidget {
 }
 
 class _DirectScreenState extends State<DirectScreen> {
-  @override
-  void initState() {
-    super.initState();
-  }
+  final auth = Auth.instance;
 
   @override
   Widget build(BuildContext context) {
@@ -38,14 +36,14 @@ class _DirectScreenState extends State<DirectScreen> {
         onLeadingPressed: widget.onLeadingPressed,
         onTrailingPressed: widget.onTrailingPressed,
         title: Text(
-          Repo.currentProfile.user.username,
+          auth.profile.user.username,
           style: TextStyles.w600Text.copyWith(fontSize: 18),
         ),
-        trailing: Icon(
-          LineIcons.edit,
-          color: Colors.black,
-          size: 28,
-        ),
+//        trailing: Icon(
+//          LineIcons.edit,
+//          color: Colors.black,
+//          size: 28,
+//        ),
       ),
       body: SafeArea(
         child: Container(
@@ -68,7 +66,7 @@ class _DirectScreenState extends State<DirectScreen> {
                     FlatButton(
                         onPressed: () {},
                         child: Text(
-                          '5 Requests',
+                          '',
                           style: TextStyles.w600Text
                               .copyWith(fontSize: 14, color: Colors.blueAccent),
                         )),

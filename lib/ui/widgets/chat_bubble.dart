@@ -3,17 +3,25 @@ import 'package:bubble/bubble.dart';
 import 'package:line_icons/line_icons.dart';
 import 'package:nutes/core/models/chat_message.dart';
 import 'package:nutes/core/models/user.dart';
-import 'package:nutes/core/services/repository.dart';
+import 'package:nutes/core/services/auth.dart';
 import 'package:nutes/ui/screens/profile_screen.dart';
 import 'package:nutes/ui/shared/avatar_image.dart';
 import 'package:intl/intl.dart';
 import 'package:nutes/ui/shared/styles.dart';
 import 'package:nutes/utils/timeAgo.dart';
 
-final kPeerBubbleColor = Colors.grey[100];
+final kPeerBubbleColor = Colors.white;
 const kPeerTextColor = Colors.black;
 final kMyBubbleColor = Colors.blueAccent[400];
 const kMyTextColor = Colors.white;
+
+final kPeerTextStyle =
+    TextStyles.defaultText.copyWith(color: kPeerTextColor, fontSize: 16);
+final kMyTextStyle =
+    TextStyles.defaultText.copyWith(color: kMyTextColor, fontSize: 16);
+
+final kLabelTextStyle =
+    TextStyles.defaultText.copyWith(color: Colors.grey, fontSize: 14);
 
 const kBubbleVerticalPadding = const EdgeInsets.symmetric(vertical: 4);
 
@@ -36,7 +44,7 @@ class ChatPeerAvatar extends StatelessWidget {
         child: Visibility(
           visible: isVisible,
           child: AvatarImage(
-            url: peer.photoUrl,
+            url: peer.urls.small,
             spacing: 0,
             padding: 0,
           ),
@@ -48,8 +56,9 @@ class ChatPeerAvatar extends StatelessWidget {
 
 class ChatPlaceholderBubble extends StatelessWidget {
   final ChatItem message;
+  final auth = Auth.instance;
 
-  const ChatPlaceholderBubble(this.message);
+  ChatPlaceholderBubble(this.message);
 
   @override
   Widget build(BuildContext context) {
@@ -67,7 +76,7 @@ class ChatPlaceholderBubble extends StatelessWidget {
 //            margin: BubbleEdges.only(top: 10),
         child: Text(
           message.content,
-          style: TextStyle(color: kMyTextColor, fontSize: 16),
+          style: kMyTextStyle,
         ),
       ),
     );
@@ -103,8 +112,6 @@ class ChatTextBubble extends StatelessWidget {
     final width = MediaQuery.of(context).size.width * 0.75;
     final isAWeekOld = message.timestamp.toDate().millisecondsSinceEpoch <
         DateTime.now().millisecondsSinceEpoch - 604800000;
-//    print(message.timestamp.toDate().second);
-//    print(DateTime.now().second);
     return Column(
       children: <Widget>[
         if (showDate)
@@ -115,7 +122,7 @@ class ChatTextBubble extends StatelessWidget {
               '${DateFormat.jm().format(message.timestamp.toDate())}',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(color: Colors.grey, fontSize: 13),
+              style: kLabelTextStyle,
             ),
           ),
         Row(
@@ -136,9 +143,7 @@ class ChatTextBubble extends StatelessWidget {
                 padding: BubbleEdges.symmetric(vertical: 10, horizontal: 10),
                 child: Text(
                   message.content,
-                  style: TextStyle(
-                      color: isPeer ? Colors.black : Colors.white,
-                      fontSize: 16),
+                  style: isPeer ? kPeerTextStyle : kMyTextStyle,
                 ),
               ),
             ),
@@ -161,7 +166,7 @@ class TypingIndicator extends StatelessWidget {
       child: Text(
         '${user.username} is '
         'typing...',
-        style: TextStyle(color: Colors.grey),
+        style: kLabelTextStyle,
       ),
     );
   }
@@ -175,7 +180,9 @@ class ChatShoutResponseBubble extends StatelessWidget {
   final VoidCallback onTapped;
   final bool isLast;
 
-  const ChatShoutResponseBubble(
+  final auth = Auth.instance;
+
+  ChatShoutResponseBubble(
       {Key key,
       @required this.isPeer,
       @required this.response,
@@ -196,7 +203,7 @@ class ChatShoutResponseBubble extends StatelessWidget {
                   'responded to a shout'} · ${TimeAgo.formatShort(response.timestamp.toDate())}',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(color: Colors.grey),
+              style: kLabelTextStyle,
             ),
           ),
         ),
@@ -207,7 +214,7 @@ class ChatShoutResponseBubble extends StatelessWidget {
           children: <Widget>[
             if (isPeer) ChatPeerAvatar(peer: peer, isVisible: isLast),
             Container(
-              padding: EdgeInsets.symmetric(vertical: 8),
+              padding: EdgeInsets.symmetric(vertical: 8, horizontal: 4),
               constraints: BoxConstraints(
                 maxWidth: MediaQuery.of(context).size.width * 0.6,
               ),
@@ -239,24 +246,18 @@ class ChatShoutResponseBubble extends StatelessWidget {
                           children: <Widget>[
                             Text(
                               isPeer
-                                  ? Repo.currentProfile.user.username
+                                  ? auth.profile.user.username
                                   : peer.username,
                               maxLines: 1,
                               overflow: TextOverflow.fade,
-                              style: TextStyle(
-                                  color: isPeer ? kMyTextColor : kPeerTextColor,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500),
+                              style: isPeer ? kMyTextStyle : kPeerTextStyle,
                             ),
                             SizedBox(height: 8),
                             Text(
                               message,
                               maxLines: 4,
                               overflow: TextOverflow.fade,
-                              style: TextStyle(
-                                color: isPeer ? kMyTextColor : kPeerTextColor,
-                                fontSize: 16,
-                              ),
+                              style: isPeer ? kMyTextStyle : kPeerTextStyle,
                             ),
                           ],
                         ),
@@ -280,21 +281,13 @@ class ChatShoutResponseBubble extends StatelessWidget {
                               Text(
                                 isPeer
                                     ? peer.username
-                                    : Repo.currentProfile.user.username,
-                                style: TextStyle(
-                                    color:
-                                        !isPeer ? kMyTextColor : kPeerTextColor,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500),
+                                    : auth.profile.user.username,
+                                style: !isPeer ? kMyTextStyle : kPeerTextStyle,
                               ),
                               SizedBox(height: 8),
                               Text(
                                 response.content,
-                                style: TextStyle(
-                                  color:
-                                      !isPeer ? kMyTextColor : kPeerTextColor,
-                                  fontSize: 16,
-                                ),
+                                style: !isPeer ? kMyTextStyle : kPeerTextStyle,
                               ),
                             ],
                           ),
@@ -329,13 +322,15 @@ class ChatShoutBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final auth = Auth.instance;
+
     return GestureDetector(
       onTap: isPeer ? onTapped : null,
       child: Column(
         crossAxisAlignment:
             isPeer ? CrossAxisAlignment.start : CrossAxisAlignment.end,
         children: <Widget>[
-          Padding(
+          Container(
             padding: const EdgeInsets.all(8.0),
             child: Center(
               child: Text(
@@ -344,7 +339,7 @@ class ChatShoutBubble extends StatelessWidget {
                     ' · ${TimeAgo.formatShort(message.timestamp.toDate())}',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: Colors.grey),
+                style: kLabelTextStyle,
               ),
             ),
           ),
@@ -381,23 +376,16 @@ class ChatShoutBubble extends StatelessWidget {
                                 Text(
                                   isPeer
                                       ? peer.username
-                                      : Repo.currentProfile.user.username,
-                                  style: TextStyle(
-                                      color: isPeer
-                                          ? kPeerTextColor
-                                          : kMyTextColor,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500),
+                                      : auth.profile.user.username,
+                                  style:
+                                      !isPeer ? kMyTextStyle : kPeerTextStyle,
                                 ),
                               ],
                             ),
                             SizedBox(height: 8),
                             Text(
                               message.content,
-                              style: TextStyle(
-                                color: isPeer ? kPeerTextColor : kMyTextColor,
-                                fontSize: 16,
-                              ),
+                              style: !isPeer ? kMyTextStyle : kPeerTextStyle,
                             ),
                           ],
                         ),

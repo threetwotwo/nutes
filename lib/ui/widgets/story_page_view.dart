@@ -1,22 +1,24 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:nutes/core/models/story.dart';
+import 'package:nutes/core/services/auth.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/screens/my_profile_screen.dart';
 import 'package:nutes/ui/screens/profile_screen.dart';
+import 'package:nutes/ui/shared/loading_indicator.dart';
 import 'package:nutes/ui/widgets/story_view.dart';
 
 class StoryPageView extends StatefulWidget {
-//  final PageController controller;
   final int initialPage;
   final List<UserStory> userStories;
-  final Function(int) onPageChanged;
-  final Widget bgWidget;
   final double topPadding;
-//  final String heroTag;
+  final Function(int) onPageChange;
 
-  static show(context, int initialPage, List<UserStory> userStories,
-          double topPadding) =>
+  static show(context,
+          {int initialPage,
+          List<UserStory> userStories,
+          double topPadding,
+          Function(int) onPageChange}) =>
       showModalBottomSheet(
         context: context,
         isScrollControlled: true,
@@ -26,8 +28,8 @@ class StoryPageView extends StatefulWidget {
           child: StoryPageView(
             initialPage: initialPage,
             userStories: userStories,
-            onPageChanged: (val) {},
             topPadding: topPadding,
+            onPageChange: (val) => onPageChange(val),
           ),
         ),
       );
@@ -39,8 +41,6 @@ class StoryPageView extends StatefulWidget {
         builder: (context) => StoryPageView(
           initialPage: initialPage,
           userStories: userStories,
-          onPageChanged: (val) {},
-          bgWidget: bgWidget ?? SizedBox(),
         ),
       );
 
@@ -48,10 +48,8 @@ class StoryPageView extends StatefulWidget {
     Key key,
     this.userStories,
     this.initialPage,
-    this.onPageChanged,
-    this.bgWidget,
     this.topPadding,
-//    this.heroTag,
+    this.onPageChange,
   }) : super(key: key);
 
   @override
@@ -60,51 +58,79 @@ class StoryPageView extends StatefulWidget {
 
 class _StoryPageViewState extends State<StoryPageView> {
   PageController controller;
+  final auth = Auth.instance;
+  List<UserStory> userStories;
+  Map<String, Timestamp> momentsSeen = {};
 
-//  final topOffset = MediaQuery.of(context).padding.top;
+  Map<String, dynamic> seenStories;
+
+  @override
+  void dispose() {
+    print('disposed, should update moments seen in firestore');
+    print(momentsSeen);
+
+    Repo.updateSeenStories(momentsSeen);
+
+    super.dispose();
+  }
 
   @override
   void initState() {
     controller = PageController(initialPage: widget.initialPage);
 
+    userStories = widget.userStories;
+
+    _getSeenStories();
+
     super.initState();
+  }
+
+  _getSeenStories() async {
+    final result = await Repo.getSeenStories();
+    setState(() {
+      seenStories = result;
+    });
   }
 
   nextPage() {
     return controller.nextPage(
-      duration: Duration(milliseconds: 200),
+      duration: Duration(milliseconds: 400),
       curve: Curves.easeInOut,
     );
   }
 
   previousPage() {
     return controller.previousPage(
-      duration: Duration(milliseconds: 200),
+      duration: Duration(milliseconds: 400),
       curve: Curves.easeInOut,
     );
   }
 
+  _getStoryForIndex(int index) async {
+    final currentUserStory = userStories[index];
+    final result = await Repo.getStoryForUser(currentUserStory.uploader.uid);
+
+    setState(() {
+      userStories[index] = currentUserStory.copyWith(story: result);
+    });
+  }
+
   _pop() {
-    ///Restore ui overlays
-
-    SystemChrome.setEnabledSystemUIOverlays(SystemUiOverlay.values);
-
     //TODO: prevent popping twice at the last moment
     if (mounted) return Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<StorySnapshot>(
-        stream: Repo.stream(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) return SizedBox();
-
-          final snap = snapshot.data;
-          return PageView.builder(
-            itemCount: snap.userStories.length,
+    return seenStories == null
+        ? Container(
+            color: Colors.black87,
+            child: Center(child: LoadingIndicator()),
+          )
+        : PageView.builder(
+            itemCount: userStories.length,
             onPageChanged: (val) {
-              Repo.updateStoryIndex(val);
+              widget.onPageChange(val);
 
               ///Auto scroll functionality
               ///
@@ -126,41 +152,56 @@ class _StoryPageViewState extends State<StoryPageView> {
                   Repo.storiesScrollController
                       .jumpTo(80.0 * estimatedLastItemIndex);
               });
-
-              return widget.onPageChanged(val);
             },
             controller: controller,
-            itemBuilder: (context, storyIdx) {
-              final userStory = snap.userStories[storyIdx];
-              print('user story: $userStory, story: ${userStory.story}');
+            itemBuilder: (context, storyIndex) {
+              final userStory = userStories[storyIndex];
+              if (userStory.story == null) {
+                _getStoryForIndex(storyIndex);
+                return Container(
+                  color: Colors.black87,
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation(Colors.white),
+                      strokeWidth: 1,
+                    ),
+                  ),
+                );
+              }
+
               return StoryView(
+                seenStories: seenStories,
                 topPadding: widget.topPadding,
-                onAvatarTapped: (user) => Navigator.of(context).push(
-                    MaterialPageRoute(
-                        builder: (context) =>
-                            user.uid == Repo.currentProfile.uid
-                                ? MyProfileScreen(isRoot: false)
-                                : ProfileScreen(
-                                    uid: user.uid,
-                                  ))),
+                onAvatarTapped: (user) =>
+                    Navigator.of(context).push(MaterialPageRoute(
+                        builder: (context) => user.uid == auth.profile.uid
+                            ? MyProfileScreen(isRoot: false)
+                            : ProfileScreen(
+                                uid: user.uid,
+                              ))),
                 uploader: userStory.uploader,
                 story: userStory.story,
-                startAt: userStory.story?.startAt ?? 0,
-                isFirstStory: storyIdx == 0,
-                onFlashForward: storyIdx == snap.userStories.length - 1
+                isFirstStory: storyIndex == 0,
+                onFlashForward: storyIndex == widget.userStories.length - 1
                     ? () => _pop()
                     : nextPage,
                 onFlashBack: previousPage,
                 onMomentChanged: (val) {
-                  print('story $storyIdx moment $val}');
-                  Repo.updateStartAt(storyIdx, val);
-                  final isFinished = val >= userStory.story.moments.length - 1;
-                  if (isFinished)
-                    Repo.updateStoryFinished(storyIdx, isFinished);
+                  final timestamp =
+                      userStories[storyIndex].story.moments[val].timestamp;
+
+                  final FIRtimestamp =
+                      (seenStories[userStory.uploader.uid] as Timestamp);
+
+                  print(FIRtimestamp);
+
+                  if (FIRtimestamp == null ||
+                      FIRtimestamp.seconds < timestamp.seconds)
+                    momentsSeen[userStories[storyIndex].uploader.uid] =
+                        timestamp;
                 },
               );
             },
           );
-        });
   }
 }

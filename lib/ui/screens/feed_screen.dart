@@ -2,18 +2,17 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:nutes/core/models/post.dart';
 import 'package:nutes/core/models/story.dart';
-import 'package:nutes/core/models/user.dart';
 import 'package:nutes/core/services/auth.dart';
 import 'package:nutes/core/services/local_cache.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/core/view_models/home_model.dart';
 import 'package:nutes/ui/shared/comment_overlay.dart';
+import 'package:nutes/ui/shared/loading_indicator.dart';
 import 'package:nutes/ui/shared/refresh_list_view.dart';
 import 'package:nutes/ui/shared/story_avatar.dart';
 import 'package:nutes/ui/widgets/feed_app_bar.dart';
 import 'package:nutes/ui/shared/post_list.dart';
 import 'package:nutes/core/services/locator.dart';
-import 'package:nutes/core/view_models/login_model.dart';
 import 'package:nutes/ui/widgets/inline_stories.dart';
 import 'package:flutter/cupertino.dart';
 
@@ -52,14 +51,23 @@ class _FeedScreenState extends State<FeedScreen>
   bool isFetchingPosts = false;
 
   ///Comment overlay fields
+  String commentingTo;
   bool showCommentTextField = false;
   final commentController = TextEditingController();
   final commentFocusNode = FocusNode();
 
+  UserStory myStory = UserStory(
+    story: Story.empty(),
+    uploader: Auth.instance.profile.user,
+    lastTimestamp: null,
+  );
+
+  List<UserStory> followingsStories = [];
+
   @override
   void didChangeDependencies() {
-    super.didChangeDependencies();
     routeObserver.subscribe(this, ModalRoute.of(context));
+    super.didChangeDependencies();
   }
 
   @override
@@ -72,7 +80,6 @@ class _FeedScreenState extends State<FeedScreen>
   void didPushNext() {
     print('did push next: home');
     cache.homeIsFirst = false;
-
     super.didPushNext();
   }
 
@@ -81,21 +88,14 @@ class _FeedScreenState extends State<FeedScreen>
     print('did pop next: home');
 
     cache.homeIsFirst = true;
-
     super.didPopNext();
   }
-
-  bool myStoryIsSEmpty;
-
-  UStoryState myStoryState = UStoryState.none;
 
   @override
   void initState() {
     _getPosts();
-    _getSnapshotUserStories();
-
     _getMyStory();
-
+    _getStoriesOfFollowings();
     super.initState();
   }
 
@@ -115,11 +115,30 @@ class _FeedScreenState extends State<FeedScreen>
         onLogoutPressed: () => Repo.logout(),
       ),
       body: CommentOverlay(
+        onSend: (text) {
+          if (commentingTo == null) return;
+
+          final comment = Repo.createComment(
+            text: text,
+            postId: commentingTo,
+          );
+
+          Repo.uploadComment(postId: commentingTo, comment: comment);
+          final post = posts.firstWhere((post) => post.id == commentingTo);
+
+          if (mounted)
+            setState(() {
+              post.topComments.add(comment);
+              showCommentTextField = false;
+              commentingTo = null;
+            });
+        },
         controller: commentController,
         focusNode: commentFocusNode,
         showTextField: showCommentTextField,
         onScroll: () {
           setState(() {
+            commentingTo = null;
             showCommentTextField = false;
           });
           return;
@@ -127,57 +146,60 @@ class _FeedScreenState extends State<FeedScreen>
         child: RefreshListView(
           controller: cache.homeScrollController,
           onRefresh: () {
-            _getSnapshotUserStories();
+            _getStoriesOfFollowings();
             return _getPosts();
           },
           children: <Widget>[
-            StreamBuilder<StorySnapshot>(
-                stream: Repo.stream(),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) return SizedBox();
-
-                  final data = snapshot.data;
-
-                  return Container(
-                    height: 120,
-                    width: MediaQuery.of(context).size.width,
-                    color: Colors.white,
-                    child: SingleChildScrollView(
-                      physics: AlwaysScrollableScrollPhysics(),
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: <Widget>[
-                          Visibility(
-                            visible: Repo.myStory == null
-                                ? false
-                                : Repo.myStory.moments.isEmpty &&
-                                    data.userStories.firstWhere(
-                                            (us) =>
-                                                us.uploader.uid ==
-                                                auth.profile.uid,
-                                            orElse: () => null) ==
-                                        null,
-                            child: Container(
-//                                color: Colors.red,
-                              child: StoryAvatar(
-                                user: auth.profile.user,
-                                isEmpty: true,
-                                isFinished: true,
-                                onTap: widget.onCreatePressed,
-                                onLongPress: widget.onCreatePressed,
-                              ),
-                            ),
+            Container(
+              height: 112,
+              width: MediaQuery.of(context).size.width,
+              color: Colors.white,
+              child: myStory == null
+                  ? Center(child: LoadingIndicator())
+                  : Row(
+                      children: <Widget>[
+//                        Visibility(
+//                          visible: Repo.myStory == null
+//                              ? false
+//                              : Repo.myStory.moments.isEmpty &&
+//                                  data.userStories.firstWhere(
+//                                          (us) =>
+//                                              us.uploader.uid ==
+//                                              auth.profile.uid,
+//                                          orElse: () => null) ==
+//                                      null,
+//                          child: Container(
+////                                color: Colors.red,
+//                            child: StoryAvatar(
+//                              user: auth.profile.user,
+//                              isEmpty: true,
+//                              isFinished: true,
+//                              onTap: widget.onCreatePressed,
+//                              onLongPress: widget.onCreatePressed,
+//                            ),
+//                          ),
+//                        ),
+                        Visibility(
+                          visible: myStory.story.moments.isEmpty,
+                          child: StoryAvatar(
+                            isOwner: true,
+                            user: auth.profile.user,
+                            isEmpty: true,
+                            onTap: widget.onCreatePressed,
+                            onLongPress: widget.onCreatePressed,
                           ),
-                          InlineStories(
-                            userStories: snapshot.data.userStories,
-                            onCreateStory: widget.onCreatePressed,
-                            topPadding: topPadding,
-                          ),
-                        ],
-                      ),
+                        ),
+                        InlineStories(
+                          userStories: [
+                                if (myStory.story.moments.isNotEmpty) myStory
+                              ] +
+                              followingsStories,
+                          onCreateStory: widget.onCreatePressed,
+                          topPadding: topPadding,
+                        ),
+                      ],
                     ),
-                  );
-                }),
+            ),
             Divider(),
             isFetchingPosts
                 ? Padding(
@@ -201,35 +223,26 @@ class _FeedScreenState extends State<FeedScreen>
                       )
                     : PostListView(
                         posts: posts,
+                        onUnfollow: (uid) {
+                          print('onUnfollow $uid');
+                          return setState(() {
+                            posts = List.from(posts)
+                              ..removeWhere((post) => post.owner.uid == uid);
+                          });
+                        },
                         onAddComment: (postId) {
                           print('add comment for post $postId');
                           setState(() {
-                            showCommentTextField = true;
+                            commentingTo = postId;
+                            showCommentTextField = !showCommentTextField;
                           });
                           FocusScope.of(context).requestFocus(commentFocusNode);
                           return;
                         })
-//                  : ListView.builder(
-//                      shrinkWrap: true,
-//                      physics: NeverScrollableScrollPhysics(),
-//                      itemCount: posts.length,
-//                      itemBuilder: (context, index) {
-//                        return Container(
-//                          color: Colors.white,
-//                          child: PostListItem(
-//                            post: posts[index],
-//                            shouldNavigate: true,
-//                          ),
-//                        );
-//                      }),
           ],
         ),
       ),
     );
-  }
-
-  _logout({BuildContext context}) async {
-    locator<LoginModel>().signOut();
   }
 
   Future<List<Post>> _getPosts() async {
@@ -247,47 +260,12 @@ class _FeedScreenState extends State<FeedScreen>
       });
   }
 
-  Future<List<UserStory>> _getSnapshotUserStories() async {
-    List<UserStory> stories = [];
-
-    final myStory = await Repo.getStoryForUser(auth.profile.uid);
-    Repo.myStory = myStory;
-
-    final oldStories = Repo.snapshot.userStories;
-    final newStories =
-        await Repo.getSnapshotUserStories(userStories: oldStories);
-
-    if (myStory.moments.isNotEmpty)
-      stories.add(UserStory(myStory, auth.profile.user));
-
-    newStories.forEach((us) {
-      print(us);
-      final match = oldStories.firstWhere(
-          (os) => os.uploader.uid == us.uploader.uid,
-          orElse: () => null);
-      if (match != null && match.story != null) {
-        print(
-            'match ${match.uploader.username} start at ${match.story.startAt}');
-
-        ///Set isFinished to false if true
-        final isThereNewMoment =
-            us.story.moments.length > match.story.moments.length;
-
-        us = UserStory(
-            us.story.copyWith(
-                startAt: match.story.startAt,
-                isFinished: isThereNewMoment ? false : us.story.isFinished),
-            us.uploader);
-      } else {
-        print('no match');
-      }
+  ///TODO: sort the user stories
+  Future<List<UserStory>> _getStoriesOfFollowings() async {
+    final result = await Repo.getStoriesOfFollowings();
+    setState(() {
+      followingsStories = result;
     });
-
-    stories.addAll(newStories);
-
-    Repo.updateUserStories(stories);
-    Repo.refreshStream();
-    return newStories;
   }
 
   @override
@@ -298,42 +276,17 @@ class _FeedScreenState extends State<FeedScreen>
 
     ///Listen to changes to my story
     myStoryStream.listen((event) {
-      if (event.documentChanges.isEmpty) return;
-
       final moments = event.documentChanges
           .map((dc) => Moment.fromDoc(dc.document))
           .toList();
 
-      setState(() {
-        myStoryIsSEmpty = moments.isEmpty;
-      });
+      myStory.story.moments.addAll(moments);
 
-      final myStory = Repo.snapshot.userStories.firstWhere(
-          (us) => us.uploader.uid == auth.profile.uid,
-          orElse: () => null);
-
-      Story story;
-
-      if (myStory != null) {
-        print('my story exists, should append new moments');
-        story = Story(
-            startAt: myStory.story.moments.length,
-            lastLoaded: 0,
-            moments: myStory.story.moments + moments);
-      } else {
-        print('i dont have any moments to show');
-        story = Story(startAt: 0, lastLoaded: 0, moments: moments);
-      }
-
-      final userStory = UserStory(story, auth.profile.user);
-
-      myStory != null
-          ? Repo.snapshot.userStories[0] = userStory
-          : Repo.snapshot.userStories.insert(0, userStory);
-
-      Repo.refreshStream();
-
-      if (mounted) setState(() {});
+      if (moments.isNotEmpty && mounted)
+        setState(() {
+          myStory = myStory.copyWith(
+              lastTimestamp: moments[moments.length - 1].timestamp);
+        });
     });
   }
 }

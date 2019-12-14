@@ -6,9 +6,14 @@ class SearchBar extends StatelessWidget {
 
   final TextEditingController controller;
   final FocusNode focusNode;
+  final bool showCancelButton;
 
   SearchBar(
-      {this.onTextChange, this.onCancel, this.controller, this.focusNode});
+      {this.onTextChange,
+      this.onCancel,
+      this.controller,
+      this.focusNode,
+      this.showCancelButton = true});
 
   @override
   Widget build(BuildContext context) {
@@ -21,21 +26,23 @@ class SearchBar extends StatelessWidget {
             controller: controller,
             onChanged: onTextChange,
             decoration: InputDecoration(
-                fillColor: Colors.black.withOpacity(0.1),
+                fillColor: Colors.grey[200],
                 filled: true,
                 prefixIcon: Icon(
                   Icons.search,
                   color: Colors.grey,
                   size: 18,
                 ),
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    Icons.cancel,
-                    color: Colors.grey,
-                    size: 16,
-                  ),
-                  onPressed: onCancel,
-                ),
+                suffixIcon: showCancelButton
+                    ? IconButton(
+                        icon: Icon(
+                          Icons.cancel,
+                          color: Colors.grey,
+                          size: 16,
+                        ),
+                        onPressed: onCancel,
+                      )
+                    : null,
                 hintText: 'Search',
                 border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),

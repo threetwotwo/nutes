@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:line_icons/line_icons.dart';
 import 'package:nutes/core/models/comment.dart';
 import 'package:nutes/core/services/auth.dart';
-import 'package:nutes/ui/shared/search_overlay.dart';
+import 'package:nutes/ui/shared/search_result_view.dart';
 import 'package:nutes/ui/widgets/emoji_picker.dart';
 
 import 'comment_text_field.dart';
@@ -22,11 +22,11 @@ class CommentOverlay extends StatefulWidget {
     Key key,
     @required this.controller,
     @required this.focusNode,
+    @required this.showTextField,
+    @required this.onSend,
     this.child,
-    this.onSend,
     this.onClear,
     this.replyingTo,
-    this.showTextField,
     this.onScroll,
   }) : super(key: key);
   @override
@@ -73,11 +73,15 @@ class _CommentOverlayState extends State<CommentOverlay> {
             }
             return null;
           },
-          child: widget.child,
+          child: GestureDetector(
+            ///hide keyboard on tap
+            onTap: widget.onScroll,
+            child: widget.child,
+          ),
         ),
         if (showSearchScreen)
           Positioned.fill(
-              child: SearchOverlay(
+              child: SearchResultView(
             controller: widget.controller,
             onUsername: (val) {
               final text = widget.controller.text;

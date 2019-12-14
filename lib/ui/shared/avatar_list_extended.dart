@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:nutes/core/models/user.dart';
+import 'package:nutes/core/services/auth.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/screens/profile_screen.dart';
 import 'package:nutes/ui/shared/buttons.dart';
@@ -17,6 +18,8 @@ class AvatarListExtended extends StatefulWidget {
 }
 
 class _AvatarListExtendedState extends State<AvatarListExtended> {
+  final auth = Auth.instance;
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<DocumentSnapshot>(
@@ -32,11 +35,11 @@ class _AvatarListExtendedState extends State<AvatarListExtended> {
               itemBuilder: (context, index) {
                 final user = widget.users[index];
                 final isFollowing = followingIds.contains(user.uid);
-                final isMe = user.uid == Repo.currentProfile.uid;
+                final isMe = user.uid == auth.profile.uid;
 
                 return AvatarListItem(
                   avatar: AvatarImage(
-                    url: user.photoUrl,
+                    url: user.urls.small,
                   ),
                   title: user.username,
                   subtitle: user.displayName,

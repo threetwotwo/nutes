@@ -207,8 +207,6 @@ class _LoginButtonState extends State<LoginButton>
 
   @override
   void initState() {
-    super.initState();
-
     _animationController = AnimationController(
       duration: Duration(milliseconds: 60),
       vsync: this,
@@ -217,6 +215,8 @@ class _LoginButtonState extends State<LoginButton>
     _animationController.addListener(() {
       setState(() {});
     });
+
+    super.initState();
   }
 
   @override

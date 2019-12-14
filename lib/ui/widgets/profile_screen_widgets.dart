@@ -1,15 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
-import 'package:provider/provider.dart';
 import 'package:nutes/core/models/user.dart';
 import 'package:nutes/ui/shared/post_grid_view.dart';
-import 'package:nutes/ui/shared/post_list.dart';
-import 'package:nutes/core/models/post.dart';
-import 'package:nutes/core/services/locator.dart';
-import 'package:nutes/ui/shared/shout_post.dart';
 import 'package:nutes/ui/shared/styles.dart';
 import 'package:nutes/utils/responsive.dart';
-import 'package:nutes/core/view_models/profile_model.dart';
 
 enum ViewType { list, grid }
 

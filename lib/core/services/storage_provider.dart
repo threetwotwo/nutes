@@ -1,12 +1,14 @@
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:meta/meta.dart';
+import 'package:nutes/core/services/auth.dart';
 import 'package:nutes/utils/image_file_bundle.dart';
 
 class FIRStorage {
   static final storage = FirebaseStorage.instance.ref();
   final usersRef = storage.child('users');
   final chatsRef = storage.child('chats');
+  final auth = Auth.instance;
 
   Future<String> uploadChatImage(
       {@required String chatId, @required File file}) async {
@@ -18,13 +20,33 @@ class FIRStorage {
     return url;
   }
 
-  Future<String> uploadPhoto(
-      {@required String uid, @required File file}) async {
+  Future removeCurrentPhoto() async {
+    final originalRef = usersRef.child(auth.profile.uid).child('photo.jpg');
+    return originalRef.delete();
+  }
+
+  Future<ImageUrlBundle> uploadPhoto({
+    @required String uid,
+    @required ImageFileBundle fileBundle,
+  }) async {
     final originalRef = usersRef.child(uid).child('photo.jpg');
-    final uploadTask = originalRef.putFile(file);
-    final c = await uploadTask.onComplete;
-    final String url = await c.ref.getDownloadURL();
-    return url;
+    final mediumRef = usersRef.child(uid).child('photo_medium.jpg');
+    final smallRef = usersRef.child(uid).child('photo_small.jpg');
+
+    final tasks = [
+      originalRef.putFile(fileBundle.original).onComplete,
+      mediumRef.putFile(fileBundle.medium).onComplete,
+      smallRef.putFile(fileBundle.small).onComplete,
+    ];
+
+    final snaps = await Future.wait(tasks, eagerError: true);
+
+    final urls = await Future.wait(
+        snaps.map((s) => s.ref.getDownloadURL()).toList(),
+        eagerError: true);
+
+    return ImageUrlBundle(
+        index: null, original: urls[0], medium: urls[1], small: urls[2]);
   }
 
   Future<String> uploadStoryFiles({
@@ -51,13 +73,12 @@ class FIRStorage {
   Future<ImageUrlBundle> uploadPostFiles({
     @required String postId,
     @required int index,
-    @required String uid,
     @required ImageFileBundle fileBundle,
   }) async {
     print('upload started');
 
     final postRef = usersRef
-        .child(uid)
+        .child(auth.profile.uid)
         .child('posts')
         .child(postId)
         .child(index.toString());

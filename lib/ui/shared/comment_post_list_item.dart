@@ -14,7 +14,7 @@ class CommentPostListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.only(top: 8),
+      padding: EdgeInsets.symmetric(vertical: 4),
       child: RichText(
         text: TextSpan(children: [
           TextSpan(

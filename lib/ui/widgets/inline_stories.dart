@@ -1,7 +1,12 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:nutes/core/models/story.dart';
+import 'package:nutes/core/services/auth.dart';
+import 'package:nutes/core/services/local_cache.dart';
 import 'package:nutes/core/services/repository.dart';
+import 'package:nutes/ui/shared/loading_indicator.dart';
 import 'package:nutes/ui/shared/story_avatar.dart';
+import 'package:nutes/ui/widgets/profile_header.dart';
 import 'package:nutes/ui/widgets/story_page_view.dart';
 
 class InlineStories extends StatefulWidget {
@@ -18,149 +23,70 @@ class InlineStories extends StatefulWidget {
 }
 
 class _InlineStoriesState extends State<InlineStories> {
+  final auth = Auth.instance;
+
   int buttonTapped;
 
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: NeverScrollableScrollPhysics(),
-      controller: Repo.storiesScrollController,
-      scrollDirection: Axis.horizontal,
-      itemCount: widget.userStories?.length ?? 0,
-      itemBuilder: (context, index) {
-        final userStory = widget.userStories[index];
+    return StreamBuilder<DocumentSnapshot>(
+        stream: Repo.seenStoriesStream(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) return LoadingIndicator();
 
-        return Stack(
-          children: <Widget>[
-            StoryAvatar(
-              heroTag: userStory.uploader.uid,
-              isFinished: userStory.story?.isFinished ?? false,
-              isEmpty: false,
-              user: userStory.uploader,
-              onLongPress: userStory.uploader.uid == Repo.currentProfile.uid
-                  ? widget.onCreateStory
-                  : null,
-              onTap: () async {
-                setState(() {
-                  buttonTapped = index;
-//
-                });
+          final data = snapshot.data.data ?? {};
 
-                Story currentStory = Repo.snapshot.userStories[index].story;
+          return ListView.builder(
+            shrinkWrap: true,
+            physics: NeverScrollableScrollPhysics(),
+            controller: Repo.storiesScrollController,
+            scrollDirection: Axis.horizontal,
+            itemCount: widget.userStories?.length ?? 0,
+            itemBuilder: (context, index) {
+              final userStory = widget.userStories[index];
+              final isOwner = auth.profile.uid == userStory.uploader.uid;
 
-                ///Get story for user
-                if (currentStory == null) {
-                  currentStory =
-                      await Repo.getStoryForUser(userStory.uploader.uid);
+              final Timestamp seenStoryTimestamp = data[userStory.uploader.uid];
 
-                  Repo.updateStory(index, currentStory);
-                }
+              final storyState = userStory.lastTimestamp == null
+                  ? StoryState.none
+                  : seenStoryTimestamp == null
+                      ? StoryState.unseen
+                      : seenStoryTimestamp.seconds <
+                              userStory.lastTimestamp.seconds
+                          ? StoryState.unseen
+                          : StoryState.seen;
 
-                if (currentStory.isFinished) {
-                  Repo.updateStartAt(index, 0);
-                }
+              return StoryAvatar(
+                isOwner: isOwner,
+                storyState: storyState,
+                isEmpty: false,
+                user: userStory.uploader,
+                onLongPress: isOwner ? widget.onCreateStory : null,
+                onTap: isOwner && userStory.story.moments.isEmpty
+                    ? () => LocalCache.instance.animateTo(0)
+                    : () {
+                        setState(() {
+                          buttonTapped = index;
+                        });
 
-                Repo.updateStoryIndex(index);
+//                        Repo.updateStoryIndex(index);
 
-                StoryPageView.show(
-                    context, index, widget.userStories, widget.topPadding);
+                        StoryPageView.show(
+                          context,
+                          initialPage: index,
+                          topPadding: widget.topPadding,
+                          userStories: widget.userStories,
+                          onPageChange: (val) {},
+                        );
 
-//                Navigator.of(context, rootNavigator: true)
-//                    .push(StoryPageView.route(index, widget.userStories));
-
-                setState(() {
-                  buttonTapped = null;
-                });
-              },
-            ),
-          ],
-        );
-//                  return AspectRatio(
-//                    aspectRatio: 1,
-//                    child: Container(
-//                      child: Column(
-//                        mainAxisSize: MainAxisSize.max,
-//                        mainAxisAlignment: MainAxisAlignment.center,
-//                        children: <Widget>[
-//                          Stack(
-//                            alignment: Alignment.center,
-//                            children: <Widget>[
-//                              FloatingActionButton(
-//                                backgroundColor: (buttonTapped == index)
-//                                    ? Colors.red
-//                                    : Colors.blue,
-//                                heroTag: index,
-//                                elevation: 0,
-//                                onPressed: () async {
-//                                  ///1. On story pressed, update
-//                                  ///indexes/booleans
-//                                  setState(() {
-//                                    buttonTapped = index;
-////
-//                                  });
-//
-//                                  Story currentStory =
-//                                      snap.userStories[index].story;
-//                                  if (currentStory == null) {
-//                                    currentStory = await Repo.getStoryForUser(
-//                                        userStory.uploader.uid);
-//
-//                                    Repo.updateStory(index, currentStory);
-//                                  }
-//
-//                                  Repo.updateStoryIndex(index);
-//
-//                                  Navigator.of(context, rootNavigator: true)
-//                                      .push(
-//                                    MaterialPageRoute(
-//                                      fullscreenDialog: true,
-//                                      builder: (context) => StoryPageView(
-//                                          userStories: userStories),
-//                                    ),
-//                                  );
-//
-//                                  setState(() {
-//                                    buttonTapped = null;
-////
-////
-//                                  });
-//
-//                                  /// 2. Check to see if: (a) moments are
-//                                  /// loaded and (b) if there are new moments
-//                                  /// Fetch moments if needed
-//                                  /// 3. Present story viewer once moments
-//                                  /// are loaded
-//                                },
-//                                child: AvatarImage(
-//                                  url: userStories[index].uploader.photoUrl,
-//                                  spacing: 2,
-//                                  showStoryIndicator: false,
-//                                ),
-//                              ),
-//                              if (buttonTapped == index)
-//                                FloatingActionButton(
-//                                  elevation: 0,
-//                                  onPressed: () {},
-//                                  backgroundColor:
-//                                      Colors.black.withOpacity(0.4),
-//                                ),
-//                              if (buttonTapped == index)
-//                                Align(
-//                                  alignment: Alignment.center,
-//                                  child: CircularProgressIndicator(
-//                                      strokeWidth: 1.4,
-//                                      valueColor: AlwaysStoppedAnimation<Color>(
-//                                          Colors.white)),
-//                                ),
-//                            ],
-//                          ),
-//                          Text(userStories[index].uploader.username),
-//                        ],
-//                      ),
-//                    ),
-//                  );
-      },
-    );
+                        setState(() {
+                          buttonTapped = null;
+                        });
+                      },
+              );
+            },
+          );
+        });
   }
 }

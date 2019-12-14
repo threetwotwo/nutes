@@ -3,14 +3,16 @@ import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
+//import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart' as path_provider;
+import 'package:image/image.dart' as img;
 import 'package:meta/meta.dart';
 import 'package:nutes/core/models/activity.dart';
 import 'package:nutes/core/models/chat_message.dart';
 import 'package:nutes/core/models/comment.dart';
 import 'package:nutes/core/models/post_type.dart';
 import 'package:nutes/core/models/story.dart';
-import 'package:nutes/core/models/tab_item.dart';
 import 'package:nutes/core/services/auth.dart';
 import 'package:nutes/core/services/firestore_service.dart';
 import 'package:nutes/core/services/rtdb_provider.dart';
@@ -30,42 +32,12 @@ class Repo {
   final _database = RTDBProvider();
   final _storage = FIRStorage();
 
-  final auth = Auth.instance;
+  static final auth = Auth.instance;
 
   static final _instance = Repo();
-  static UserProfile currentProfile;
-
-//  static ScrollController homeScrollController = ScrollController();
-//  static ScrollController searchScrollController = ScrollController();
-//  static ScrollController profileScrollController = ScrollController();
-
-//  static void animateToTop(TabItem tabItem) {
-//    ScrollController controller;
-//
-//    print(tabItem);
-//    switch (tabItem) {
-//      case TabItem.home:
-//        controller = homeScrollController;
-//        break;
-//      case TabItem.search:
-//        controller = searchScrollController;
-//        break;
-//      case TabItem.create:
-//        break;
-//      case TabItem.activity:
-//        break;
-//      case TabItem.profile:
-//        controller = profileScrollController;
-//        break;
-//    }
-//
-//    ///Scroll up if the controller is attached to a scroll view
-//    if (controller.hasClients)
-//      controller.animateTo(0, duration: scrollDuration, curve: scrollCurve);
-//  }
+//  static UserProfile currentProfile;
 
   static Story myStory;
-  // ignore: close_sinks
 
   static UserStory get currentUserStory => snapshot.userStories[storyIndex];
   static StorySnapshot snapshot = StorySnapshot(userStories: [], storyIndex: 0);
@@ -117,15 +89,6 @@ class Repo {
   static void updateStory(int index, Story story) {
     var us = snapshot.userStories;
 
-//    if (index == 0) {
-//      if (us.where((u) => u.uploader.uid == Repo.currentUser.uid).isNotEmpty)
-//        us[index].story = story;
-//      else {
-//        us.insert(0, UserStory(story, Repo.currentUser));
-//      }
-//    } else {
-//      us[index].story = story;
-//    }
     us[index].story = story;
 
     storiesStreamController.add(snapshot.copyWith(userStories: us));
@@ -143,18 +106,6 @@ class Repo {
     var st = snapshot.userStories;
     st[storyIndex].story = st[storyIndex].story.copyWith(startAt: startAt);
     return storiesStreamController.add(snapshot.copyWith(userStories: st));
-  }
-
-  static final Stream<DocumentSnapshot> likesStream = _instance._firestore
-      .activityRef(currentProfile.uid)
-      .document('did_likes')
-      .snapshots();
-
-  static Stream<DocumentSnapshot> engagementStream() {
-    return _instance._firestore
-        .activityRef(currentProfile.uid)
-        .document('did_likes')
-        .snapshots();
   }
 
   static Future updateAccountPrivacy(bool isPrivate) async {
@@ -210,14 +161,14 @@ class Repo {
     return _instance._firestore.chatStream();
   }
 
-  static Future likeShoutBubble(bool isChallenger, Post post) async {
+  static Future likeShout(bool isChallenger, Post post) async {
     return _instance._firestore
-        .likeShoutBubble(isChallenger: isChallenger, post: post);
+        .likeShout(isChallenger: isChallenger, post: post);
   }
 
-  static Future unlikeShoutBubble(bool isChallenger, Post post) async {
+  static Future unlikeShout(bool isChallenger, Post post) async {
     return _instance._firestore
-        .unlikeShoutBubble(isChallenger: isChallenger, post: post);
+        .unlikeShout(isChallenger: isChallenger, post: post);
   }
 
   static Future likePost(Post post) async {
@@ -267,7 +218,7 @@ class Repo {
 
     final url = await _instance._storage.uploadStoryFiles(
         storyId: storyRef.documentID,
-        uid: currentProfile.uid,
+        uid: Auth.instance.profile.uid,
         fileBundle: fileBundle);
     return await _instance._firestore.uploadStory(storyRef: storyRef, url: url);
   }
@@ -288,7 +239,7 @@ class Repo {
     final shoutId = shoutRef.documentID;
 
     final selfRef =
-        _instance._firestore.userPostRef(Repo.currentProfile.uid, shoutId);
+        _instance._firestore.userPostRef(Auth.instance.profile.uid, shoutId);
 
     final peerRef = _instance._firestore.userPostRef(peer.uid, shoutId);
 
@@ -296,7 +247,7 @@ class Repo {
 
     final payload = {
       'type': 'shout',
-      'uploader': Repo.currentProfile.toMap(),
+      'uploader': auth.profile.toMap(),
       'timestamp': timestamp,
       'data': data,
     };
@@ -309,21 +260,30 @@ class Repo {
   }
 
   static uploadComment({
-    @required Post post,
+    @required String postId,
     @required Comment comment,
 //    @required User owner,
 //    @required String text,
 //    String parentId,
   }) async {
-    return _instance._firestore.uploadComment(post: post, comment: comment);
+    return _instance._firestore.uploadComment(postId: postId, comment: comment);
   }
 
-  static uploadShout({@required User peer, @required Map data}) {
+  static Future updatePost({@required Post post}) async {
+    final updatedPost = post.toMap();
+    print(updatedPost);
+
+    final postRef = _instance._firestore.userPostRef(post.owner.uid, post.id);
+
+    postRef.setData(updatedPost, merge: true);
+  }
+
+  static Future uploadShout({@required User peer, @required Map data}) {
     return uploadPost(
         type: PostType.shout, isPrivate: false, peer: peer, metadata: data);
   }
 
-  static uploadPost({
+  static Future uploadPost({
     @required PostType type,
     @required bool isPrivate,
     List<ImageFileBundle> fileBundles,
@@ -346,7 +306,7 @@ class Repo {
     print('new post: $postId');
 
     batch.setData(publicRef, {
-      'owner_id': currentProfile.uid,
+      'owner_id': Auth.instance.profile.uid,
       'published': timestamp,
       'is_private': isPrivate,
     });
@@ -360,11 +320,8 @@ class Repo {
       ///Upload files to storage
       ///and then get the storage urls
       final uploadTasks = fileBundles
-          .map((b) => _instance._storage.uploadPostFiles(
-              postId: postId,
-              index: b.index,
-              uid: currentProfile.uid,
-              fileBundle: b))
+          .map((b) => _instance._storage
+              .uploadPostFiles(postId: postId, index: b.index, fileBundle: b))
           .toList();
       final urlBundles = await Future.wait(uploadTasks);
 
@@ -382,7 +339,9 @@ class Repo {
           {};
     }
 
-    final uploader = currentProfile.user.toMap();
+    final uploader = Auth.instance.profile.user.toMap();
+
+    print('post uploader: $uploader');
 
     final payload = {
       'type': PostHelper.stringValue(type),
@@ -410,12 +369,21 @@ class Repo {
 
   ///current user's story stream
   static Stream<QuerySnapshot> myStoryStream() {
-    return _instance._firestore.myStoryStream(_instance.auth.profile.uid);
+    return _instance._firestore.myStoryStream(auth.profile.uid);
   }
 
-  static Future<List<UserStory>> getSnapshotUserStories(
+  static Future<Map<String, dynamic>> getSeenStories() =>
+      _instance._firestore.getSeenStories();
+
+  static Stream<DocumentSnapshot> seenStoriesStream() =>
+      _instance._firestore.seenStoriesStream();
+
+  static Future updateSeenStories(Map<String, Timestamp> data) =>
+      _instance._firestore.updateSeenStories(data);
+
+  static Future<List<UserStory>> getStoriesOfFollowings(
       {List<UserStory> userStories}) {
-    return _instance._firestore.getSnapshotStories(userStories: userStories);
+    return _instance._firestore.getStoriesOfFollowings();
   }
 
   static Future<Story> getStoryForUser(String uid) {
@@ -435,11 +403,6 @@ class Repo {
     return tempOutput;
   }
 
-  ///fetch posts
-//  static Future<List<Post>> getMorePosts({int limit}) {
-//    return _instance._firestore.getMorePosts(limit: limit);
-//  }
-
   static Future<List> getMyFollowRequests() async {
     final doc = await _instance._firestore.myFollowRequestsRef().get();
 
@@ -454,9 +417,9 @@ class Repo {
 
   static authorizeFollowRequest(String uid) {
     _instance._firestore
-        .deleteFollowRequest(follower: uid, following: Repo.currentProfile.uid);
+        .deleteFollowRequest(follower: uid, following: auth.profile.uid);
     return _instance._firestore
-        .follow(followerId: uid, following: Repo.currentProfile.user);
+        .follow(followerId: uid, following: auth.profile.user);
   }
 
   static Map followingsArray = {};
@@ -470,7 +433,7 @@ class Repo {
     isPrivate
         ? _instance._firestore.requestFollow(user.uid)
         : _instance._firestore
-            .follow(followerId: Repo.currentProfile.uid, following: user);
+            .follow(followerId: auth.profile.uid, following: user);
   }
 
   /// unfollow a user
@@ -489,6 +452,14 @@ class Repo {
   static Future<UserProfile> getUserProfile(String uid) =>
       _instance._firestore.getUserProfile(uid);
 
+  static Future getRecentSearches() => _instance._firestore.getRecentSearches();
+
+  static Future deleteRecentSearch(String uid) =>
+      _instance._firestore.deleteRecentSearch(uid);
+
+  static Future createRecentSearch(User user) =>
+      _instance._firestore.createRecentSearch(user);
+
   static Future<List<User>> searchUsers(String text) =>
       _instance._firestore.searchUsers(text);
 
@@ -506,11 +477,9 @@ class Repo {
     final user = await _instance._firestore
         .signInWithUsernameAndPassword(username: username, password: password);
 
-    _instance.auth.reset();
+    auth.reset();
 
-    Repo.currentProfile = user;
-
-    _instance.auth.profile = user;
+    auth.profile = user;
 
     return user;
   }
@@ -567,8 +536,10 @@ class Repo {
     return posts;
   }
 
-  static Comment newComment(
-          {@required String text, @required postId, Comment parentComment}) =>
+  static Comment createComment(
+          {@required String text,
+          @required String postId,
+          Comment parentComment}) =>
       _instance._firestore
           .newComment(text: text, postId: postId, parentComment: parentComment);
 
@@ -585,16 +556,45 @@ class Repo {
     return _instance._firestore.getPostComplete(postId, ownerId);
   }
 
-  static Future<UserProfile> updatePhotoUrl({String uid, File file}) async {
-    final newUrl = await _instance._storage.uploadPhoto(uid: uid, file: file);
-    _instance._firestore.updateProfile(photoUrl: newUrl);
-    final updatedUser = currentProfile.copyWith(photoUrl: newUrl);
-//    Repo.currentUser = newUser;
-//    return newUser;
-    return updatedUser;
+  static Future<UserProfile> removeCurrentPhoto() async {
+    _instance._storage.removeCurrentPhoto();
+    return _instance._firestore.updateProfile(urls: ImageUrlBundle.empty());
+//    final updatedUser = Auth.instance.profile.copyWith(photoUrl: '');
+  }
+
+  static Future<UserProfile> updatePhotoUrl({String uid, File original}) async {
+    final image = img.decodeImage(original.readAsBytesSync());
+    final medium = img.copyResize(image, width: 300);
+    final small = img.copyResize(image, width: 80);
+    final directory =
+        (await path_provider.getApplicationDocumentsDirectory()).path;
+    String fileName = DateTime.now().toIso8601String();
+
+    final mediumPath = '$directory/${fileName}medium.png';
+    final smallPath = '$directory/${fileName}small.png';
+
+    final bundle = await _instance._storage.uploadPhoto(
+        uid: uid,
+        fileBundle: ImageFileBundle(
+            original: original,
+            medium: File(mediumPath)..writeAsBytesSync(img.encodeJpg(medium)),
+            small: File(smallPath)..writeAsBytesSync(img.encodeJpg(small))));
+
+    print('bundle uploaded: $bundle');
+
+    return _instance._firestore.updateProfile(urls: bundle);
   }
 
   static DocumentReference myRef() {
-    return _instance._firestore.userRef(_instance.auth.profile.uid);
+    return _instance._firestore.userRef(auth.profile.uid);
   }
+
+  static Stream<DocumentSnapshot> myPostLikeStream(Post post) =>
+      _instance._firestore.myPostLikeStream(post);
+
+  static Stream<DocumentSnapshot> myShoutLeftLikeStream(Post post) =>
+      _instance._firestore.myShoutLeftLikeStream(post);
+
+  static Stream<DocumentSnapshot> myShoutRightLikeStream(Post post) =>
+      _instance._firestore.myShoutRightLikeStream(post);
 }

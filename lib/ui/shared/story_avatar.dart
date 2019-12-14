@@ -1,33 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:nutes/core/models/user.dart';
 import 'package:nutes/core/services/auth.dart';
-import 'package:nutes/core/services/repository.dart';
+import 'package:nutes/ui/shared/styles.dart';
+import 'package:nutes/ui/widgets/profile_header.dart';
 
 import 'avatar_image.dart';
 
 class StoryAvatar extends StatelessWidget {
   final User user;
-  final bool isFinished;
 
   final bool isEmpty;
 
   final VoidCallback onTap;
   final VoidCallback onLongPress;
 
-  final String heroTag;
-//  final UStoryState storyState;
+  final bool isOwner;
 
-  final auth = Auth.instance;
+  final StoryState storyState;
 
   StoryAvatar({
     Key key,
-    @required this.isFinished,
     this.isEmpty = false,
     @required this.user,
     @required this.onTap,
     this.onLongPress,
-    this.heroTag,
-//      this.storyState,
+    this.isOwner = false,
+    this.storyState = StoryState.none,
   }) : super(key: key);
   @override
   Widget build(BuildContext context) {
@@ -44,30 +42,25 @@ class StoryAvatar extends StatelessWidget {
               alignment: Alignment.bottomRight,
               children: <Widget>[
                 Padding(
-                  padding: const EdgeInsets.all(2.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 2.0),
                   child: AvatarImage(
-                    storyState: UStoryState.seen,
                     addStoryIndicatorSize: 7,
-                    heroTag: user.uid,
-                    url: user.photoUrl,
-                    spacing: 2,
-                    showStoryIndicator: !isFinished,
-                    addStory: user.uid == auth.profile.uid && isEmpty ?? false,
+                    url: isOwner
+                        ? Auth.instance.profile.user.urls.small
+                        : user.urls.small,
+                    storyState: storyState,
+                    addStory: isOwner && isEmpty ?? false,
                   ),
                 ),
               ],
             ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
-//              color: Colors.grey,
               child: Text(
-                user.uid == auth.profile.uid ? 'Your Story' : user.username,
+                isOwner ? 'Your Story' : user.username,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                    fontWeight: FontWeight.w400,
-                    color: user.uid == auth.profile.uid
-                        ? Colors.grey
-                        : Colors.black),
+                style: TextStyles.defaultText
+                    .copyWith(color: isOwner ? Colors.grey : Colors.black),
               ),
             ),
           ],

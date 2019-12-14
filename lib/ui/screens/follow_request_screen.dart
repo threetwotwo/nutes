@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nutes/core/services/auth.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/shared/app_bars.dart';
 import 'package:nutes/ui/shared/avatar_image.dart';
@@ -9,7 +10,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class FollowRequestScreen extends StatelessWidget {
   final Stream<QuerySnapshot> stream;
 
-  const FollowRequestScreen({Key key, this.stream}) : super(key: key);
+  final auth = Auth.instance;
+
+  FollowRequestScreen({Key key, this.stream}) : super(key: key);
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -25,7 +28,7 @@ class FollowRequestScreen extends StatelessWidget {
           child: StreamBuilder<QuerySnapshot>(
               stream: Firestore.instance
                   .collection('users')
-                  .document(Repo.currentProfile.uid)
+                  .document(auth.profile.uid)
                   .collection('follow_requests')
                   .snapshots(),
               builder: (context, snapshot) {
@@ -62,7 +65,7 @@ class FollowRequestScreen extends StatelessWidget {
                                 onDelete: (uid) {
                                   print(uid);
                                   return Repo.redactFollowRequest(
-                                      Repo.currentProfile.uid, uid);
+                                      auth.profile.uid, uid);
                                 },
                               ),
                             );

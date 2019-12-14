@@ -3,8 +3,7 @@ import 'package:nutes/core/services/local_cache.dart';
 
 class DismissView extends StatelessWidget {
   final Widget child;
-  final VoidCallback onDismiss;
-  const DismissView({Key key, this.child, this.onDismiss}) : super(key: key);
+  const DismissView({Key key, this.child}) : super(key: key);
   @override
   Widget build(BuildContext context) {
     return GestureDetector(

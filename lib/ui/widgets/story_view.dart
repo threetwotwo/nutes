@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import 'dart:async';
@@ -13,7 +14,6 @@ import 'package:nutes/ui/screens/profile_screen.dart';
 import 'package:nutes/ui/shared/avatar_image.dart';
 import 'package:nutes/ui/shared/buttons.dart';
 import 'package:nutes/utils/timeAgo.dart';
-//import 'package:cached_network_image/cached_network_image.dart';
 
 ///
 /// Callback function that accepts the index of moment and
@@ -33,19 +33,23 @@ class StoryView extends StatefulWidget {
     Key key,
     this.onFlashForward,
     this.onFlashBack,
-    this.startAt = 0,
+//    this.startAt = 0,
     this.isFirstStory = false,
     this.story,
     this.onMomentChanged,
     this.uploader,
     this.onAvatarTapped,
     this.topPadding,
-  })  : assert(startAt != null),
-        assert(startAt >= 0),
+    this.seenStories,
+  })  :
+//        assert(startAt != null),
+//        assert(startAt >= 0),
 //        assert(startAt == 0 || startAt < story?.moments.length),
         assert(onFlashForward != null),
         assert(onFlashBack != null),
         super(key: key);
+
+  final Map seenStories;
 
   final User uploader;
 
@@ -92,7 +96,7 @@ class StoryView extends StatefulWidget {
   ///
   /// Sets the index of the first moment that will be displayed
   ///
-  final int startAt;
+//  final int startAt;
 
   final bool isFirstStory;
 
@@ -129,15 +133,27 @@ class _StoryViewState extends State<StoryView>
   bool isInFullscreenMode = false;
   Story story;
 
+  Map<String, dynamic> _seenStories = {};
+
   @override
   void didUpdateWidget(StoryView oldWidget) {
-    print('didupdatewidget');
     _play();
     super.didUpdateWidget(oldWidget);
   }
 
   @override
   void initState() {
+    _init();
+
+    super.initState();
+  }
+
+  Future<void> _init() async {
+//    final result = await Repo.getSeenStories();
+//    setState(() {
+//      _seenStories = result;
+//    });
+
     if (widget.story == null) {
       print('story is null, get story');
       _getStory();
@@ -146,12 +162,17 @@ class _StoryViewState extends State<StoryView>
 
       _initAnimationController();
     }
-
-    super.initState();
   }
 
   void _initAnimationController() {
-    momentIndex = widget.startAt;
+    final startAt = widget.seenStories[widget.uploader.uid] == null
+        ? 0
+        : story.moments.indexOf(story.moments.firstWhere(
+            (m) =>
+                m.timestamp.seconds >
+                (widget.seenStories[widget.uploader.uid] as Timestamp).seconds,
+            orElse: () => story.moments.first));
+    momentIndex = startAt;
 
     controller = AnimationController(
       vsync: this,
@@ -162,7 +183,7 @@ class _StoryViewState extends State<StoryView>
         }
       });
 
-//    _play();
+    _play();
     widget.onMomentChanged(momentIndex);
   }
 
@@ -243,6 +264,8 @@ class _StoryViewState extends State<StoryView>
   ///Resumes the animation controller
   ///provided the current moment has been loaded
   void _play() {
+    if (story == null || widget.story == null) return;
+
     if (story.moments[momentIndex].isLoaded) controller.forward();
   }
 
@@ -367,7 +390,7 @@ class _StoryViewState extends State<StoryView>
                                   children: <Widget>[
                                     AvatarImage(
                                       bordered: false,
-                                      url: widget.uploader.photoUrl,
+                                      url: widget.uploader.urls.small,
                                       spacing: 0,
                                       padding: 8,
                                       addStory: false,

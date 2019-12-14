@@ -1,20 +1,18 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:line_icons/line_icons.dart';
 import 'package:nutes/core/models/post.dart';
 import 'package:nutes/core/models/story.dart';
 import 'package:nutes/core/models/user.dart';
 import 'package:nutes/core/services/auth.dart';
 import 'package:nutes/core/services/local_cache.dart';
 import 'package:nutes/core/services/repository.dart';
-import 'package:nutes/core/view_models/login_model.dart';
 import 'package:nutes/ui/screens/edit_profile_page.dart';
 import 'package:nutes/ui/screens/editor_page.dart';
 import 'package:nutes/ui/screens/follower_list_screen.dart';
 import 'package:nutes/ui/screens/post_detail_page.dart';
 import 'package:nutes/ui/shared/app_bars.dart';
+import 'package:nutes/ui/shared/loading_indicator.dart';
 import 'package:nutes/ui/shared/post_grid_view.dart';
 import 'package:nutes/ui/shared/post_list.dart';
 import 'package:nutes/ui/shared/refresh_list_view.dart';
@@ -22,7 +20,6 @@ import 'package:nutes/ui/shared/styles.dart';
 import 'package:nutes/ui/widgets/profile_header.dart';
 import 'package:nutes/ui/widgets/profile_screen_widgets.dart';
 import 'package:nutes/ui/widgets/story_page_view.dart';
-import 'package:provider/provider.dart';
 
 import 'account_screen.dart';
 
@@ -36,8 +33,6 @@ class MyProfileScreen extends StatefulWidget {
 }
 
 class _MyProfileScreenState extends State<MyProfileScreen> {
-//  UserProfile profile;
-
   final profileStream = Repo.myRef().snapshots();
   final auth = Auth.instance;
 
@@ -47,15 +42,8 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
   ViewType view = ViewType.grid;
 
   @override
-  void initState() {
-//    _getUser();
-    super.initState();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final topPadding = MediaQuery.of(context).padding.top;
-    print('top padding $topPadding');
 
     return Scaffold(
       appBar: ProfileAppBar(
@@ -72,79 +60,98 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
           StreamBuilder<DocumentSnapshot>(
               stream: profileStream,
               builder: (context, snapshot) {
-                if (!snapshot.hasData)
-                  return Container(
-                    color: Colors.red,
-                    child: Text('no profile stream data'),
-                  );
+                if (!snapshot.hasData) return LoadingIndicator();
 
                 final prof = UserProfile.fromDoc(snapshot.data);
 
-                print('my data: ${snapshot.data.data}');
                 return StreamBuilder<QuerySnapshot>(
                     stream: Repo.myStoryStream(),
                     builder: (context, storySnap) {
-                      if (!storySnap.hasData)
-                        return Container(
-                          color: Colors.blue,
-                          child: Text('no my story stream data'),
-                        );
+                      if (!storySnap.hasData) return LoadingIndicator();
                       final momentDocs = storySnap.data.documents;
 
                       final moments =
                           momentDocs.map((doc) => Moment.fromDoc(doc)).toList();
 
                       final story = Story(
-                          startAt: 0,
-                          lastLoaded: 0,
-                          moments: moments,
-                          isFinished: false);
+                        moments: moments,
+                        isFinished: false,
+                      );
 
-                      final userStory = UserStory(story, auth.profile.user);
+                      final userStory = UserStory(
+                        story: story,
+                        uploader: auth.profile.user,
+                        lastTimestamp: moments.isEmpty
+                            ? null
+                            : moments[moments.length - 1].timestamp,
+                      );
 
-                      return ProfileHeader(
-                        onAvatarPressed: () => momentDocs.isNotEmpty
-                            ? StoryPageView.show(
-                                context, 0, [userStory], topPadding)
-                            : Navigator.of(context, rootNavigator: true)
-                                .push(EditorPage.route()),
-                        onFollowersPressed: () => Navigator.push(context,
-                            FollowerListScreen.route(auth.profile.user, 0)),
-                        onFollowingsPressed: () => Navigator.push(context,
-                            FollowerListScreen.route(auth.profile.user, 1)),
-                        hasStories: momentDocs.isNotEmpty,
-                        profile: prof,
-                        isOwner: true,
-                        isFollowing: false,
-                        onEditPressed: () async {
-                          final UserProfile updatedProfile =
-                              await Navigator.of(context, rootNavigator: true)
-                                  .push(MaterialPageRoute(
-                                      fullscreenDialog: true,
-                                      builder: (ctx) => EditProfilePage(
-                                            profile: prof,
-                                          )));
+                      return StreamBuilder<DocumentSnapshot>(
+                          stream: Repo.seenStoriesStream(),
+                          builder: (context, snapshot) {
+                            final data = snapshot.data?.data ?? {};
 
-                          if (updatedProfile != null)
+                            final Timestamp seenStoryTimestamp =
+                                data[userStory.uploader.uid];
 
-                            ///Dont trigger if user cancel edit profile
-                            setState(() {
-                              auth.profile = updatedProfile;
+                            final storyState = userStory.lastTimestamp == null
+                                ? StoryState.none
+                                : seenStoryTimestamp == null
+                                    ? StoryState.unseen
+                                    : seenStoryTimestamp.seconds <
+                                            userStory.lastTimestamp.seconds
+                                        ? StoryState.unseen
+                                        : StoryState.seen;
+
+                            return ProfileHeader(
+                              onAvatarPressed: () => momentDocs.isNotEmpty
+                                  ? StoryPageView.show(context,
+                                      initialPage: 0,
+                                      topPadding: topPadding,
+                                      userStories: [userStory],
+                                      onPageChange: (val) {})
+                                  : Navigator.of(context, rootNavigator: true)
+                                      .push(EditorPage.route()),
+                              onFollowersPressed: () => Navigator.push(
+                                  context,
+                                  FollowerListScreen.route(
+                                      auth.profile.user, 0)),
+                              onFollowingsPressed: () => Navigator.push(
+                                  context,
+                                  FollowerListScreen.route(
+                                      auth.profile.user, 1)),
+                              storyState: storyState,
+                              profile: prof,
+                              isOwner: true,
+                              isFollowing: false,
+                              onEditPressed: () async {
+                                final UserProfile updatedProfile =
+                                    await Navigator.of(context,
+                                            rootNavigator: true)
+                                        .push(MaterialPageRoute(
+                                            fullscreenDialog: true,
+                                            builder: (ctx) => EditProfilePage(
+                                                  profile: prof,
+                                                )));
+
+                                if (updatedProfile != null)
+
+                                  ///Dont trigger if user cancel edit profile
+                                  setState(() {
+                                    auth.profile = updatedProfile;
 //                                    model.updateProfile(updatedProfile);
 //                                    profile = updatedProfile;
-                            });
-                        },
-                      );
+                                  });
+                              },
+                            );
+                          });
                     });
               }),
           Divider(height: 0, thickness: 1),
           StreamBuilder<QuerySnapshot>(
               stream: postStream,
               builder: (context, snapshot) {
-                if (!snapshot.hasData)
-                  return Container(
-                      padding: const EdgeInsets.all(8),
-                      child: CupertinoActivityIndicator());
+                if (!snapshot.hasData) return LoadingIndicator();
                 final docs = snapshot.data.documents;
                 var posts = docs.map((doc) => Post.fromDoc(doc)).toList();
                 posts.removeWhere((p) => p == null);
@@ -155,14 +162,6 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                         child: Center(
                           child: Column(
                             children: <Widget>[
-//                              Padding(
-//                                padding: const EdgeInsets.all(8.0),
-//                                child: Icon(
-//                                  LineIcons.group,
-//                                  color: Colors.grey,
-//                                  size: 50,
-//                                ),
-//                              ),
                               Text(
                                 'You have no posts. \n',
                                 style: TextStyles.defaultDisplay.copyWith(
@@ -175,7 +174,6 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                                 'Create your first post',
                                 style: TextStyles.defaultDisplay.copyWith(
                                   color: Colors.grey,
-//                                  fontSize: 24,
                                 ),
                                 textAlign: TextAlign.center,
                               ),

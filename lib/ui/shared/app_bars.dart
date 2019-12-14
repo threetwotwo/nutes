@@ -13,13 +13,16 @@ class BaseAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback onLeadingPressed;
   final VoidCallback onTrailingPressed;
 
+  final bool automaticallyImplyLeading;
+
   const BaseAppBar(
       {Key key,
       this.leading,
       this.trailing,
       this.title,
       this.onLeadingPressed,
-      this.onTrailingPressed})
+      this.onTrailingPressed,
+      this.automaticallyImplyLeading = true})
       : super(key: key);
 
   @override
@@ -28,23 +31,22 @@ class BaseAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      automaticallyImplyLeading: true,
-      leading: GestureDetector(
-        onTap: onLeadingPressed ?? () => Navigator.of(context).pop(),
-        child: leading == null
-            ? Icon(
-                Icons.arrow_back_ios,
-                color: Colors.black,
-              )
-            : leading,
-      ),
+      automaticallyImplyLeading: automaticallyImplyLeading,
+      leading: !automaticallyImplyLeading
+          ? null
+          : GestureDetector(
+              onTap: onLeadingPressed ?? () => Navigator.of(context).pop(),
+              child: leading == null
+                  ? Icon(
+                      Icons.arrow_back_ios,
+                      color: Colors.black,
+                    )
+                  : leading,
+            ),
       actions: <Widget>[
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: GestureDetector(
-            child: trailing == null ? SizedBox() : trailing,
-            onTap: onTrailingPressed,
-          ),
+        GestureDetector(
+          child: trailing == null ? SizedBox() : trailing,
+          onTap: onTrailingPressed,
         )
       ],
       title: title,

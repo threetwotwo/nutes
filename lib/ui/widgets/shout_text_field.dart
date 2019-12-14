@@ -51,7 +51,7 @@ class ShoutTextField extends StatelessWidget {
                       child: Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: AvatarImage(
-                        url: Auth.instance.profile.user.photoUrl, spacing: 0),
+                        url: Auth.instance.profile.user.urls.small, spacing: 0),
                   )),
                   Expanded(
                     flex: 5,

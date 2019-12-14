@@ -1,13 +1,15 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:nutes/core/services/auth.dart';
 import 'package:nutes/ui/shared/app_bars.dart';
 import 'package:nutes/ui/shared/avatar_image.dart';
 import 'package:nutes/core/models/user.dart';
 import 'package:nutes/core/services/firestore_service.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/shared/styles.dart';
-import 'package:nutes/core/view_models/profile_model.dart';
-import 'package:image_cropper/image_cropper.dart';
+//import 'package:image_cropper/image_cropper.dart';
 
 class EditProfilePage extends StatefulWidget {
   final UserProfile profile;
@@ -29,11 +31,17 @@ class _EditProfilePageState extends State<EditProfilePage> {
   final _bioController = TextEditingController();
   bool isUpdating = false;
 
+  final auth = Auth.instance;
+  UserProfile profile;
+
+//  UserProfile profile;
+
   @override
   void initState() {
-    _usernameController.text = widget.profile.user.username;
-    _displayNameController.text = widget.profile.user.displayName;
-    _bioController.text = widget.profile.bio;
+    profile = widget.profile;
+    _usernameController.text = auth.profile.user.username;
+    _displayNameController.text = auth.profile.user.displayName;
+    _bioController.text = auth.profile.bio;
     super.initState();
   }
 
@@ -55,7 +63,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
             bio: bio,
           );
 
-          final updatedProfile = Repo.currentProfile
+          final updatedProfile = auth.profile
               .copyWith(username: username, displayName: displayName, bio: bio);
 
           return Navigator.of(context).pop(updatedProfile);
@@ -69,7 +77,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: <Widget>[
                 Container(
-                  padding: EdgeInsets.all(5),
+                  padding: EdgeInsets.all(4),
                   height: 200,
                   width: 200,
                   child: Stack(
@@ -77,30 +85,26 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       if (isUpdating)
                         Positioned.fill(
                           child: Padding(
-                            padding: const EdgeInsets.all(8.0),
+                            padding: const EdgeInsets.all(4.0),
                             child: CircularProgressIndicator(
                               valueColor: AlwaysStoppedAnimation(Colors.grey),
                               strokeWidth: 2,
                             ),
                           ),
                         ),
-                      AvatarImage(
-                        onTap: () {
-                          print('prof pressed');
-                          changeProfilePhoto();
-                        },
-                        url: Repo.currentProfile.user.photoUrl ?? '',
-                        addStoryIndicatorSize: 15,
-                        spacing: 4,
+                      Positioned.fill(
+                        child: AvatarImage(
+                          onTap: () => _showModalPopup(context),
+                          url: profile.user.urls.original ?? '',
+                          addStoryIndicatorSize: 15,
+                          spacing: 4,
+                        ),
                       ),
                     ],
                   ),
                 ),
                 FlatButton(
-                    onPressed: () {
-                      print('edit photo pressed');
-                      changeProfilePhoto();
-                    },
+                    onPressed: () => _showModalPopup(context),
                     child: Text(
                       'Change Photo',
                       style: TextStyles.w600Text
@@ -132,22 +136,73 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 
-  Future<void> changeProfilePhoto() async {
+  Future _showModalPopup(BuildContext context) {
+    return showCupertinoModalPopup(
+        context: context,
+        builder: (context) {
+          return CupertinoActionSheet(
+            actions: <Widget>[
+              CupertinoActionSheetAction(
+                child: Text('Remove Current Photo',
+                    style: TextStyles.defaultDisplay.copyWith(
+                      color: Colors.red,
+                    )),
+                onPressed: () {
+                  removeCurrentPhoto();
+                  return Navigator.pop(context);
+                },
+              ),
+              CupertinoActionSheetAction(
+                child: Text('Choose from Library',
+                    style: TextStyles.defaultDisplay),
+                onPressed: () {
+                  pickImageFromLibrary();
+                  return Navigator.pop(context);
+                },
+              ),
+            ],
+            cancelButton: FlatButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancel', style: TextStyles.defaultDisplay),
+            ),
+          );
+        });
+  }
+
+  Future removeCurrentPhoto() async {
+    setState(() {
+      isUpdating = true;
+    });
+    final updatedProfile = await Repo.removeCurrentPhoto();
+    setState(() {
+      isUpdating = false;
+      profile = updatedProfile;
+    });
+  }
+
+  Future<void> pickImageFromLibrary() async {
     final imageFile = await ImagePicker.pickImage(source: ImageSource.gallery);
 
-    final croppedFile = await ImageCropper.cropImage(
+    final cropped = await ImageCropper.cropImage(
       sourcePath: imageFile.path,
       cropStyle: CropStyle.circle,
+      maxHeight: 600,
+      maxWidth: 600,
     );
+
+    ///If cancelled image picking and/or image cropping
+    if (cropped == null) return;
 
     setState(() {
       isUpdating = true;
     });
     final updatedProfile =
-        await Repo.updatePhotoUrl(uid: widget.profile.uid, file: croppedFile);
+        await Repo.updatePhotoUrl(uid: widget.profile.uid, original: cropped);
+
     setState(() {
       isUpdating = false;
-      Repo.currentProfile = updatedProfile;
+      profile = updatedProfile;
+//      profile = updatedProfile;
     });
   }
 }

@@ -3,6 +3,7 @@ import 'package:line_icons/line_icons.dart';
 import 'package:nutes/core/models/chat_message.dart';
 import 'package:nutes/core/models/post_type.dart';
 import 'package:nutes/core/models/user.dart';
+import 'package:nutes/core/services/auth.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/shared/app_bars.dart';
 import 'package:bubble/bubble.dart';
@@ -32,6 +33,8 @@ class _ShoutScreenState extends State<ShoutScreen> {
   final controller = TextEditingController();
 
   bool finishedEditing = false;
+
+  final auth = Auth.instance;
 
   @override
   Widget build(BuildContext context) {
@@ -87,7 +90,7 @@ class _ShoutScreenState extends State<ShoutScreen> {
                           width: 50,
                           child: AvatarImage(
                               spacing: 0,
-                              url: this.widget.challenger.photoUrl)),
+                              url: this.widget.challenger.urls.small)),
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -141,7 +144,7 @@ class _ShoutScreenState extends State<ShoutScreen> {
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: <Widget>[
                               Text(
-                                Repo.currentProfile.user.username,
+                                auth.profile.user.username,
                                 style: TextStyles.w600Text
                                     .copyWith(color: Colors.white),
                                 maxLines: 1,
@@ -230,8 +233,7 @@ class _ShoutScreenState extends State<ShoutScreen> {
                       child: SizedBox(
                           width: 50,
                           child: AvatarImage(
-                              spacing: 0,
-                              url: Repo.currentProfile.user.photoUrl)),
+                              spacing: 0, url: auth.profile.user.urls.small)),
                     ),
                   ],
                 ),
@@ -282,7 +284,7 @@ class _ShoutScreenState extends State<ShoutScreen> {
   Future _completeShoutChallenge() async {
     final metadata = {
       'challenger': widget.challenger.toMap(),
-      'challenged': Repo.currentProfile.toMap(),
+      'challenged': auth.profile.toMap(),
       'challenger_text': widget.message.content,
       'challenged_text': controller.text,
     };

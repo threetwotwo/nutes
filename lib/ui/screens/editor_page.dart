@@ -1,3 +1,4 @@
+import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 //import 'package:provider/provider.dart';
@@ -196,9 +197,9 @@ class _EditorPageState extends State<EditorPage>
 
       switch (filter.type) {
         case FilterType.urban:
-          if (text > 210)
+          if (text > 150)
             aspectRatio = 0.8;
-          else if (text > 110)
+          else if (text > 90)
             aspectRatio = 1;
           else
             aspectRatio = 1.4;
@@ -206,9 +207,9 @@ class _EditorPageState extends State<EditorPage>
 
         case FilterType.canvas:
         case FilterType.ego:
-          if (text > 260)
+          if (text > 200)
             aspectRatio = 0.8;
-          else if (text > 150)
+          else if (text > 100)
             aspectRatio = 1;
           else
             aspectRatio = 1.4;
@@ -327,7 +328,6 @@ class _EditorPageState extends State<EditorPage>
                             itemCount: capturePages.length,
                             isLoading: isLoading,
                             onSendPressed: () async {
-                              print('hide keyboard on send');
                               FocusScope.of(context).requestFocus(FocusNode());
 
                               ///hacky way to ensure keyboard is fully dismissed
@@ -335,13 +335,24 @@ class _EditorPageState extends State<EditorPage>
 
                               final bundles = await takeScreenshots();
 
-                              Navigator.push(
+                              final result = await Navigator.push(
                                   context,
                                   MaterialPageRoute(
                                       builder: (ctx) => ConfirmUploadPage(
                                             fileBundles: bundles,
                                             enableStory: bundles.length <= 1,
                                           )));
+
+                              if (result is bool && result == true) {
+                                print('should go to home');
+                                await Navigator.popUntil(
+                                    context, (r) => r.isFirst);
+                                await cache.animateTo(1);
+                                BotToast.showText(
+                                  text: 'Shared story',
+                                  align: Alignment(0, -0.75),
+                                );
+                              }
                             }),
                       ],
                     ),

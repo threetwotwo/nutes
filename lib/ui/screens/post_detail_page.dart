@@ -31,8 +31,8 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       appBar: BaseAppBar(),
       body: SafeArea(
           child: DismissView(
-        onDismiss: () => Navigator.pop(context),
         child: CommentOverlay(
+          onSend: (val) {},
           showTextField: showCommentTextField,
           controller: commentController,
           focusNode: commentFocusNode,

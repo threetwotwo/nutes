@@ -4,59 +4,22 @@ import 'package:line_icons/line_icons.dart';
 import 'package:nutes/core/models/post.dart';
 import 'package:nutes/core/models/user.dart';
 import 'package:nutes/ui/screens/profile_screen.dart';
+import 'package:nutes/ui/shared/avatar_image.dart';
 import 'package:nutes/ui/shared/styles.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:vibrate/vibrate.dart';
 
-class ShoutPost extends StatelessWidget {
-  const ShoutPost({
-    Key key,
-    @required this.post,
-    this.isGrid = false,
-  }) : super(key: key);
+final kPeerBubbleColor = Colors.white;
+const kPeerTextColor = Colors.black;
+final kMyBubbleColor = Colors.blueAccent[400];
+const kMyTextColor = Colors.white;
 
-  final Post post;
-  final bool isGrid;
+final kPeerTextStyle =
+    TextStyles.defaultText.copyWith(color: kPeerTextColor, fontSize: 16);
+final kMyTextStyle =
+    TextStyles.defaultText.copyWith(color: kMyTextColor, fontSize: 16);
 
-  @override
-  Widget build(BuildContext context) {
-    return isGrid
-        ? Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              GridShoutBubble(
-                post: post,
-                isChallenger: true,
-              ),
-              Expanded(
-                child: ClipRect(
-                  child: GridShoutBubble(
-                    post: post,
-                    isChallenger: false,
-                  ),
-                ),
-              ),
-            ],
-          )
-        : Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              Expanded(
-                child: ShoutPostBubble(
-                  isChallenger: true,
-                  post: post,
-                ),
-              ),
-              Expanded(
-                child: ShoutPostBubble(
-                  isChallenger: false,
-                  post: post,
-                ),
-              ),
-            ],
-          );
-  }
-}
+final kLabelTextStyle =
+    TextStyles.defaultText.copyWith(color: Colors.grey, fontSize: 14);
 
 class GridShoutBubble extends StatelessWidget {
   final Post post;
@@ -81,13 +44,13 @@ class GridShoutBubble extends StatelessWidget {
       children: <Widget>[
         if (isChallenger)
           Container(
-            decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey[100], width: 0.6)),
+            width: 36,
             padding: const EdgeInsets.symmetric(horizontal: 4.0),
-            child: CircleAvatar(
-                foregroundColor: Colors.grey[100],
-                radius: 14,
-                backgroundImage: CachedNetworkImageProvider(user.photoUrl)),
+            child: AvatarImage(
+              url: user.urls.small,
+              spacing: 0,
+              padding: 0,
+            ),
           ),
         Expanded(
           child: Bubble(
@@ -126,13 +89,13 @@ class GridShoutBubble extends StatelessWidget {
         ),
         if (!isChallenger)
           Container(
+            width: 36,
             padding: const EdgeInsets.symmetric(horizontal: 4.0),
-            decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey[100], width: 0.6)),
-            child: CircleAvatar(
-                foregroundColor: Colors.grey[100],
-                radius: 14,
-                backgroundImage: CachedNetworkImageProvider(user.photoUrl)),
+            child: AvatarImage(
+              url: user.urls.small,
+              spacing: 0,
+              padding: 0,
+            ),
           ),
       ],
     );
@@ -147,12 +110,15 @@ class ShoutPostBubble extends StatelessWidget {
   final bool didLike;
   final PostStats stats;
 
+  final int likeCount;
+
   const ShoutPostBubble({
-    this.post,
-    this.isChallenger,
+    @required this.post,
+    @required this.isChallenger,
     this.onHeartTapped,
     this.didLike,
     this.stats,
+    this.likeCount,
 
 //    this.showBullhorn = true,
   });
@@ -179,11 +145,13 @@ class ShoutPostBubble extends StatelessWidget {
                 onTap: () =>
                     Navigator.push(context, ProfileScreen.route(user.uid)),
                 child: Container(
+                  width: 48,
                   padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                  child: CircleAvatar(
-                      backgroundColor: Colors.grey[100],
-                      backgroundImage:
-                          CachedNetworkImageProvider(user.photoUrl)),
+                  child: AvatarImage(
+                    url: user.urls.small,
+                    spacing: 0,
+                    padding: 0,
+                  ),
                 ),
               ),
             Expanded(
@@ -195,7 +163,7 @@ class ShoutPostBubble extends StatelessWidget {
                       ? Alignment.centerLeft
                       : Alignment.centerRight,
                   shadowColor: Colors.black,
-                  color: isChallenger ? Colors.grey[100] : Colors.blueAccent,
+                  color: isChallenger ? kPeerBubbleColor : kMyBubbleColor,
                   padding: BubbleEdges.symmetric(vertical: 10, horizontal: 10),
                   margin: BubbleEdges.only(top: 10),
                   nip: isChallenger
@@ -208,56 +176,94 @@ class ShoutPostBubble extends StatelessWidget {
                         : CrossAxisAlignment.end,
                     children: <Widget>[
                       Material(
-                        color:
-                            isChallenger ? Colors.grey[100] : Colors.blueAccent,
+                        color: isChallenger ? kPeerBubbleColor : kMyBubbleColor,
                         child: InkWell(
                           onTap: () => Navigator.push(
                               context, ProfileScreen.route(user.uid)),
                           child: Text(
                             user.username,
-                            style: TextStyle(
-                                color:
-                                    isChallenger ? Colors.black : Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500),
+                            style: isChallenger
+                                ? kPeerTextStyle.copyWith(
+                                    fontWeight: FontWeight.w500)
+                                : kMyTextStyle.copyWith(
+                                    fontWeight: FontWeight.w500),
                           ),
                         ),
                       ),
-                      SizedBox(height: 8),
+                      SizedBox(height: 4),
                       Text(
                         content,
-                        style: TextStyles.defaultText.copyWith(
-                            color: isChallenger ? Colors.black : Colors.white),
+                        style: isChallenger ? kPeerTextStyle : kMyTextStyle,
                       ),
                       SizedBox(height: 8),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         mainAxisSize: MainAxisSize.min,
                         children: <Widget>[
+                          if (!isChallenger && likeCount > 0)
+                            Material(
+                              color: isChallenger
+                                  ? kPeerBubbleColor
+                                  : kMyBubbleColor,
+                              child: InkWell(
+                                onTap: () => print('tapped shout like count'),
+                                child: Text(
+                                  likeCount.toString() +
+                                      ' ${likeCount > 1 ? 'likes' : 'like'}',
+                                  style: isChallenger
+                                      ? kPeerTextStyle
+                                      : kMyTextStyle,
+                                ),
+                              ),
+                            ),
                           GestureDetector(
-                            onTap: onHeartTapped,
+                            onTap: () {
+                              Vibrate.feedback(FeedbackType.selection);
+                              return onHeartTapped();
+                            },
                             child: Padding(
-                              padding: const EdgeInsets.only(right: 5.0),
+                              padding: EdgeInsets.only(
+                                top: 0.0,
+                                bottom: 0.0,
+                                right: isChallenger ? 4.0 : 0.0,
+                                left: !isChallenger ? 4.0 : 0.0,
+                              ),
                               child: Icon(
-                                  didLike ? LineIcons.heart : LineIcons.heart_o,
-                                  size: 20,
-                                  color: didLike
-                                      ? isChallenger
-                                          ? Colors.pink[300]
-                                          : Colors.white
-                                      : isChallenger
-                                          ? Colors.grey
-                                          : Colors.white),
+                                didLike == null
+                                    ? Icons.ac_unit
+                                    : didLike
+                                        ? LineIcons.heart
+                                        : LineIcons.heart_o,
+                                size: 20,
+                                color: didLike == null
+                                    ? Colors.transparent
+                                    : didLike
+                                        ? isChallenger
+                                            ? Colors.pink[300]
+                                            : Colors.white
+                                        : isChallenger
+                                            ? Colors.grey
+                                            : Colors.white,
+                              ),
                             ),
                           ),
-                          Text(
-                            isChallenger
-                                ? stats.challengerCount.toString() + ' likes'
-                                : stats.challengedCount.toString() + ' likes',
-                            style: TextStyle(
-                                color:
-                                    isChallenger ? Colors.grey : Colors.white),
-                          ),
+                          if (isChallenger && likeCount > 0)
+                            Material(
+                              color: isChallenger
+                                  ? kPeerBubbleColor
+                                  : kMyBubbleColor,
+                              child: InkWell(
+                                onTap: () => print('tapped shout like count'),
+                                child: Text(
+                                  likeCount.toString() +
+                                      ' ${likeCount > 1 ? 'likes' : 'like'}',
+                                  style: isChallenger
+                                      ? kLabelTextStyle
+                                      : kLabelTextStyle.copyWith(
+                                          color: Colors.white),
+                                ),
+                              ),
+                            )
                         ],
                       ),
                     ],
@@ -270,12 +276,13 @@ class ShoutPostBubble extends StatelessWidget {
                 onTap: () =>
                     Navigator.push(context, ProfileScreen.route(user.uid)),
                 child: Container(
+                  width: 48,
                   padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                  child: CircleAvatar(
-                      backgroundColor: Colors.grey[100],
-//                    radius: 14,
-                      backgroundImage:
-                          CachedNetworkImageProvider(user.photoUrl)),
+                  child: AvatarImage(
+                    url: user.urls.small,
+                    spacing: 0,
+                    padding: 0,
+                  ),
                 ),
               ),
           ],

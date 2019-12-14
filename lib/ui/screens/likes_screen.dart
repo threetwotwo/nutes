@@ -1,15 +1,12 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:nutes/core/models/post.dart';
 import 'package:nutes/core/models/user.dart';
 import 'package:nutes/core/services/repository.dart';
-import 'package:nutes/ui/screens/profile_screen.dart';
 import 'package:nutes/ui/shared/app_bars.dart';
-import 'package:nutes/ui/shared/avatar_image.dart';
 import 'package:nutes/ui/shared/avatar_list_extended.dart';
-import 'package:nutes/ui/shared/avatar_list_item.dart';
-import 'package:nutes/ui/shared/buttons.dart';
-import 'package:nutes/ui/shared/search_bar.dart';
+import 'package:nutes/ui/shared/dismiss_view.dart';
+import 'package:nutes/ui/shared/empty_indicator.dart';
+import 'package:nutes/ui/shared/loading_indicator.dart';
 import 'package:nutes/ui/shared/styles.dart';
 
 class LikeScreen extends StatefulWidget {
@@ -31,6 +28,8 @@ class LikeScreen extends StatefulWidget {
 class _LikeScreenState extends State<LikeScreen> {
   List<User> users = [];
 
+  bool isLoading = false;
+
   ///Helper array to update follow button to say 'requested'
 //  List<bool> privateAccountRequests = [];
   final textEditingController = TextEditingController();
@@ -44,6 +43,7 @@ class _LikeScreenState extends State<LikeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: BaseAppBar(
         title: Text(
           'Likes',
@@ -51,14 +51,23 @@ class _LikeScreenState extends State<LikeScreen> {
         ),
       ),
       body: SafeArea(
-        child: AvatarListExtended(
-          users: users,
+        child: DismissView(
+          child: isLoading
+              ? LoadingIndicator()
+              : users.isEmpty
+                  ? EmptyIndicator('No one has liked this post')
+                  : AvatarListExtended(
+                      users: users,
+                    ),
         ),
       ),
     );
   }
 
   Future<void> _getUserLikes() async {
+    setState(() {
+      isLoading = true;
+    });
     final result = await Repo.getPostUserLikes(widget.post);
     final myFollowRequests = await Repo.getMyFollowRequests();
 
@@ -68,6 +77,7 @@ class _LikeScreenState extends State<LikeScreen> {
           .map((u) =>
               u.copyWith(hasRequestedFollow: myFollowRequests.contains(u.uid)))
           .toList();
+      isLoading = false;
     });
   }
 }

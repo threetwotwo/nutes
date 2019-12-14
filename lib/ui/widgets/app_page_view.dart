@@ -83,8 +83,6 @@ class _AppPageViewState extends State<AppPageView> {
                     onDM: () => cache.animateTo(2),
 
                     ///Page view is scrollable only when on feed page
-                    ///TODO: disable scroll on push @@@ Make use of Dismissible to
-                    ///prevent app view swipe
                     onTabTapped: (index) => setState(() {
                       cache.physics = index == 0
                           ? ClampingScrollPhysics()

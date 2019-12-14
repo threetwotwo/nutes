@@ -21,7 +21,7 @@ class RefreshListView extends StatefulWidget {
 
 class _RefreshListViewState extends State<RefreshListView> {
   bool isLoadingMore = false;
-  ScrollController controller;
+//  ScrollController controller;
 
   _loadMore() async {
     if (widget.onLoadMore != null) {
@@ -36,10 +36,10 @@ class _RefreshListViewState extends State<RefreshListView> {
 
   @override
   void initState() {
-    controller = widget.controller ?? ScrollController();
-    controller.addListener(() {
+    widget.controller?.addListener(() {
       if (!isLoadingMore &&
-          controller.position.pixels > controller.position.maxScrollExtent) {
+          widget.controller.position.pixels >
+              widget.controller.position.maxScrollExtent) {
         _loadMore();
         isLoadingMore = true;
 

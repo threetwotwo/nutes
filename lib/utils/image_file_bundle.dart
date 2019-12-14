@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:meta/meta.dart';
 
 ///Object use to upload image urls to storage and firestore
@@ -13,7 +13,7 @@ class ImageFileBundle {
   final double aspectRatio;
 
   ImageFileBundle({
-    @required this.index,
+    this.index,
     @required this.original,
     @required this.medium,
     @required this.small,
@@ -30,12 +30,30 @@ class ImageUrlBundle {
   final double aspectRatio;
 
   ImageUrlBundle({
-    @required this.index,
+    this.index,
     @required this.original,
     @required this.medium,
     @required this.small,
     this.aspectRatio = 1,
   });
+
+  factory ImageUrlBundle.empty() {
+    return ImageUrlBundle(
+      index: 0,
+      small: '',
+      medium: '',
+      original: '',
+      aspectRatio: 1.0,
+    );
+  }
+
+  factory ImageUrlBundle.fromUserDoc(DocumentSnapshot doc) {
+    return ImageUrlBundle(
+      small: doc['photo_url_small'] ?? '',
+      medium: doc['photo_url_medium'] ?? '',
+      original: doc['photo_url'] ?? '',
+    );
+  }
 
   factory ImageUrlBundle.fromMap(int index, Map map) {
     return ImageUrlBundle(

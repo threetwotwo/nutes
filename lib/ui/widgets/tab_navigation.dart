@@ -15,27 +15,22 @@ import 'package:nutes/ui/screens/create_screen.dart';
 
 class HomeRoute {
   static const String root = '/';
-  static const String user = '/user';
 }
 
 class SearchRoute {
   static const String root = '/';
-  static const String user = '/user';
 }
 
 class CreateRoute {
   static const String root = '/';
-  static const String user = '/user';
 }
 
 class ActivityRoute {
   static const String root = '/';
-  static const String user = '/user';
 }
 
 class ProfileRoute {
   static const String root = '/';
-  static const String user = '/user';
 }
 
 class TabNavigator extends StatelessWidget {
@@ -69,22 +64,18 @@ class TabNavigator extends StatelessWidget {
             onDM: onDM,
             routeObserver: routeObserver,
           ),
-//          HomeRoute.user: (context) => ProfileScreen(),
         };
       case TabItem.search:
         return {
           SearchRoute.root: SearchScreen(),
-//          SearchRoute.user: (context) => ProfileScreen(),
         };
       case TabItem.create:
         return {
           CreateRoute.root: CreateScreen(),
-//          CreateRoute.user: (context) => ProfileScreen(),
         };
       case TabItem.activity:
         return {
           ActivityRoute.root: ActivityScreen(),
-//          ActivityRoute.user: (context) => ProfileScreen(),
         };
       case TabItem.profile:
         return {

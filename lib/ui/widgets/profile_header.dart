@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
-import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/core/models/user.dart';
 import 'package:nutes/ui/shared/buttons.dart';
 import 'package:nutes/ui/shared/styles.dart';
 import 'package:nutes/utils/responsive.dart';
 
 import 'package:nutes/ui/shared/avatar_image.dart';
+
+enum StoryState { loading, none, unseen, seen }
 
 class ProfileHeader extends StatelessWidget {
   final UserProfile profile;
@@ -16,7 +17,8 @@ class ProfileHeader extends StatelessWidget {
   final bool isFollowing;
   final Function onEditPressed;
   final Function onMessagePressed;
-  final bool hasStories;
+//  final bool hasStories;
+  final StoryState storyState;
 
   final VoidCallback onAvatarPressed;
   final VoidCallback onFollowersPressed;
@@ -34,19 +36,16 @@ class ProfileHeader extends StatelessWidget {
     this.onMessagePressed,
     this.isFollowing,
     this.onFollow,
-    @required this.hasStories,
+//    @required this.hasStories,
     this.onAvatarPressed,
     this.onFollowersPressed,
     this.onFollowingsPressed,
     this.onRequest,
+    this.storyState = StoryState.none,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    double size(double size) {
-      return screenAwareSize(size, context);
-    }
-
     if (profile == null) return SizedBox();
     return Padding(
       padding: const EdgeInsets.all(8.0),
@@ -56,11 +55,6 @@ class ProfileHeader extends StatelessWidget {
           Container(
             height: 280,
             padding: const EdgeInsets.all(8),
-//            padding: EdgeInsets.only(
-//                top: size(16),
-//                bottom: size(16),
-//                left: size(8),
-//                right: size(16)),
             decoration: BoxDecoration(color: Colors.grey[100].withOpacity(0.3)),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -69,18 +63,17 @@ class ProfileHeader extends StatelessWidget {
                 Flexible(
                   flex: 5,
                   child: Container(
-//                    color: Colors.green,
                     child: Align(
                       alignment: Alignment.centerRight,
                       child: AvatarImage(
+                        storyState: storyState,
                         onTap: onAvatarPressed,
-                        showStoryIndicator: hasStories,
-                        addStory: isOwner,
-//                        addStoryIndicatorShouldHugBorder: true,
+                        addStory: isOwner && storyState == StoryState.none,
                         addStoryIndicatorSize: 16,
-                        spacing: size(4),
+                        spacing: 4,
                         padding: 8,
-                        url: profile.user.photoUrl ?? '',
+                        ringWidth: 4,
+                        url: profile.user.urls.original ?? '',
                       ),
                     ),
                   ),
@@ -88,7 +81,6 @@ class ProfileHeader extends StatelessWidget {
                 Flexible(
                   flex: 3,
                   child: Container(
-//                    color: Colors.lightBlue,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -99,7 +91,6 @@ class ProfileHeader extends StatelessWidget {
                         SizedBox(height: screenAwareSize(20, context)),
                         Expanded(
                             child: Container(
-//                  color: Colors.red,
                           child: profile.stats == null
                               ? SizedBox()
                               : UserStatsUI(
@@ -129,42 +120,46 @@ class ProfileHeader extends StatelessWidget {
               ],
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: <Widget>[
-                Text(
-                  profile.user.displayName ?? '',
-                  style: TextStyles.w600Text.copyWith(fontSize: 15),
-                ),
-                IconButton(
-                  onPressed: null,
-                  icon: Icon(
-                    MdiIcons.chevronDown,
-                    size: defaultSize(24, context, defaultTo: 20),
+
+          ///Display name
+          if (profile.user.displayName.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: <Widget>[
+                  Text(
+                    profile.user.displayName ?? '',
+                    style: TextStyles.w600Text.copyWith(fontSize: 15),
                   ),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: Container(
-//          padding: EdgeInsets.symmetric(
-//              vertical: screenAwareSize(8, context),
-//              horizontal: screenAwareSize(16, context)),
-              child: Text(
-                profile.bio ?? '',
-                textAlign: TextAlign.start,
-                maxLines: 10,
-                softWrap: true,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyles.defaultText
-                    .copyWith(fontSize: 14, fontWeight: FontWeight.normal),
+                  IconButton(
+                    onPressed: null,
+                    icon: Icon(
+                      MdiIcons.chevronDown,
+                      color: Colors.white,
+                      size: defaultSize(24, context, defaultTo: 20),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
+
+          ///Bio
+          if (profile.bio.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: Container(
+                child: Text(
+                  profile.bio ?? '',
+                  textAlign: TextAlign.start,
+                  maxLines: 10,
+                  softWrap: true,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyles.defaultText
+                      .copyWith(fontSize: 14, fontWeight: FontWeight.normal),
+                ),
+              ),
+            ),
         ],
       ),
     );
