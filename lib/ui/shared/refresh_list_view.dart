@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:nutes/ui/shared/loading_indicator.dart';
 
 class RefreshListView extends StatefulWidget {
   final ScrollController controller;
@@ -21,7 +22,7 @@ class RefreshListView extends StatefulWidget {
 
 class _RefreshListViewState extends State<RefreshListView> {
   bool isLoadingMore = false;
-//  ScrollController controller;
+  ScrollController _controller;
 
   _loadMore() async {
     if (widget.onLoadMore != null) {
@@ -36,10 +37,11 @@ class _RefreshListViewState extends State<RefreshListView> {
 
   @override
   void initState() {
-    widget.controller?.addListener(() {
+    _controller = widget.controller ?? ScrollController();
+    _controller.addListener(() {
       if (!isLoadingMore &&
-          widget.controller.position.pixels >
-              widget.controller.position.maxScrollExtent) {
+          _controller.position.pixels > _controller.position.maxScrollExtent) {
+        print('load more');
         _loadMore();
         isLoadingMore = true;
 
@@ -59,7 +61,7 @@ class _RefreshListViewState extends State<RefreshListView> {
   @override
   Widget build(BuildContext context) {
     return CustomScrollView(
-      controller: widget.controller,
+      controller: _controller,
       physics: AlwaysScrollableScrollPhysics(),
       slivers: <Widget>[
         CupertinoSliverRefreshControl(
@@ -78,10 +80,7 @@ class _RefreshListViewState extends State<RefreshListView> {
             )),
         if (isLoadingMore)
           SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(10.0),
-              child: CupertinoActivityIndicator(),
-            ),
+            child: LoadingIndicator(),
           )
       ],
     );

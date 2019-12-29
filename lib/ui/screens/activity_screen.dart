@@ -1,16 +1,20 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:nutes/core/models/activity.dart';
 import 'package:nutes/core/models/follow_request.dart';
-import 'package:nutes/core/models/post.dart';
-import 'package:nutes/core/models/user.dart';
+import 'package:nutes/core/models/post_type.dart';
 import 'package:nutes/core/services/auth.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/screens/follow_request_screen.dart';
 import 'package:nutes/ui/screens/post_detail_page.dart';
 import 'package:nutes/ui/shared/avatar_image.dart';
 import 'package:nutes/ui/shared/avatar_list_item.dart';
+import 'package:nutes/ui/shared/empty_indicator.dart';
+import 'package:nutes/ui/shared/loading_indicator.dart';
 import 'package:nutes/ui/shared/refresh_list_view.dart';
+import 'package:nutes/ui/shared/shout_grid_item.dart';
+import 'package:nutes/ui/shared/shout_post.dart';
 import 'package:nutes/ui/shared/styles.dart';
 import 'package:nutes/utils/timeAgo.dart';
 
@@ -65,51 +69,63 @@ class FollowingsActivityScreen extends StatefulWidget {
 }
 
 class _FollowingsActivityScreenState extends State<FollowingsActivityScreen> {
-  List<User> followings = [];
   List<Activity> activities = [];
+  List<ActivityBundle> bundles = [];
 
   final auth = Auth.instance;
 
+  bool isLoading = false;
+
   @override
   void initState() {
-    _getMyFollowings();
+    _getActivity();
     super.initState();
   }
 
-  _getMyFollowings() async {
-    final result = await Repo.getMyUserFollowings(auth.profile.uid);
-    setState(() {
-      followings = result;
-    });
-    _getActivity();
-  }
-
   _getActivity() async {
-    var result = await Repo.getFollowingsActivity(followings);
-    result.removeWhere((r) => r.owner == null);
     setState(() {
+      isLoading = true;
+    });
+    var result = await Repo.getMyFollowingsActivity();
+//    result.removeWhere((r) => r.activityType == null);
+    setState(() {
+      isLoading = false;
       activities = result;
     });
+
+    final postLikes = result
+        .where((ac) => ac.activityType == ActivityType.post_like)
+        .toList();
+
+    if (postLikes.isEmpty) return;
+
+    final likesBundle = ActivityBundle.from(postLikes, ActivityType.post_like);
+
+    bundles.add(likesBundle);
   }
 
   @override
   Widget build(BuildContext context) {
-    return RefreshListView(
-      onRefresh: () => _getActivity(),
-      children: <Widget>[
-        ListView.builder(
-            shrinkWrap: true,
-            physics: NeverScrollableScrollPhysics(),
-            itemCount: activities.length,
-            itemBuilder: (context, index) {
-              final activity = activities[index];
-              final user = activity.owner;
-              final postUrl = activity.postUrl;
-              final date = activity.timestamp;
-              return ActivityListItem(activity: activity);
-            }),
-      ],
-    );
+    return isLoading
+        ? LoadingIndicator()
+        : activities.isEmpty
+            ? EmptyIndicator('No followings activity')
+            : RefreshListView(
+                onRefresh: () => _getActivity(),
+                children: <Widget>[
+                  ListView.builder(
+                      shrinkWrap: true,
+                      physics: NeverScrollableScrollPhysics(),
+                      itemCount: bundles.length,
+                      itemBuilder: (context, index) {
+                        final activity = activities[index];
+                        final user = activity.postOwner;
+                        final postUrl = activity.postUrl;
+                        final date = activity.timestamp;
+                        return ActivityListItem(bundle: bundles[index]);
+                      }),
+                ],
+              );
   }
 }
 
@@ -172,62 +188,82 @@ class _SelfActivityViewState extends State<SelfActivityView> {
 }
 
 class ActivityListItem extends StatelessWidget {
-  final Activity activity;
+  final ActivityBundle bundle;
 
-  const ActivityListItem({Key key, this.activity}) : super(key: key);
+  const ActivityListItem({Key key, this.bundle}) : super(key: key);
   @override
   Widget build(BuildContext context) {
+    final length = bundle.activities.length;
     return Column(
       children: <Widget>[
         AvatarListItem(
             avatar: AvatarImage(
-              url: activity.owner.urls.small,
+              url: bundle.owner.urls.small,
             ),
             richTitle: TextSpan(children: [
               TextSpan(
-                  text: activity.owner.username,
+                  text: bundle.owner.username,
                   style: TextStyles.defaultText
                       .copyWith(fontWeight: FontWeight.w500)),
               TextSpan(
-                  text: ' liked a post ${activity.postId}. ',
+                  text:
+                      ' liked ${length > 1 ? length : 'a'} post${length > 1 ? 's' : ''}. ',
                   style: TextStyles.defaultText
                       .copyWith(fontWeight: FontWeight.w300)),
               TextSpan(
-                  text: TimeAgo.formatShort(activity.timestamp.toDate()),
+                  text: TimeAgo.formatShort(bundle.timestamp.toDate()),
                   style: TextStyles.defaultText.copyWith(
                       fontWeight: FontWeight.w500, color: Colors.grey)),
             ])
 //      title: '${activity.owner.username} liked a post',
             ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: <Widget>[
-              GestureDetector(
-                onTap: () => Navigator.push(context, PostDetailScreen.route(
+        Container(
+          height: 110,
+          child: ListView.builder(
+//              shrinkWrap: true,
+              itemCount: bundle.activities.length,
+              scrollDirection: Axis.horizontal,
+              itemBuilder: (context, idx) {
+                final activity = bundle.activities[idx];
 
-                    ///TODO: make this possible
-                    Post(id: activity.postId, owner: activity.owner))),
-                child: Container(
-                  color: Colors.grey[100],
-                  height: 110,
-                  width: 110,
-                  child: activity.metadata == null
-                      ? Image.network(
-                          activity.postUrl,
-                          fit: BoxFit.cover,
-                        )
-//                  CachedNetworkImage(
-//                          imageUrl: activity.postUrl,
-//                          fit: BoxFit.cover,
-//                        )
-                      : Text('shout'),
-                ),
-              )
-            ],
-          ),
-        ),
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: <Widget>[
+                      GestureDetector(
+                        onTap: () {
+                          return Navigator.push(
+                            context,
+                            PostDetailScreen.route(null,
+                                postId: activity.postId,
+                                ownerId: activity.postOwner.uid),
+                          );
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.grey[100],
+                            border: Border.all(color: Colors.grey[200]),
+                          ),
+                          height: 110,
+                          width: 110,
+                          child: activity.postType == PostType.text
+                              ? CachedNetworkImage(
+                                  imageUrl: activity.postUrl,
+                                  fit: BoxFit.cover,
+                                )
+                              : ShoutGridItem(
+                                  metadata: activity.metadata,
+                                  avatarSize: 24,
+                                  fontSize: 10,
+                                ),
+                        ),
+                      )
+                    ],
+                  ),
+                );
+              }),
+        )
       ],
     );
   }

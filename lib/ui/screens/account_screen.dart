@@ -24,7 +24,7 @@ class AccountScreen extends StatelessWidget {
         ),
         body: ListView(
           children: <Widget>[
-            AccountListTile(LineIcons.bookmark_o, 'Saved'),
+//            AccountListTile(LineIcons.bookmark_o, 'Saved'),
             AccountListTile(LineIcons.gear, 'Settings',
                 onTap: () => Navigator.push(
                     context, AccountSettingsScreen.route(profile))),

@@ -4,6 +4,7 @@ import 'package:nutes/core/services/auth.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/shared/avatar_image.dart';
 import 'package:nutes/ui/shared/avatar_list_item.dart';
+import 'package:nutes/ui/shared/styles.dart';
 import 'package:nutes/utils/screenshot.dart';
 
 ///maintains a bundle of [CaptureController]s
@@ -127,6 +128,9 @@ class CapturePageBody extends StatelessWidget {
                 avatar: AvatarImage(
                   url: Auth.instance.profile.user.urls.small,
                 ),
+                color: filter.variant.bgDecor.color,
+                titleStyle: TextStyles.w600Text
+                    .copyWith(color: filter.variant.textStyle.color),
                 title: auth.profile.user.displayName,
                 subtitle: '@${auth.profile.user.username}',
                 trailingWidget: Icon(

@@ -5,31 +5,28 @@ import 'package:nutes/core/models/story.dart';
 import 'package:nutes/core/services/auth.dart';
 import 'package:nutes/core/services/local_cache.dart';
 import 'package:nutes/core/services/repository.dart';
-import 'package:nutes/core/view_models/home_model.dart';
 import 'package:nutes/ui/shared/comment_overlay.dart';
 import 'package:nutes/ui/shared/loading_indicator.dart';
 import 'package:nutes/ui/shared/refresh_list_view.dart';
 import 'package:nutes/ui/shared/story_avatar.dart';
+import 'package:nutes/ui/widgets/empty_view.dart';
 import 'package:nutes/ui/widgets/feed_app_bar.dart';
 import 'package:nutes/ui/shared/post_list.dart';
-import 'package:nutes/core/services/locator.dart';
 import 'package:nutes/ui/widgets/inline_stories.dart';
 import 'package:flutter/cupertino.dart';
 
 class FeedScreen extends StatefulWidget {
   final VoidCallback onCreatePressed;
   final VoidCallback onDM;
-  final GlobalKey<NavigatorState> navigatorKey;
+  final ScrollController scrollController;
 
-  final RouteObserver<PageRoute> routeObserver;
-  FeedScreen(
-      {Key key,
-      this.onCreatePressed,
-      this.onDM,
-      this.navigatorKey,
+  FeedScreen({
+    Key key,
+    this.onCreatePressed,
+    this.onDM,
+    this.scrollController,
 //      this.onAddStoryPressed,
-      this.routeObserver})
-      : super(key: key);
+  }) : super(key: key);
 
   @override
   _FeedScreenState createState() => _FeedScreenState();
@@ -37,9 +34,7 @@ class FeedScreen extends StatefulWidget {
 
 class _FeedScreenState extends State<FeedScreen>
     with AutomaticKeepAliveClientMixin, RouteAware {
-  final homeModel = locator<HomeModel>();
-
-  final routeObserver = locator<RouteObserver<PageRoute>>();
+  final routeObserver = RouteObserver();
 
   Stream<QuerySnapshot> myStoryStream;
 
@@ -63,6 +58,8 @@ class _FeedScreenState extends State<FeedScreen>
   );
 
   List<UserStory> followingsStories = [];
+
+  DocumentSnapshot startAfter;
 
   @override
   void didChangeDependencies() {
@@ -93,7 +90,7 @@ class _FeedScreenState extends State<FeedScreen>
 
   @override
   void initState() {
-    _getPosts();
+    _getInitialPosts();
     _getMyStory();
     _getStoriesOfFollowings();
     super.initState();
@@ -107,12 +104,15 @@ class _FeedScreenState extends State<FeedScreen>
 
     final topPadding = MediaQuery.of(context).padding.top;
 
+//    return Container(
+//      color: Colors.red,
+//    );
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: FeedAppBar(
-        onDM: widget.onDM,
         onCreatePressed: widget.onCreatePressed,
         onLogoutPressed: () => Repo.logout(),
+        onDM: widget.onDM,
       ),
       body: CommentOverlay(
         onSend: (text) {
@@ -144,11 +144,12 @@ class _FeedScreenState extends State<FeedScreen>
           return;
         },
         child: RefreshListView(
-          controller: cache.homeScrollController,
+          controller: widget.scrollController,
           onRefresh: () {
             _getStoriesOfFollowings();
-            return _getPosts();
+            return _getInitialPosts();
           },
+          onLoadMore: _getMorePosts,
           children: <Widget>[
             Container(
               height: 112,
@@ -158,31 +159,13 @@ class _FeedScreenState extends State<FeedScreen>
                   ? Center(child: LoadingIndicator())
                   : Row(
                       children: <Widget>[
-//                        Visibility(
-//                          visible: Repo.myStory == null
-//                              ? false
-//                              : Repo.myStory.moments.isEmpty &&
-//                                  data.userStories.firstWhere(
-//                                          (us) =>
-//                                              us.uploader.uid ==
-//                                              auth.profile.uid,
-//                                          orElse: () => null) ==
-//                                      null,
-//                          child: Container(
-////                                color: Colors.red,
-//                            child: StoryAvatar(
-//                              user: auth.profile.user,
-//                              isEmpty: true,
-//                              isFinished: true,
-//                              onTap: widget.onCreatePressed,
-//                              onLongPress: widget.onCreatePressed,
-//                            ),
-//                          ),
-//                        ),
                         Visibility(
                           visible: myStory.story.moments.isEmpty,
                           child: StoryAvatar(
                             isOwner: true,
+//                            user: User.empty(),
+
+                            ///TODO: fix this bug causing app to not load
                             user: auth.profile.user,
                             isEmpty: true,
                             onTap: widget.onCreatePressed,
@@ -194,7 +177,7 @@ class _FeedScreenState extends State<FeedScreen>
                                 if (myStory.story.moments.isNotEmpty) myStory
                               ] +
                               followingsStories,
-                          onCreateStory: widget.onCreatePressed,
+//                          onCreateStory: widget.onCreatePressed,
                           topPadding: topPadding,
                         ),
                       ],
@@ -202,31 +185,18 @@ class _FeedScreenState extends State<FeedScreen>
             ),
             Divider(),
             isFetchingPosts
-                ? Padding(
-                    padding: EdgeInsets.all(8),
-                    child: CupertinoActivityIndicator(),
-                  )
+                ? LoadingIndicator()
                 : posts.isEmpty
-                    ? Container(
-                        padding: EdgeInsets.all(24),
-//                          color: Colors.red,
-                        child: Center(
-                            child: Text(
-                          'No posts to show. \n Start '
-                          'following users to see their posts.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                              color: Colors.grey[700],
-                              fontSize: 20,
-                              fontWeight: FontWeight.w300),
-                        )),
+                    ? EmptyView(
+                        title: 'No posts to show',
+                        subtitle: 'Start following users to see their posts',
                       )
                     : PostListView(
                         posts: posts,
                         onUnfollow: (uid) {
                           print('onUnfollow $uid');
                           return setState(() {
-                            posts = List.from(posts)
+                            posts = List<Post>.from(posts)
                               ..removeWhere((post) => post.owner.uid == uid);
                           });
                         },
@@ -238,25 +208,38 @@ class _FeedScreenState extends State<FeedScreen>
                           });
                           FocusScope.of(context).requestFocus(commentFocusNode);
                           return;
-                        })
+                        }),
+            SizedBox(height: 64),
           ],
         ),
       ),
     );
   }
 
-  Future<List<Post>> _getPosts() async {
+  Future<void> _getInitialPosts() async {
     if (mounted)
       setState(() {
+//        startAfter = null;
         isFetchingPosts = true;
       });
 
-    final result = await Repo.getFeed(uid: auth.profile.uid, limit: 10);
+    final result = await Repo.getFeed();
 
     if (mounted)
       setState(() {
-        posts = result;
+        posts = result.posts;
+        startAfter = result.startAfter;
         isFetchingPosts = false;
+      });
+  }
+
+  Future<void> _getMorePosts() async {
+    final result = await Repo.getFeed(startAfter: startAfter);
+
+    if (mounted)
+      setState(() {
+        posts = posts + result.posts;
+        startAfter = result.startAfter;
       });
   }
 

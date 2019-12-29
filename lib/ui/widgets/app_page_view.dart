@@ -1,16 +1,13 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:nutes/core/services/auth.dart';
-import 'package:nutes/core/services/local_cache.dart';
 import 'package:nutes/core/services/repository.dart';
-import 'package:nutes/core/view_models/home_model.dart';
-import 'package:nutes/core/view_models/login_model.dart';
 import 'package:nutes/ui/screens/direct_screen.dart';
 import 'package:nutes/ui/screens/editor_page.dart';
 import 'package:nutes/ui/screens/home_screen.dart';
-import 'package:nutes/ui/shared/provider_view.dart';
-import 'package:provider/provider.dart';
+
+const scrollDuration = Duration(milliseconds: 300);
+const scrollCurve = Curves.easeInOut;
 
 class AppPageView extends StatefulWidget {
   final String uid;
@@ -21,41 +18,45 @@ class AppPageView extends StatefulWidget {
 }
 
 class _AppPageViewState extends State<AppPageView> {
-  Widget _editorStoryScreen;
-
   final _focusNode = FocusScopeNode();
-  final cache = LocalCache.instance;
   final auth = Auth.instance;
 
+  ScrollPhysics scrollPhysics = ClampingScrollPhysics();
+
+  final appPageController = PageController(initialPage: 1);
+
+  Future animateTo(int page) {
+    print('animate app to page $page');
+    if (appPageController.hasClients)
+      return appPageController.animateToPage(page,
+          duration: scrollDuration, curve: scrollCurve);
+    else
+      return null;
+  }
+
   _getProfile() async {
-//    final model = Provider.of<LoginModel>(context);
-//
-//    final result = await Repo.getUserProfile(widget.uid);
-//    print('current profile: ${result.toMap()}');
-//    model.updateProfile(result);
-    auth.profile = await Repo.getUserProfile(widget.uid);
+    Auth.instance.profile = await Repo.getUserProfile(widget.uid);
     setState(() {});
   }
 
   @override
   void initState() {
-//    final model = Provider.of<LoginModel>(context);
 //
-    if (auth.profile == null) _getProfile();
-//    _getProfile();
-
-    _editorStoryScreen = FocusScope(
-      node: _focusNode,
-      child: EditorPage(
-        isStoryMode: true,
-        onBackPressed: () => cache.animateTo(1),
-      ),
-    );
+//    if (auth.profile == null)
+    _getProfile();
+//
+//    _editorStoryScreen = FocusScope(
+//      node: _focusNode,
+//      child: EditorPage(
+//        isStoryMode: true,
+//        onBackPressed: () => cache.animateTo(1),
+//      ),
+//    );
 
     ///listen to page scroll
-    cache.appScrollController.addListener(() {
+    appPageController.addListener(() {
       if (context == null) return;
-      if (cache.appScrollController.page.floor() != 0) {
+      if (appPageController.page.floor() != 0) {
         FocusScope.of(context).requestFocus(FocusNode());
       } else {
         FocusScope.of(context).setFirstFocus(_focusNode);
@@ -68,35 +69,41 @@ class _AppPageViewState extends State<AppPageView> {
   @override
   Widget build(BuildContext context) {
     return Auth.instance.profile == null
-        ? CupertinoActivityIndicator()
-        : WillPopScope(
-            onWillPop: () async => false,
-            child: ProviderView<HomeModel>(builder: (context, model, child) {
-              return PageView(
-                dragStartBehavior: DragStartBehavior.down,
-                physics: cache.physics,
-                controller: cache.appScrollController,
-                children: <Widget>[
-                  _editorStoryScreen,
-                  HomeScreen(
-                    onCreatePressed: () => cache.animateTo(0),
-                    onDM: () => cache.animateTo(2),
+        ? Scaffold(
+            body: Container(
+              color: Colors.white,
+              child: Center(
+                child: CupertinoActivityIndicator(),
+              ),
+            ),
+          )
+        : PageView(
+            physics: scrollPhysics,
+            controller: appPageController,
+            children: <Widget>[
+              FocusScope(
+                node: _focusNode,
+                child: EditorPage(
+                  isStoryMode: true,
+                  onBackPressed: () => animateTo(1),
+                ),
+              ),
+              HomeScreen(
+                onCreatePressed: () => animateTo(0),
+                onDM: () => animateTo(2),
 
-                    ///Page view is scrollable only when on feed page
-                    onTabTapped: (index) => setState(() {
-                      cache.physics = index == 0
-                          ? ClampingScrollPhysics()
-                          : NeverScrollableScrollPhysics();
-                    }),
-                  ),
-                  DirectScreen(
-                    onLeadingPressed: () => cache.animateTo(1),
-//              onLeadingPressed: () => _animateToPage(1),
-                    onTrailingPressed: () {},
-                  ),
-                ],
-              );
-            }),
+                ///Page view is scrollable only when on feed page
+                onTabTapped: (index) => setState(() {
+                  scrollPhysics = index == 0
+                      ? ClampingScrollPhysics()
+                      : NeverScrollableScrollPhysics();
+                }),
+              ),
+              DirectScreen(
+                onLeadingPressed: () => animateTo(1),
+                onTrailingPressed: () {},
+              ),
+            ],
           );
   }
 }

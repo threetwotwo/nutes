@@ -214,14 +214,6 @@ class ColorAvatar extends StatelessWidget {
           color: Colors.transparent,
           borderRadius: BorderRadius.circular(999),
           border: Border.all(color: Colors.grey, width: 0.5),
-//        boxShadow: [
-//          BoxShadow(
-//            color: Colors.grey[300],
-//            spreadRadius: 1.6,
-//            blurRadius: 4,
-//            offset: Offset(0, 3), // changes position of shadow
-//          ),
-//        ],
         ),
         child: Container(
           decoration: BoxDecoration(

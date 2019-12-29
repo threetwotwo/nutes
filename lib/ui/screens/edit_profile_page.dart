@@ -224,7 +224,7 @@ class EditListItem extends StatelessWidget {
             flex: 1,
             child: Text(
               title,
-              style: TextStyles.w300Display,
+              style: TextStyles.defaultText,
             ),
           ),
           SizedBox(width: 30),

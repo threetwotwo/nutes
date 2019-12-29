@@ -7,6 +7,7 @@ import 'package:nutes/core/models/chat_message.dart';
 import 'package:nutes/core/models/user.dart';
 import 'package:nutes/core/services/auth.dart';
 import 'package:nutes/core/services/repository.dart';
+import 'package:nutes/ui/screens/profile_screen.dart';
 import 'package:nutes/ui/screens/shout_screen.dart';
 import 'package:nutes/ui/shared/app_bars.dart';
 import 'package:nutes/ui/shared/avatar_image.dart';
@@ -15,26 +16,29 @@ import 'package:nutes/ui/shared/loading_indicator.dart';
 import 'package:nutes/ui/widgets/chat_bubble.dart';
 import 'package:nutes/ui/widgets/chat_screen_input.dart';
 import 'package:nutes/ui/widgets/shout_text_field.dart';
-import 'package:flutter_spinkit/flutter_spinkit.dart';
-
-class LoadMoreIndicator extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-        child: Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: SpinKitFadingCircle(
-        color: Colors.grey,
-        size: 24,
-      ),
-    ));
-  }
-}
 
 class ChatScreen extends StatefulWidget {
   final User peer;
+  final Timestamp lastSeenTimestamp;
+  final Timestamp lastSeenTimestampPeer;
+  final String peerId;
 
-  const ChatScreen({Key key, this.peer}) : super(key: key);
+  const ChatScreen(
+      {Key key,
+      this.peer,
+      this.lastSeenTimestamp,
+      this.lastSeenTimestampPeer,
+      this.peerId})
+      : super(key: key);
+
+  static Route route(User peer) => MaterialPageRoute(
+      builder: (_) => ChatScreen(
+            peer: peer,
+          ));
+  static Route FCMroute(String peerId) => MaterialPageRoute(
+      builder: (_) => ChatScreen(
+            peerId: peerId,
+          ));
 
   @override
   _ChatScreenState createState() => _ChatScreenState();
@@ -44,6 +48,9 @@ class _ChatScreenState extends State<ChatScreen> {
   final auth = Auth.instance;
 
   String uid = Auth.instance.profile.uid;
+
+  User peer;
+
   String chatId;
 
   List<ChatItem> messages = [];
@@ -65,6 +72,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
   bool loadMoreIndicatorIsVisibible = false;
 
+  bool peerHasSeenMyLastMessage = false;
+
   ///For pagination
   Timestamp endAt;
   Timestamp startAt;
@@ -84,12 +93,11 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   @override
-  Future initState() {
+  void initState() {
     final peerId = widget.peer.uid;
 
-    chatId = (uid.hashCode <= widget.peer.uid.hashCode)
-        ? '$uid-$peerId'
-        : '$peerId-$uid';
+    chatId =
+        (uid.hashCode <= peerId.hashCode) ? '$uid-$peerId' : '$peerId-$uid';
 
     getInitialMessages();
 
@@ -146,12 +154,9 @@ class _ChatScreenState extends State<ChatScreen> {
     _messagesStream.listen((data) {
       ///only insert if initial messages have finished loading
 
-//      ChatStream.refreshStream();
       data.documentChanges.forEach((c) {
         if (initialMessagedFinishedLoading) {
           final message = ChatItem.fromDoc(c.document);
-
-//          ChatStream.addMessage(newMessage);
 
           setState(() {
             messages.insert(0, message);
@@ -252,20 +257,46 @@ class _ChatScreenState extends State<ChatScreen> {
       messages.addAll(initialMessages);
       initialMessagedFinishedLoading = true;
     });
+
+    final myLastMessage = initialMessages.firstWhere(
+        (msg) => msg.senderId == auth.profile.uid,
+        orElse: () => null);
+    final lastMessagePeer = initialMessages.firstWhere(
+        (msg) => msg.senderId == widget.peer.uid,
+        orElse: () => null);
+
+    setState(() {
+      peerHasSeenMyLastMessage =
+          (widget.lastSeenTimestampPeer == null || myLastMessage == null)
+              ? false
+              : widget.lastSeenTimestampPeer.millisecondsSinceEpoch >=
+                  myLastMessage.timestamp.millisecondsSinceEpoch;
+    });
+
+    if (lastMessagePeer != null)
+      Repo.updateLastSeenPeerMessage(lastMessagePeer);
+
+    return;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.grey[50],
       appBar: BaseAppBar(
         onLeadingPressed: () => Navigator.pop(context),
         title: AvatarListItem(
+          onAvatarTapped: () =>
+              Navigator.push(context, ProfileScreen.route(widget.peer.uid)),
+          onBodyTapped: () =>
+              Navigator.push(context, ProfileScreen.route(widget.peer.uid)),
           avatar: AvatarImage(
-            spacing: 0,
+            spacing: 2,
             url: widget.peer.urls.small,
           ),
+          titleStyle: kPeerTextStyle,
           title: widget.peer.username,
+//          subtitle: 'Following',
         ),
       ),
       body: SafeArea(
@@ -288,8 +319,13 @@ class _ChatScreenState extends State<ChatScreen> {
                               itemBuilder: (context, index) {
                                 final message = messages[index];
 
+                                final isPeer =
+                                    message.senderId != auth.profile.uid;
+
                                 ///Remember: list view is reversed
                                 final isLast = index < 1;
+                                final lastMessageIsMine = isLast && !isPeer;
+
                                 final nextBubbleIsMine = (!isLast &&
                                     messages[index - 1].senderId ==
                                         auth.profile.uid);
@@ -297,9 +333,6 @@ class _ChatScreenState extends State<ChatScreen> {
                                 final showPeerAvatar = (isLast &&
                                         message.senderId == widget.peer.uid) ||
                                     nextBubbleIsMine;
-
-                                final isPeer =
-                                    message.senderId != auth.profile.uid;
 
                                 ///Show message date if previous message is
                                 ///sent more than an hour ago
@@ -322,12 +355,28 @@ class _ChatScreenState extends State<ChatScreen> {
 
                                 switch (message.type) {
                                   case Bubbles.text:
-                                    return ChatTextBubble(
-                                      isPeer: isPeer,
-                                      message: message,
-                                      isLast: showPeerAvatar,
-                                      peer: widget.peer,
-                                      showDate: showDate,
+                                    return Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.end,
+                                      children: <Widget>[
+                                        ChatTextBubble(
+                                          isPeer: isPeer,
+                                          message: message,
+                                          isLast: showPeerAvatar,
+                                          peer: widget.peer,
+                                          showDate: showDate,
+                                        ),
+                                        if (lastMessageIsMine &&
+                                            peerHasSeenMyLastMessage)
+                                          Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 8.0),
+                                            child: Text(
+                                              'Seen',
+                                              style: kLabelTextStyle,
+                                            ),
+                                          ),
+                                      ],
                                     );
                                   case Bubbles.photo:
                                     return SizedBox();
@@ -363,6 +412,14 @@ class _ChatScreenState extends State<ChatScreen> {
                                       },
                                     );
 
+                                  case Bubbles.post:
+                                    return ChatPostBubble(
+                                      isPeer: isPeer,
+                                      isLast: isLast,
+                                      peer: widget.peer,
+                                      message: message,
+//                                      showDate: showDate,
+                                    );
                                   case Bubbles.text_temp:
                                     return ChatPlaceholderBubble(message);
                                   case Bubbles.photo_temp:
@@ -376,7 +433,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                       user: widget.peer,
                                     );
                                   case Bubbles.loadMore:
-                                    return LoadMoreIndicator();
+                                    return LoadingIndicator();
 
                                   default:
                                     return SizedBox();
@@ -402,7 +459,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   onSendPressed() {
-    final text = textController.text;
+    final text = textController.text.trim();
 
     if (text.isEmpty) return;
 
@@ -417,10 +474,16 @@ class _ChatScreenState extends State<ChatScreen> {
 
     print('new id: ${placeholder.id}');
 
-    Repo.uploadMessage(ref, Bubbles.text, text, widget.peer);
+    Repo.uploadMessage(
+      ref: ref,
+      type: Bubbles.text,
+      content: text,
+      peer: widget.peer,
+    );
 
     setState(() {
       messages.insert(0, placeholder);
+      peerHasSeenMyLastMessage = false;
     });
 
     _scrollController.animateTo(0,
@@ -454,8 +517,13 @@ class _ChatScreenState extends State<ChatScreen> {
 
                     final messageRef = Repo.createMessageRef(chatId);
 
+                    ///upload a shout challenge
                     Repo.uploadMessage(
-                        messageRef, Bubbles.shout_challenge, text, widget.peer);
+                      ref: messageRef,
+                      type: Bubbles.shout_challenge,
+                      content: text,
+                      peer: widget.peer,
+                    );
 
                     shoutController.clear();
 

@@ -1,9 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
 import 'package:nutes/ui/shared/styles.dart';
-import 'package:nutes/core/view_models/login_model.dart';
 
 final GlobalKey<FormFieldState<String>> _passwordFieldKey =
     GlobalKey<FormFieldState<String>>();
@@ -128,15 +126,18 @@ class UsernameTextField extends StatelessWidget {
   final Function(String) onChanged;
   final Function(String) onSubmit;
 
+  final bool usernameExists;
+
   const UsernameTextField({
     Key key,
     @required this.controller,
     this.onChanged,
     this.onSubmit,
+    this.usernameExists = false,
   }) : super(key: key);
   @override
   Widget build(BuildContext context) {
-    final model = Provider.of<LoginModel>(context);
+//    final model = Provider.of<LoginModel>(context);
 
     return BaseTextField(
       maxLength: 30,
@@ -146,8 +147,9 @@ class UsernameTextField extends StatelessWidget {
       controller: controller,
       textSize: 15,
       hint: 'Username',
-      message: model.usernameExists ? 'Username taken' : '',
-      labelColor: model.usernameExists ? Colors.black : Colors.white,
+      message:
+          controller.text.isEmpty ? '' : usernameExists ? 'Username taken' : '',
+      labelColor: usernameExists ? Colors.black : Colors.white,
       onChanged: onChanged,
       onSubmit: onSubmit,
     );
@@ -159,22 +161,23 @@ class EmailTextField extends StatelessWidget {
   final Function(String) onChanged;
   final Function(String) onSubmit;
 
+  final bool emailIsValid;
+
   const EmailTextField({
     Key key,
     @required this.controller,
     this.onChanged,
     this.onSubmit,
+    this.emailIsValid = true,
   }) : super(key: key);
   @override
   Widget build(BuildContext context) {
-    final model = Provider.of<LoginModel>(context);
-
     return BaseTextField(
       controller: controller,
       textSize: 15,
-      message: model.emailIsValid ? '' : 'Enter a valid email',
+      message: emailIsValid ? '' : 'Enter a valid email',
       hint: 'Email',
-      labelColor: model.emailIsValid ? Colors.white : Colors.black54,
+      labelColor: emailIsValid ? Colors.white : Colors.black54,
       onChanged: onChanged,
       onSubmit: onSubmit,
     );
@@ -227,6 +230,7 @@ class BaseTextField extends StatelessWidget {
         ),
         TextField(
           inputFormatters: inputFormatters ?? null,
+          autocorrect: false,
           textCapitalization: textCapitalization,
           maxLength: maxLength ?? 200,
           onChanged: onChanged,

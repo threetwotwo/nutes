@@ -4,6 +4,7 @@ import 'package:nutes/core/models/user.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/shared/app_bars.dart';
 import 'package:nutes/ui/shared/avatar_list_extended.dart';
+import 'package:nutes/ui/shared/empty_indicator.dart';
 import 'package:nutes/ui/shared/refresh_list_view.dart';
 import 'package:nutes/ui/shared/styles.dart';
 
@@ -61,7 +62,6 @@ class _FollowerListScreenState extends State<FollowerListScreen> {
           child: Column(
             children: <Widget>[
               TabBar(
-//          onTap: (tab) => cache.searchTabIndex = tab,
                 indicatorColor: Colors.black,
                 labelColor: Colors.black,
                 labelStyle: TextStyles.w600Text,
@@ -80,20 +80,7 @@ class _FollowerListScreenState extends State<FollowerListScreen> {
               ),
             ],
           ),
-        )
-//      body: DismissView(
-//        onDismiss: () => Navigator.pop(context),
-//        child: Container(
-//          child: RefreshListView(
-//            children: <Widget>[
-//              AvatarListExtended(
-//                users: followers,
-//              ),
-//            ],
-//          ),
-//        ),
-//      ),
-        );
+        ));
   }
 }
 
@@ -130,14 +117,11 @@ class _FollowerTabViewState extends State<FollowerTabView> {
   @override
   Widget build(BuildContext context) {
     return RefreshListView(
-      onRefresh: () {},
-      onLoadMore: () {},
+//      onRefresh: () {},
+//      onLoadMore: () {},
       children: <Widget>[
         users == null
-            ? Padding(
-                padding: const EdgeInsets.all(8),
-                child: Text('Loading...'),
-              )
+            ? EmptyIndicator('Loading...')
             : AvatarListExtended(
                 users: users,
               ),

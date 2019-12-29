@@ -29,7 +29,7 @@ class FilterVariant {
   static const canvasText = TextStyle(color: Colors.black, fontSize: 24);
   static const frameText = TextStyle(color: Colors.black, fontSize: 20);
 
-  static final egoText = TextStyles.w300Text.copyWith(fontSize: 20);
+  static final egoText = TextStyles.defaultText.copyWith(fontSize: 18);
 
   static final frameShadow = [
     BoxShadow(
@@ -211,6 +211,13 @@ class FilterVariant {
       textStyle: egoText,
     );
   }
+
+  factory FilterVariant.egoDark() {
+    return FilterVariant(
+      bgDecor: BoxDecoration(color: Color(0xff243447)),
+      textStyle: egoText.copyWith(color: Colors.white),
+    );
+  }
 }
 
 class FilterAvatar extends StatelessWidget {
@@ -351,6 +358,7 @@ Filter filterEgo() {
   return Filter(
     variants: [
       FilterVariant.ego(),
+      FilterVariant.egoDark(),
     ],
     type: FilterType.ego,
     avatar: FilterAvatar(

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class SearchBar extends StatelessWidget {
   final void Function(String) onTextChange;
-  final void Function() onCancel;
+  final VoidCallback onCancel;
 
   final TextEditingController controller;
   final FocusNode focusNode;
@@ -20,6 +20,7 @@ class SearchBar extends StatelessWidget {
     return Container(
         height: 45,
         padding: EdgeInsets.symmetric(vertical: 4, horizontal: 0),
+        margin: EdgeInsets.all(8),
         child: TextField(
             autofocus: false,
             focusNode: focusNode,

@@ -6,14 +6,17 @@ import 'package:nutes/ui/shared/search_bar.dart';
 import 'package:nutes/ui/shared/styles.dart';
 
 class SearchScreen extends StatefulWidget {
+  final void Function(int) onTab;
+
+  const SearchScreen({Key key, this.onTab}) : super(key: key);
   @override
   _SearchScreenState createState() => _SearchScreenState();
 }
 
 class _SearchScreenState extends State<SearchScreen>
     with AutomaticKeepAliveClientMixin<SearchScreen> {
-  final textEditingController = TextEditingController();
-  final FocusNode searchFocusNode = FocusNode();
+  final _searchController = TextEditingController();
+  final searchFocusNode = FocusNode();
 
   int index = 0;
 
@@ -41,11 +44,11 @@ class _SearchScreenState extends State<SearchScreen>
           automaticallyImplyLeading: false,
           title: SearchBar(
             focusNode: searchFocusNode,
-            controller: textEditingController,
+            controller: _searchController,
             onTextChange: (text) => print(text),
             showCancelButton: searchFocusNode.hasFocus,
             onCancel: () {
-              textEditingController.clear();
+              _searchController.clear();
             },
           ),
           trailing: AnimatedOpacity(
@@ -54,14 +57,16 @@ class _SearchScreenState extends State<SearchScreen>
             child: Visibility(
               visible: index == 1,
               child: CancelButton(onPressed: () {
-                textEditingController.clear();
+                _searchController.clear();
                 FocusScope.of(context).requestFocus(FocusNode());
               }),
             ),
           )),
       body: index == 0
-          ? ExploreScreen()
-          : SearchResultsScreen(controller: textEditingController),
+          ? ExploreScreen(
+              onTab: (idx) => widget.onTab(idx),
+            )
+          : SearchResultsScreen(controller: _searchController),
     );
   }
 

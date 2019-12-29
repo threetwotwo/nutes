@@ -6,6 +6,8 @@ class Auth {
 
   UserProfile profile;
 
+  String fcmToken;
+
   void reset() {
     Auth.instance = Auth();
   }

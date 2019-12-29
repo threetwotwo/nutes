@@ -17,6 +17,7 @@ import 'package:nutes/ui/shared/post_grid_view.dart';
 import 'package:nutes/ui/shared/post_list.dart';
 import 'package:nutes/ui/shared/refresh_list_view.dart';
 import 'package:nutes/ui/shared/styles.dart';
+import 'package:nutes/ui/widgets/my_empty_post_view.dart';
 import 'package:nutes/ui/widgets/profile_header.dart';
 import 'package:nutes/ui/widgets/profile_screen_widgets.dart';
 import 'package:nutes/ui/widgets/story_page_view.dart';
@@ -25,8 +26,13 @@ import 'account_screen.dart';
 
 class MyProfileScreen extends StatefulWidget {
   final bool isRoot;
+  final ScrollController scrollController;
 
-  MyProfileScreen({Key key, this.isRoot = false}) : super(key: key);
+  MyProfileScreen({
+    Key key,
+    this.isRoot = false,
+    this.scrollController,
+  }) : super(key: key);
 
   @override
   _MyProfileScreenState createState() => _MyProfileScreenState();
@@ -40,6 +46,69 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
 
   final cache = LocalCache.instance;
   ViewType view = ViewType.grid;
+
+  bool isLoadingPosts = false;
+
+  bool initialPostsLoaded = false;
+
+  DocumentSnapshot startAfter;
+
+  List<Post> posts = [];
+
+  Future<void> _getInitialPosts() async {
+    setState(() {
+      isLoadingPosts = true;
+    });
+    final result = await Repo.getPostsForUser(
+      uid: auth.profile.uid,
+      limit: 10,
+      startAfter: startAfter,
+    );
+    if (mounted)
+      setState(() {
+        isLoadingPosts = false;
+        posts = result.posts;
+        startAfter = result.startAfter;
+        initialPostsLoaded = true;
+      });
+  }
+
+  Future<void> _loadMore() async {
+    final result = await Repo.getPostsForUser(
+      uid: auth.profile.uid,
+      limit: 10,
+      startAfter: startAfter,
+    );
+
+    setState(() {
+      posts = posts + result.posts;
+      startAfter = result.startAfter;
+    });
+  }
+
+  @override
+  void setState(fn) {
+    if (mounted) super.setState(fn);
+  }
+
+  @override
+  void initState() {
+    _getInitialPosts();
+
+    postStream.listen((data) {
+      data.documents.forEach((doc) {
+        if (initialPostsLoaded) {
+          final post = Post.fromDoc(doc);
+
+          if (post == null) return;
+          setState(() {
+            posts = [post] + posts;
+          });
+        }
+      });
+    });
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,7 +124,8 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
       backgroundColor: Colors.white,
       body: SafeArea(
           child: RefreshListView(
-        controller: widget.isRoot ? cache.profileScrollController : null,
+        onLoadMore: _loadMore,
+        controller: widget.isRoot ? widget.scrollController : null,
         children: <Widget>[
           StreamBuilder<DocumentSnapshot>(
               stream: profileStream,
@@ -148,76 +218,28 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                     });
               }),
           Divider(height: 0, thickness: 1),
-          StreamBuilder<QuerySnapshot>(
-              stream: postStream,
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) return LoadingIndicator();
-                final docs = snapshot.data.documents;
-                var posts = docs.map((doc) => Post.fromDoc(doc)).toList();
-                posts.removeWhere((p) => p == null);
-
-                return posts.isEmpty
-                    ? Container(
-                        padding: const EdgeInsets.all(20),
-                        child: Center(
-                          child: Column(
-                            children: <Widget>[
-                              Text(
-                                'You have no posts. \n',
-                                style: TextStyles.defaultDisplay.copyWith(
-                                  color: Colors.grey,
-                                  fontSize: 24,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                              Text(
-                                'Create your first post',
-                                style: TextStyles.defaultDisplay.copyWith(
-                                  color: Colors.grey,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                              SizedBox(height: 20),
-                              RaisedButton.icon(
-                                color: Colors.blue,
-                                onPressed: () =>
-                                    Navigator.of(context, rootNavigator: true)
-                                        .push(EditorPage.route()),
-                                icon: Icon(
-                                  Icons.add,
-                                  color: Colors.white,
-                                ),
-                                label: Text(
-                                  'Create Post',
-                                  style: TextStyles.w600Text
-                                      .copyWith(color: Colors.white),
-                                ),
-                                shape: StadiumBorder(),
-                              ),
-                              SizedBox(height: 20),
-                            ],
-                          ),
+          isLoadingPosts
+              ? LoadingIndicator()
+              : posts.isEmpty
+                  ? MyEmptyPostView()
+                  : PostMasterView(
+                      view: view,
+                      postGridView: PostGridView(
+                        posts: posts,
+                        onTap: (index) =>
+                            Navigator.of(context).push(MaterialPageRoute(
+                                builder: (context) => PostDetailScreen(
+                                      post: posts[index],
+                                    ))),
+                      ),
+                      postListView: ListView.builder(
+                        shrinkWrap: true,
+                        physics: NeverScrollableScrollPhysics(),
+                        itemCount: posts.length,
+                        itemBuilder: (context, index) => PostListItem(
+                          post: posts[index],
                         ),
-                      )
-                    : PostMasterView(
-                        view: view,
-                        postGridView: PostGridView(
-                          posts: posts,
-                          onTap: (index) =>
-                              Navigator.of(context).push(MaterialPageRoute(
-                                  builder: (context) => PostDetailScreen(
-                                        post: posts[index],
-                                      ))),
-                        ),
-                        postListView: ListView.builder(
-                          shrinkWrap: true,
-                          physics: NeverScrollableScrollPhysics(),
-                          itemCount: posts.length,
-                          itemBuilder: (context, index) => PostListItem(
-                            post: posts[index],
-                          ),
-                        ));
-              }),
+                      )),
         ],
       )),
     );

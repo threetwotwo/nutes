@@ -1,16 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:nutes/core/models/tab_item.dart';
-import 'package:nutes/core/services/auth.dart';
-import 'package:nutes/core/services/locator.dart';
-import 'package:nutes/core/services/repository.dart';
-import 'package:nutes/core/view_models/home_model.dart';
-import 'package:nutes/ui/screens/account_screen.dart';
 import 'package:nutes/ui/screens/activity_screen.dart';
 import 'package:nutes/ui/screens/feed_screen.dart';
 import 'package:nutes/ui/screens/my_profile_screen.dart';
-import 'package:nutes/ui/screens/profile_screen.dart';
 import 'package:nutes/ui/screens/search_screen.dart';
-import 'package:nutes/ui/screens/editor_page.dart';
 import 'package:nutes/ui/screens/create_screen.dart';
 
 class HomeRoute {
@@ -42,10 +35,6 @@ class TabNavigator extends StatelessWidget {
 
   final routeObserver = RouteObserver<PageRoute>();
 
-  final model = locator<HomeModel>();
-
-  final auth = Auth.instance;
-
   TabNavigator({
     this.navigatorKey,
     this.tabItem,
@@ -59,10 +48,9 @@ class TabNavigator extends StatelessWidget {
       case TabItem.home:
         return {
           HomeRoute.root: FeedScreen(
-            navigatorKey: this.navigatorKey,
+//            navigatorKey: this.navigatorKey,
             onCreatePressed: onCreatePressed,
             onDM: onDM,
-            routeObserver: routeObserver,
           ),
         };
       case TabItem.search:
@@ -84,14 +72,14 @@ class TabNavigator extends StatelessWidget {
     }
   }
 
-  final observer = locator<RouteObserver<PageRoute>>();
+//  final observer = locator<RouteObserver<PageRoute>>();
 
   @override
   Widget build(BuildContext context) {
     return Navigator(
       key: navigatorKey,
       initialRoute: HomeRoute.root,
-      observers: tabItem == TabItem.home ? [observer] : [],
+      observers: tabItem == TabItem.home ? [] : [],
       onGenerateRoute: (routeSettings) {
         return MaterialPageRoute(
           builder: (context) =>

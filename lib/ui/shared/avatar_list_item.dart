@@ -10,7 +10,8 @@ class AvatarListItem extends StatelessWidget {
   final AvatarImage avatar;
   final String title;
   final TextSpan richTitle;
-  final TextStyle style;
+  final TextStyle titleStyle;
+  final TextStyle subtitleStyle;
   final String subtitle;
   final Widget trailingWidget;
   final Function onTrailingWidgetPressed;
@@ -28,7 +29,8 @@ class AvatarListItem extends StatelessWidget {
     this.onTrailingWidgetPressed,
     this.onAvatarTapped,
     this.onBodyTapped,
-    this.style,
+    this.titleStyle,
+    this.subtitleStyle,
     this.trailingFlexFactor = 3,
     this.richTitle,
     this.color,
@@ -68,7 +70,7 @@ class AvatarListItem extends StatelessWidget {
                                 title,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: style ?? TextStyles.w600Text,
+                                style: titleStyle ?? TextStyles.w600Text,
                                 textAlign: TextAlign.left,
                               ),
                         if (subtitle != null && subtitle.isNotEmpty)
@@ -76,8 +78,9 @@ class AvatarListItem extends StatelessWidget {
                             subtitle,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyles.defaultText
-                                .copyWith(color: Colors.grey),
+                            style: subtitleStyle ??
+                                TextStyles.defaultText
+                                    .copyWith(color: Colors.grey),
                           ),
                       ],
                     ),

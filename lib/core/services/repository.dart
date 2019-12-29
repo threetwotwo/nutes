@@ -34,7 +34,7 @@ class Repo {
 
   static final auth = Auth.instance;
 
-  static final _instance = Repo();
+  static final shared = Repo();
 //  static UserProfile currentProfile;
 
   static Story myStory;
@@ -48,19 +48,17 @@ class Repo {
   static StreamController<StorySnapshot> storiesStreamController;
   static ScrollController storiesScrollController = ScrollController();
 
-  static List<User> myUserFollowings;
-
   static Future<List<User>> getFollowersOfUser(String uid) =>
-      _instance._firestore.getFollowersOfUser(uid);
+      shared._firestore.getFollowersOfUser(uid);
 
   static Future<List<User>> getFollowingsOfUser(String uid) =>
-      _instance._firestore.getFollowingsOfUser(uid);
+      shared._firestore.getFollowingsOfUser(uid);
 
-  static Future<List<User>> getMyUserFollowings(String uid) =>
-      _instance._firestore.getMyUserFollowings(uid);
+  static Future<List<User>> getMyUserFollowings() =>
+      shared._firestore.getMyUserFollowings();
 
-  static Future<List<Activity>> getFollowingsActivity(List<User> followings) =>
-      _instance._firestore.getFollowingsActivity(followings);
+  static Future<List<Activity>> getMyFollowingsActivity() =>
+      shared._firestore.getMyFollowingsActivity();
 
   static void refreshStream() {
     return storiesStreamController.add(snapshot);
@@ -109,80 +107,89 @@ class Repo {
   }
 
   static Future updateAccountPrivacy(bool isPrivate) async {
-    return _instance._firestore.updateAccountPrivacy(isPrivate);
+    return shared._firestore.updateAccountPrivacy(isPrivate);
   }
 
   static Future deleteChatWithUser(User user) async {
-    return _instance._firestore.deleteChatWithUser(user);
+    return shared._firestore.deleteChatWithUser(user);
   }
 
   static Future<Timestamp> chatEndAtForUser(String uid) {
-    return _instance._firestore.chatEndAtForUser(uid);
+    return shared._firestore.chatEndAtForUser(uid);
   }
+
+  static Future<void> updateLastSeenPeerMessage(ChatItem lastMessage) =>
+      shared._firestore.updateLastSeenMessage(lastMessage);
 
   static Future<List<ChatItem>> getInitialMessages(
       {String chatId, Timestamp endAt}) {
-    return _instance._firestore.getMessages(chatId, endAt);
+    return shared._firestore.getMessages(chatId, endAt);
   }
 
   static Future<List<ChatItem>> getMessages(
       {String chatId, Timestamp endAt, Timestamp startAt}) {
-    return _instance._firestore.getMessages(chatId, endAt, startAt: startAt);
+    return shared._firestore.getMessages(chatId, endAt, startAt: startAt);
   }
 
   static Future isTyping(String chatId, String uid, bool isTyping) {
-    return _instance._firestore.isTyping(chatId, uid, isTyping);
+    return shared._firestore.isTyping(chatId, uid, isTyping);
   }
 
   static Stream<QuerySnapshot> isTypingStream(String chatId) {
-    return _instance._firestore.isTypingStream(chatId);
+    return shared._firestore.isTypingStream(chatId);
   }
 
   static Stream<QuerySnapshot> DMStream() {
-    return _instance._firestore.DMStream();
+    return shared._firestore.DMStream();
+  }
+
+  static Future<void> deleteShout(String id) =>
+      shared._firestore.deleteShout(id);
+
+  static Stream<QuerySnapshot> ShoutStream() {
+    return shared._firestore.ShoutStream();
   }
 
   static Stream<QuerySnapshot> messagesStream(String chatId) {
-    return _instance._firestore.messagesStream(chatId);
+    return shared._firestore.messagesStream(chatId);
   }
 
-  static Stream<QuerySnapshot> messageStream(
-      String chatId, Timestamp endAt, int limit) {
-    return _instance._firestore.messageStream(chatId, endAt, limit);
-  }
-
-  static Stream<QuerySnapshot> messageStreamPaginated(
-      String chatId, Timestamp endAt, DocumentSnapshot startAfter) {
-    return _instance._firestore
-        .messageStreamPaginated(chatId, endAt, startAfter);
-  }
+//  static Stream<QuerySnapshot> messageStream(
+//      String chatId, Timestamp endAt, int limit) {
+//    return _instance._firestore.messageStream(chatId, endAt, limit);
+//  }
+//
+//  static Stream<QuerySnapshot> messageStreamPaginated(
+//      String chatId, Timestamp endAt, DocumentSnapshot startAfter) {
+//    return _instance._firestore
+//        .messageStreamPaginated(chatId, endAt, startAfter);
+//  }
 
   static Stream<QuerySnapshot> chatStream() {
-    return _instance._firestore.chatStream();
+    return shared._firestore.chatStream();
   }
 
   static Future likeShout(bool isChallenger, Post post) async {
-    return _instance._firestore
-        .likeShout(isChallenger: isChallenger, post: post);
+    return shared._firestore.likeShout(isChallenger: isChallenger, post: post);
   }
 
   static Future unlikeShout(bool isChallenger, Post post) async {
-    return _instance._firestore
+    return shared._firestore
         .unlikeShout(isChallenger: isChallenger, post: post);
   }
 
   static Future likePost(Post post) async {
-    return _instance._firestore.likePost(post);
+    return shared._firestore.likePost(post);
   }
 
   static Future unlikePost(Post post) async {
 //    likedPosts.remove(post.id);
 //    updateLikeStream();
-    return _instance._firestore.unlikePost(post);
+    return shared._firestore.unlikePost(post);
   }
 
   static DocumentReference createMessageRef(String chatId) {
-    return _instance._firestore.createMessageRef(chatId);
+    return shared._firestore.createMessageRef(chatId);
   }
 
   static completeShoutChallenge(
@@ -191,17 +198,24 @@ class Repo {
       String content,
       String response,
       User peer}) {
-    return _instance._firestore
+    return shared._firestore
         .completeShoutChallenge(chatId, messageId, content, response, peer);
   }
 
-  static Future uploadMessage(
+  static Future uploadMessage({
     DocumentReference ref,
     Bubbles type,
     String content,
     User peer,
-  ) {
-    return _instance._firestore.uploadMessage(ref, type, content, peer);
+    Map data,
+  }) {
+    return shared._firestore.uploadMessage(
+      messageRef: ref,
+      type: type,
+      content: content,
+      peer: peer,
+      data: data,
+    );
   }
 
   static Future<void> createMessage(
@@ -209,18 +223,18 @@ class Repo {
       @required User recipient,
       @required content,
       int type = 0}) {
-    return _instance._firestore.createMessage(
+    return shared._firestore.createMessage(
         chatId: chatId, recipient: recipient, content: content, type: type);
   }
 
   static Future uploadStory({@required ImageFileBundle fileBundle}) async {
-    final storyRef = _instance._firestore.createStoryRef();
+    final storyRef = shared._firestore.createStoryRef();
 
-    final url = await _instance._storage.uploadStoryFiles(
+    final url = await shared._storage.uploadStoryFiles(
         storyId: storyRef.documentID,
         uid: Auth.instance.profile.uid,
         fileBundle: fileBundle);
-    return await _instance._firestore.uploadStory(storyRef: storyRef, url: url);
+    return await shared._firestore.uploadStory(storyRef: storyRef, url: url);
   }
 
   ///Writes the shout to a public post collection
@@ -235,13 +249,13 @@ class Repo {
     @required User peer,
     @required Map data,
   }) async {
-    final shoutRef = _instance._firestore.publicPostRef();
+    final shoutRef = shared._firestore.publicPostRef();
     final shoutId = shoutRef.documentID;
 
     final selfRef =
-        _instance._firestore.userPostRef(Auth.instance.profile.uid, shoutId);
+        shared._firestore.userPostRef(Auth.instance.profile.uid, shoutId);
 
-    final peerRef = _instance._firestore.userPostRef(peer.uid, shoutId);
+    final peerRef = shared._firestore.userPostRef(peer.uid, shoutId);
 
     final timestamp = Timestamp.now();
 
@@ -252,7 +266,7 @@ class Repo {
       'data': data,
     };
 
-    return _instance._firestore.runTransaction((t) {
+    return shared._firestore.runTransaction((t) {
       t.set(shoutRef, payload);
       t.set(selfRef, payload);
       return t.set(peerRef, payload);
@@ -262,23 +276,21 @@ class Repo {
   static uploadComment({
     @required String postId,
     @required Comment comment,
-//    @required User owner,
-//    @required String text,
-//    String parentId,
   }) async {
-    return _instance._firestore.uploadComment(postId: postId, comment: comment);
+    return shared._firestore.uploadComment(postId: postId, comment: comment);
   }
 
   static Future updatePost({@required Post post}) async {
     final updatedPost = post.toMap();
     print(updatedPost);
 
-    final postRef = _instance._firestore.userPostRef(post.owner.uid, post.id);
+    final postRef = shared._firestore.userPostRef(post.owner.uid, post.id);
 
     postRef.setData(updatedPost, merge: true);
   }
 
-  static Future uploadShout({@required User peer, @required Map data}) {
+  ///Uploads a shout as a post
+  static Future uploadShoutPost({@required User peer, @required Map data}) {
     return uploadPost(
         type: PostType.shout, isPrivate: false, peer: peer, metadata: data);
   }
@@ -294,12 +306,12 @@ class Repo {
 //    return print(type);
     final timestamp = Timestamp.now();
 
-    final batch = _instance._firestore.batch();
+    final batch = shared._firestore.batch();
 
     ///1. Set public post doc privacy field
     ///This public doc is used to maintain and query post stats(eg. like stats)
 
-    final publicRef = _instance._firestore.publicPostRef();
+    final publicRef = shared._firestore.publicPostRef();
 
     final postId = publicRef.documentID;
 
@@ -312,7 +324,7 @@ class Repo {
     });
 
     ///2. set user post doc
-    final myPostRef = _instance._firestore.myPostRef(postId);
+    final myPostRef = shared._firestore.myPostRef(postId);
 
     var bundleMaps;
 
@@ -320,7 +332,7 @@ class Repo {
       ///Upload files to storage
       ///and then get the storage urls
       final uploadTasks = fileBundles
-          .map((b) => _instance._storage
+          .map((b) => shared._storage
               .uploadPostFiles(postId: postId, index: b.index, fileBundle: b))
           .toList();
       final urlBundles = await Future.wait(uploadTasks);
@@ -356,7 +368,7 @@ class Repo {
 
     ///2b. Set peer user post ref if shout
     if (type == PostType.shout) {
-      final peerPostRef = _instance._firestore.userPostRef(peer.uid, postId);
+      final peerPostRef = shared._firestore.userPostRef(peer.uid, postId);
       batch.setData(peerPostRef, payload);
     }
 
@@ -369,76 +381,70 @@ class Repo {
 
   ///current user's story stream
   static Stream<QuerySnapshot> myStoryStream() {
-    return _instance._firestore.myStoryStream(auth.profile.uid);
+    return shared._firestore.myStoryStream(auth.profile.uid);
   }
 
   static Future<Map<String, dynamic>> getSeenStories() =>
-      _instance._firestore.getSeenStories();
+      shared._firestore.getSeenStories();
 
   static Stream<DocumentSnapshot> seenStoriesStream() =>
-      _instance._firestore.seenStoriesStream();
+      shared._firestore.seenStoriesStream();
 
   static Future updateSeenStories(Map<String, Timestamp> data) =>
-      _instance._firestore.updateSeenStories(data);
+      shared._firestore.updateSeenStories(data);
 
   static Future<List<UserStory>> getStoriesOfFollowings(
       {List<UserStory> userStories}) {
-    return _instance._firestore.getStoriesOfFollowings();
+    return shared._firestore.getStoriesOfFollowings();
   }
 
   static Future<Story> getStoryForUser(String uid) {
-    return _instance._firestore.getStoryForUser(uid);
+    return shared._firestore.getStoryForUser(uid);
   }
 
   ///fetch posts
-  static Future<List<Post>> getFeed(
-      {String uid, int limit, DocumentSnapshot startAfter}) async {
-    final posts = await _instance._firestore.getFeed();
+  static Future<PostCursor> getFeed({DocumentSnapshot startAfter}) async {
+    final postCursor = await shared._firestore.getFeed(startAfter: startAfter);
 
-    ///To deal with error: Cannot remove from a fixed-length list
-    var tempOutput = posts.toList();
-
-    tempOutput.removeWhere((p) => p == null);
-
-    return tempOutput;
+    return postCursor;
   }
 
   static Future<List> getMyFollowRequests() async {
-    final doc = await _instance._firestore.myFollowRequestsRef().get();
+    final doc = await shared._firestore.myFollowRequestsRef().get();
 
     return doc.exists ? doc['requests'] ?? [] : [];
   }
 
   ///Deletes a follow request
   static redactFollowRequest(String followerId, String followingId) {
-    _instance._firestore
+    shared._firestore
         .deleteFollowRequest(follower: followerId, following: followingId);
   }
 
-  static authorizeFollowRequest(String uid) {
-    _instance._firestore
-        .deleteFollowRequest(follower: uid, following: auth.profile.uid);
-    return _instance._firestore
-        .follow(followerId: uid, following: auth.profile.user);
+  static authorizeFollowRequest(User follower) {
+    shared._firestore.deleteFollowRequest(
+        follower: follower.uid, following: auth.profile.uid);
+    return shared._firestore
+        .follow(follower: follower, following: auth.profile.user);
   }
 
   static Map followingsArray = {};
 
   static Stream<DocumentSnapshot> myFollowingListStream() {
-    return _instance._firestore.myFollowingListStream();
+    return shared._firestore.myFollowingListStream();
   }
 
   /// follow a user
   static requestFollow(User user, bool isPrivate) {
     isPrivate
-        ? _instance._firestore.requestFollow(user.uid)
-        : _instance._firestore
-            .follow(followerId: auth.profile.uid, following: user);
+        ? shared._firestore.requestFollow(user.uid)
+        : shared._firestore
+            .follow(follower: auth.profile.user, following: user);
   }
 
   /// unfollow a user
   static void unfollowUser(String uid) {
-    _instance._firestore.unfollow(uid);
+    shared._firestore.unfollow(uid);
   }
 
   /// check if following a user
@@ -447,34 +453,34 @@ class Repo {
 //          .isFollowing(follower: follower, following: following);
 
   static Future<UserProfile> getUserProfileFromUsername(String username) =>
-      _instance._firestore.getUserProfileFromUsername(username);
+      shared._firestore.getUserProfileFromUsername(username);
 
   static Future<UserProfile> getUserProfile(String uid) =>
-      _instance._firestore.getUserProfile(uid);
+      shared._firestore.getUserProfile(uid);
 
-  static Future getRecentSearches() => _instance._firestore.getRecentSearches();
+  static Future getRecentSearches() => shared._firestore.getRecentSearches();
 
   static Future deleteRecentSearch(String uid) =>
-      _instance._firestore.deleteRecentSearch(uid);
+      shared._firestore.deleteRecentSearch(uid);
 
   static Future createRecentSearch(User user) =>
-      _instance._firestore.createRecentSearch(user);
+      shared._firestore.createRecentSearch(user);
 
   static Future<List<User>> searchUsers(String text) =>
-      _instance._firestore.searchUsers(text);
+      shared._firestore.searchUsers(text);
 
   static Future<bool> usernameExists(String name) =>
-      _instance._firestore.usernameExists(name);
+      shared._firestore.usernameExists(name);
 
-  static Future<User> getUser(String uid) => _instance._firestore.getUser(uid);
+  static Future<User> getUser(String uid) => shared._firestore.getUser(uid);
 
-  static Future<void> logout() => _instance._firestore.logout();
+  static Future<void> logout() => shared._firestore.logout();
 
   ///returns a user object
   static Future<UserProfile> signInWithUsernameAndPassword(
       {String username, String password}) async {
     print('repo sign in $username');
-    final user = await _instance._firestore
+    final user = await shared._firestore
         .signInWithUsernameAndPassword(username: username, password: password);
 
     auth.reset();
@@ -496,12 +502,12 @@ class Repo {
         .createUserWithEmailAndPassword(email: email, password: password)
         .catchError((err) {
       print(err);
-      return null;
+      throw (err);
     });
 
     ///create user doc on firestore
     return (authResult != null)
-        ? await _instance._firestore.createUser(
+        ? await shared._firestore.createUser(
             uid: authResult.user.uid,
             username: username,
             email: authResult.user.email)
@@ -509,56 +515,54 @@ class Repo {
   }
 
   static Future<UserStats> getUserStats(String uid) =>
-      _instance._database.getUserStats(uid);
+      shared._database.getUserStats(uid);
 
   static Stream<QuerySnapshot> myPostStream() =>
-      _instance._firestore.myPostStream();
+      shared._firestore.myPostStream();
 
   static Future<List<Post>> getUserPosts(String uid) =>
-      _instance._firestore.getUserPosts(uid);
+      shared._firestore.getUserPosts(uid);
 
   static Future<List<User>> getPostUserLikes(Post post) =>
-      _instance._firestore.getPostUserLikes(post);
+      shared._firestore.getPostUserLikes(post);
 
   static Future<PostCursor> getTrendingPosts(DocumentSnapshot startAfter) =>
-      _instance._firestore.getTrendingPosts(startAfter);
+      shared._firestore.getTrendingPosts(startAfter);
 
   static Future<PostCursor> getNewestPosts(DocumentSnapshot startAfter) =>
-      _instance._firestore.getNewestPosts(startAfter);
+      shared._firestore.getNewestPosts(startAfter);
 
-  static Future<List<Post>> getPostsForUser({
+  static Future<PostCursor> getPostsForUser({
     String uid,
     int limit,
-  }) async {
-    List<Post> posts =
-        await _instance._firestore.getPostsForUser(uid: uid, limit: limit);
-
-    return posts;
-  }
+    DocumentSnapshot startAfter,
+  }) async =>
+      shared._firestore
+          .getPostsForUser(uid: uid, limit: limit, startAfter: startAfter);
 
   static Comment createComment(
           {@required String text,
           @required String postId,
           Comment parentComment}) =>
-      _instance._firestore
+      shared._firestore
           .newComment(text: text, postId: postId, parentComment: parentComment);
 
   static Future<List<Comment>> getComments(String postId) async =>
-      _instance._firestore.getComments(postId);
+      shared._firestore.getComments(postId);
 
   ///Returns a complete post from an incomplete one
   static Future<Post> getPostStatsAndLikes(Post post) async {
-    return _instance._firestore.getPostStatsAndLikes(post);
+    return shared._firestore.getPostStatsAndLikes(post);
   }
 
   ///Returns a complete post from post id
   static Future<Post> getPostComplete(String postId, String ownerId) async {
-    return _instance._firestore.getPostComplete(postId, ownerId);
+    return shared._firestore.getPostComplete(postId, ownerId);
   }
 
   static Future<UserProfile> removeCurrentPhoto() async {
-    _instance._storage.removeCurrentPhoto();
-    return _instance._firestore.updateProfile(urls: ImageUrlBundle.empty());
+    shared._storage.removeCurrentPhoto();
+    return shared._firestore.updateProfile(urls: ImageUrlBundle.empty());
 //    final updatedUser = Auth.instance.profile.copyWith(photoUrl: '');
   }
 
@@ -573,7 +577,7 @@ class Repo {
     final mediumPath = '$directory/${fileName}medium.png';
     final smallPath = '$directory/${fileName}small.png';
 
-    final bundle = await _instance._storage.uploadPhoto(
+    final bundle = await shared._storage.uploadPhoto(
         uid: uid,
         fileBundle: ImageFileBundle(
             original: original,
@@ -582,19 +586,22 @@ class Repo {
 
     print('bundle uploaded: $bundle');
 
-    return _instance._firestore.updateProfile(urls: bundle);
+    return shared._firestore.updateProfile(urls: bundle);
   }
 
   static DocumentReference myRef() {
-    return _instance._firestore.userRef(auth.profile.uid);
+    return shared._firestore.userRef(auth.profile.uid);
   }
 
   static Stream<DocumentSnapshot> myPostLikeStream(Post post) =>
-      _instance._firestore.myPostLikeStream(post);
+      shared._firestore.myPostLikeStream(post);
 
   static Stream<DocumentSnapshot> myShoutLeftLikeStream(Post post) =>
-      _instance._firestore.myShoutLeftLikeStream(post);
+      shared._firestore.myShoutLeftLikeStream(post);
 
   static Stream<DocumentSnapshot> myShoutRightLikeStream(Post post) =>
-      _instance._firestore.myShoutRightLikeStream(post);
+      shared._firestore.myShoutRightLikeStream(post);
+
+  static void createFCMDeviceToken({String uid, String token}) =>
+      shared._firestore.createFCMDeviceToken(uid: uid, token: token);
 }

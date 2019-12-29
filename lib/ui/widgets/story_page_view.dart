@@ -34,16 +34,6 @@ class StoryPageView extends StatefulWidget {
         ),
       );
 
-  static Route route(int initialPage, List<UserStory> userStories,
-          {Widget bgWidget}) =>
-      MaterialPageRoute(
-        fullscreenDialog: true,
-        builder: (context) => StoryPageView(
-          initialPage: initialPage,
-          userStories: userStories,
-        ),
-      );
-
   const StoryPageView({
     Key key,
     this.userStories,
@@ -192,8 +182,6 @@ class _StoryPageViewState extends State<StoryPageView> {
 
                   final FIRtimestamp =
                       (seenStories[userStory.uploader.uid] as Timestamp);
-
-                  print(FIRtimestamp);
 
                   if (FIRtimestamp == null ||
                       FIRtimestamp.seconds < timestamp.seconds)

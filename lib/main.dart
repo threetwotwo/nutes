@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:bot_toast/bot_toast.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -7,14 +5,11 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:nutes/core/services/auth.dart';
-import 'package:provider/provider.dart';
+import 'package:nutes/ui/screens/profile_screen.dart';
 import 'package:nutes/core/services/local_cache.dart';
 import 'package:nutes/ui/widgets/app_page_view.dart';
 import 'package:nutes/ui/screens/login_screen.dart';
-import 'package:nutes/core/services/locator.dart';
 import 'package:nutes/core/services/repository.dart';
-import 'package:nutes/core/view_models/login_model.dart';
-import 'package:nutes/core/view_models/profile_model.dart';
 
 import 'core/models/user.dart';
 
@@ -22,8 +17,6 @@ final auth = Auth.instance;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  setUpLocator();
 
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
@@ -45,7 +38,7 @@ Future initCurrentUser() async {
     auth.profile = user;
     Repo.myStory = null;
 
-    if (user == null) locator<LoginModel>().signOut();
+    if (user == null) FirebaseAuth.instance.signOut();
 
     LocalCache.instance = LocalCache();
 
@@ -85,34 +78,62 @@ class MainBuilder extends StatefulWidget {
 }
 
 class _MainBuilderState extends State<MainBuilder> {
-  final _auth = locator<LoginModel>();
   final auth = Auth.instance;
-  final FirebaseMessaging _firebaseMessaging = FirebaseMessaging();
+  final _fcm = FirebaseMessaging();
+  IosNotificationSettings iosSettings;
+  String fcmToken;
 
   @override
   void initState() {
-    _firebaseMessaging.configure(
+    super.initState();
+
+    _fcm.requestNotificationPermissions(
+        const IosNotificationSettings(sound: true, badge: true, alert: true));
+
+    _fcm.onIosSettingsRegistered.listen((IosNotificationSettings settings) {
+      print("Settings registered: $settings");
+      iosSettings = settings;
+    });
+
+    _fcm.getToken().then((String token) {
+      assert(token != null);
+      fcmToken = token;
+      auth.fcmToken = fcmToken;
+      print('FCM token: $token');
+    });
+
+    _fcm.configure(
       onMessage: (Map<String, dynamic> message) async {
         print("onMessage: $message");
       },
       onLaunch: (Map<String, dynamic> message) async {
         print("onLaunch: $message");
       },
-      onResume: (Map<String, dynamic> message) async {
-        print("onResume: $message");
+      onResume: (Map<String, dynamic> msg) async {
+        print("onResume: $msg");
+
+        final data = msg['data'] ?? {};
+        final extraData = data['extradata'] ?? '';
+
+        print('onResume screen: ${data['screen']}');
+        switch (data['screen']) {
+          case "dm":
+            print('go to chat $extraData');
+            break;
+          case "post":
+            print('go to post $extraData');
+//            Navigator.of(context).push(PostDetailScreen.route(post));
+            break;
+          case "user":
+            print('go to user $extraData');
+            await Navigator.of(context).push(ProfileScreen.route(extraData));
+
+            break;
+          default:
+            break;
+        }
       },
     );
-    _firebaseMessaging.requestNotificationPermissions(
-        const IosNotificationSettings(sound: true, badge: true, alert: true));
-    _firebaseMessaging.onIosSettingsRegistered
-        .listen((IosNotificationSettings settings) {
-      print("Settings registered: $settings");
-    });
-    _firebaseMessaging.getToken().then((String token) {
-      assert(token != null);
-      print('FCM token: $token');
-    });
-    super.initState();
   }
 
   @override
@@ -123,25 +144,19 @@ class _MainBuilderState extends State<MainBuilder> {
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider<LoginModel>(
-            builder: (context) => locator<LoginModel>()),
-        ChangeNotifierProvider<ProfileModel>(
-            builder: (context) => locator<ProfileModel>()),
-      ],
-      child: StreamBuilder<FirebaseUser>(
-        stream: _auth.auth.onAuthStateChanged,
-        builder: (context, snapshot) {
-          if (snapshot.hasData) {
-            return AppPageView(
-              uid: snapshot.data.uid,
-            );
-          } else {
-            return LoginScreen();
-          }
-        },
-      ),
+    return StreamBuilder<FirebaseUser>(
+      stream: FirebaseAuth.instance.onAuthStateChanged,
+      builder: (context, snapshot) {
+        if (snapshot.hasData) {
+          if (iosSettings != null && fcmToken != null)
+            Repo.createFCMDeviceToken(uid: snapshot.data.uid, token: fcmToken);
+          return AppPageView(
+            uid: snapshot.data.uid,
+          );
+        } else {
+          return LoginScreen();
+        }
+      },
     );
   }
 }

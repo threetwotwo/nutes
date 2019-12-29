@@ -1,8 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:line_icons/line_icons.dart';
-import 'package:nutes/core/services/auth.dart';
-import 'package:nutes/ui/shared/avatar_image.dart';
+import 'package:nutes/ui/shared/styles.dart';
 
 class ChatTextField extends StatefulWidget {
   final VoidCallback onImagePressed;
@@ -30,8 +29,7 @@ class _ChatTextFieldState extends State<ChatTextField> {
   }
 
   bool isTyping = false;
-  CrossAxisAlignment _alignment = CrossAxisAlignment.center;
-  final tf = TextField();
+  CrossAxisAlignment alignment = CrossAxisAlignment.center;
 
   @override
   void initState() {
@@ -40,12 +38,12 @@ class _ChatTextFieldState extends State<ChatTextField> {
         setState(() {
           isTyping = true;
 
-          _alignment = CrossAxisAlignment.end;
+          alignment = CrossAxisAlignment.end;
         });
       else
         setState(() {
           isTyping = false;
-          _alignment = CrossAxisAlignment.center;
+          alignment = CrossAxisAlignment.center;
         });
     });
     super.initState();
@@ -73,6 +71,7 @@ class _ChatTextFieldState extends State<ChatTextField> {
                 ),
                 Expanded(
                   child: TextField(
+                    style: TextStyles.defaultText,
                     controller: widget.controller,
                     minLines: 1,
                     maxLines: 4,
@@ -120,27 +119,27 @@ class _ChatTextFieldState extends State<ChatTextField> {
                 ),
 
                 ///Image Button
-                AnimatedOpacity(
-                  opacity: !isTyping ? 1 : 0,
-                  duration: Duration(milliseconds: 400),
-                  child: Visibility(
-                    visible: !isTyping,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 4.0, horizontal: 8),
-                      child: Material(
-                        color: Colors.white,
-                        child: InkWell(
-                          child: Icon(
-                            LineIcons.camera,
-                            color: Colors.blueAccent,
-                          ),
-                          onTap: widget.onImagePressed,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+//                AnimatedOpacity(
+//                  opacity: !isTyping ? 1 : 0,
+//                  duration: Duration(milliseconds: 400),
+//                  child: Visibility(
+//                    visible: !isTyping,
+//                    child: Padding(
+//                      padding: const EdgeInsets.symmetric(
+//                          vertical: 4.0, horizontal: 8),
+//                      child: Material(
+//                        color: Colors.white,
+//                        child: InkWell(
+//                          child: Icon(
+//                            LineIcons.camera,
+//                            color: Colors.blueAccent,
+//                          ),
+//                          onTap: widget.onImagePressed,
+//                        ),
+//                      ),
+//                    ),
+//                  ),
+//                ),
 
                 ///Shout Button
                 AnimatedOpacity(
@@ -155,7 +154,7 @@ class _ChatTextFieldState extends State<ChatTextField> {
                         color: Colors.white,
                         child: InkWell(
                           child: Icon(
-                            LineIcons.bullhorn,
+                            LineIcons.volume_up,
                             color: Colors.blueAccent,
                           ),
                           onTap: () {

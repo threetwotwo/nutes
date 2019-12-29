@@ -40,12 +40,12 @@ class ConfirmUploadPage extends StatelessWidget {
               color: Colors.black,
             ),
             onPressed: () => Navigator.pop(context)),
-        trailing: IconButton(
-            icon: Icon(
-              Icons.more_horiz,
-              color: Colors.black,
-            ),
-            onPressed: () => Navigator.popUntil(context, (r) => r.isFirst)),
+//        trailing: IconButton(
+//            icon: Icon(
+//              Icons.more_horiz,
+//              color: Colors.black,
+//            ),
+//            onPressed: () => Navigator.popUntil(context, (r) => r.isFirst)),
         title: Text(
           'Share',
           style: TextStyles.w600Text,

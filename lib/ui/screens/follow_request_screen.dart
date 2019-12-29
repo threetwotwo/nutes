@@ -60,8 +60,8 @@ class FollowRequestScreen extends StatelessWidget {
                               subtitle: user['display_name'],
                               trailingWidget: FollowRequestActionButtons(
                                 uid: requests[index].documentID,
-                                onConfirm: (uid) =>
-                                    Repo.authorizeFollowRequest(uid),
+//                                onConfirm: (uid) =>
+//                                    Repo.authorizeFollowRequest(uid),
                                 onDelete: (uid) {
                                   print(uid);
                                   return Repo.redactFollowRequest(

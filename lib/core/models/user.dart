@@ -123,6 +123,15 @@ class User {
     this.hasRequestedFollow,
   });
 
+  factory User.empty() {
+    return User(
+        uid: '',
+        username: '',
+        displayName: '',
+        urls: ImageUrlBundle.empty(),
+        isPrivate: false);
+  }
+
   factory User.fromDoc(DocumentSnapshot doc) {
     final data = doc.data;
     if (data == null || doc.documentID == 'list') return null;

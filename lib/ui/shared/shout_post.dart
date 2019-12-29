@@ -22,15 +22,21 @@ final kLabelTextStyle =
     TextStyles.defaultText.copyWith(color: Colors.grey, fontSize: 14);
 
 class GridShoutBubble extends StatelessWidget {
-  final Post post;
+  final Map data;
   final bool isChallenger;
+  final double avatarSize;
+  final double fontSize;
 
-  const GridShoutBubble({Key key, this.post, this.isChallenger})
-      : super(key: key);
+  const GridShoutBubble({
+    Key key,
+    this.data,
+    this.isChallenger,
+    this.avatarSize = 36,
+    this.fontSize = 14,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final data = post.metadata ?? {};
     final content = isChallenger
         ? data['challenger_text'] ?? ''
         : data['challenged_text'] ?? '';
@@ -40,12 +46,12 @@ class GridShoutBubble extends StatelessWidget {
 
     return Row(
       mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.end,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         if (isChallenger)
           Container(
-            width: 36,
-            padding: const EdgeInsets.symmetric(horizontal: 4.0),
+            width: avatarSize,
+//            padding: const EdgeInsets.symmetric(horizontal: 4.0),
             child: AvatarImage(
               url: user.urls.small,
               spacing: 0,
@@ -58,9 +64,9 @@ class GridShoutBubble extends StatelessWidget {
                 isChallenger ? Alignment.bottomLeft : Alignment.bottomRight,
             shadowColor: Colors.black,
             color: isChallenger ? Colors.white : Colors.blueAccent[400],
-            padding: BubbleEdges.symmetric(vertical: 5, horizontal: 5),
-            margin: BubbleEdges.only(top: 5),
-            nip: isChallenger ? BubbleNip.leftBottom : BubbleNip.rightBottom,
+//            padding: BubbleEdges.symmetric(vertical: 5, horizontal: 5),
+//            margin: BubbleEdges.only(top: 5),
+//            nip: isChallenger ? BubbleNip.leftBottom : BubbleNip.rightBottom,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: isChallenger
@@ -69,17 +75,15 @@ class GridShoutBubble extends StatelessWidget {
               children: <Widget>[
                 Text(
                   user.username,
-                  style: TextStyle(
-                      color: isChallenger ? Colors.black : Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500),
+                  style: isChallenger
+                      ? kPeerTextStyle.copyWith(fontSize: fontSize)
+                      : kMyTextStyle.copyWith(fontSize: fontSize),
                 ),
-//          SizedBox(height: 4),
                 Text(
                   content,
-                  style: TextStyles.defaultText.copyWith(
-                    color: isChallenger ? Colors.black : Colors.white,
-                  ),
+                  style: isChallenger
+                      ? kPeerTextStyle.copyWith(fontSize: fontSize)
+                      : kMyTextStyle.copyWith(fontSize: fontSize),
 //                  maxLines: 4,
                   overflow: TextOverflow.fade,
                 ),
@@ -89,8 +93,8 @@ class GridShoutBubble extends StatelessWidget {
         ),
         if (!isChallenger)
           Container(
-            width: 36,
-            padding: const EdgeInsets.symmetric(horizontal: 4.0),
+            width: avatarSize,
+//            padding: const EdgeInsets.symmetric(horizontal: 4.0),
             child: AvatarImage(
               url: user.urls.small,
               spacing: 0,

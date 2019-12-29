@@ -1,13 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:line_icons/line_icons.dart';
 import 'package:nutes/core/models/user.dart';
 import 'package:nutes/core/services/auth.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/shared/app_bars.dart';
-import 'package:nutes/ui/shared/search_bar.dart';
+import 'package:nutes/ui/shared/empty_indicator.dart';
+import 'package:nutes/ui/shared/loading_indicator.dart';
 import 'package:nutes/ui/shared/styles.dart';
-import 'package:nutes/ui/widgets/chat_avatar_item.dart';
+import 'package:nutes/ui/widgets/dm_list_item.dart';
 import 'package:flutter/cupertino.dart';
 
 ///Shows a list of chats
@@ -28,6 +28,13 @@ class DirectScreen extends StatefulWidget {
 class _DirectScreenState extends State<DirectScreen> {
   final auth = Auth.instance;
 
+  Stream<QuerySnapshot> _stream = Repo.DMStream();
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -37,7 +44,7 @@ class _DirectScreenState extends State<DirectScreen> {
         onTrailingPressed: widget.onTrailingPressed,
         title: Text(
           auth.profile.user.username,
-          style: TextStyles.w600Text.copyWith(fontSize: 18),
+          style: TextStyles.header,
         ),
 //        trailing: Icon(
 //          LineIcons.edit,
@@ -50,10 +57,6 @@ class _DirectScreenState extends State<DirectScreen> {
           child: Center(
             child: ListView(
               children: <Widget>[
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: SearchBar(),
-                ),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: <Widget>[
@@ -73,43 +76,66 @@ class _DirectScreenState extends State<DirectScreen> {
                   ],
                 ),
                 StreamBuilder<QuerySnapshot>(
-                    stream: Repo.DMStream(),
+                    stream: _stream,
                     builder: (context, snapshot) {
                       if (!snapshot.hasData) {
-                        return Center(child: Text('No conversations to show'));
+                        return LoadingIndicator();
                       } else {
-                        var docs = snapshot.data.documents;
+                        final docs = snapshot.data.documents
+                          ..sort((a, b) {
+                            final Timestamp aTime =
+                                a.data['last_checked_timestamp'];
+                            final Timestamp bTime =
+                                b.data['last_checked_timestamp'];
 
-                        docs.sort((a, b) {
-                          final Timestamp aTime =
-                              a.data['last_checked_timestamp'];
-                          final Timestamp bTime =
-                              b.data['last_checked_timestamp'];
+                            return bTime.millisecondsSinceEpoch
+                                .compareTo(aTime.millisecondsSinceEpoch);
+                          });
 
-                          return bTime.millisecondsSinceEpoch
-                              .compareTo(aTime.millisecondsSinceEpoch);
-                        });
+                        return docs.isEmpty
+                            ? EmptyIndicator('No conversations to show')
+                            : ListView.builder(
+                                shrinkWrap: true,
+                                physics: NeverScrollableScrollPhysics(),
+                                padding: EdgeInsets.all(10.0),
+                                itemBuilder: (context, index) {
+                                  final doc = docs[index];
 
-                        return ListView.builder(
-                          shrinkWrap: true,
-                          physics: NeverScrollableScrollPhysics(),
-                          padding: EdgeInsets.all(10.0),
-                          itemBuilder: (context, index) {
-                            final doc = docs[index];
+                                  final userMap = doc['user'];
+                                  if (userMap == null) return SizedBox();
+                                  final Map lastChecked = doc['last_checked'];
+                                  final String lastCheckedSender =
+                                      lastChecked['sender_id'];
 
-                            final userMap = doc['user'];
-                            if (userMap == null) return SizedBox();
-                            final lastChecked = doc['last_checked'];
-                            final user = User.fromMap(doc['user']);
-                            final endAt = doc['end_at'];
-                            return DMListItem(
-                              user: user,
-                              lastChecked: lastChecked,
-                              endAt: endAt,
-                            );
-                          },
-                          itemCount: snapshot.data.documents.length,
-                        );
+                                  final Timestamp lastCheckedTimestamp =
+                                      doc['last_checked_timestamp'];
+                                  final Timestamp lastSeenTimestamp =
+                                      doc['last_seen_timestamp'];
+                                  final Timestamp lastSeenTimestampPeer =
+                                      doc['peer_last_seen_timestamp'];
+
+                                  final user = User.fromMap(userMap);
+
+                                  final endAt = doc['end_at'];
+
+                                  return DMListItem(
+                                    user: user,
+                                    lastChecked: lastChecked,
+                                    lastSeenTimestamp: lastSeenTimestamp,
+                                    lastSeenTimestampPeer:
+                                        lastSeenTimestampPeer,
+                                    endAt: endAt,
+                                    hasUnreadMessages: (lastSeenTimestamp ==
+                                            null)
+                                        ? lastCheckedSender != auth.profile.uid
+                                        : (lastSeenTimestamp.seconds <
+                                                lastCheckedTimestamp.seconds &&
+                                            lastCheckedSender !=
+                                                auth.profile.uid),
+                                  );
+                                },
+                                itemCount: snapshot.data.documents.length,
+                              );
                       }
                     }),
               ],

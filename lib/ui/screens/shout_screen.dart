@@ -298,7 +298,7 @@ class _ShoutScreenState extends State<ShoutScreen> {
 
 //    await Repo.uploadPublicShout(peer: widget.challenger, data: metadata);
 
-    await Repo.uploadShout(peer: widget.challenger, data: metadata);
+    await Repo.uploadShoutPost(peer: widget.challenger, data: metadata);
     return Navigator.pop(context);
   }
 }

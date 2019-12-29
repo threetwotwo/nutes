@@ -1,13 +1,10 @@
+import 'package:email_validator/email_validator.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter/services.dart';
+import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/core/models/user.dart';
-import 'package:nutes/ui/shared/provider_view.dart';
 import 'package:nutes/ui/widgets/login_textfield.dart';
 import 'package:nutes/ui/shared/styles.dart';
-import 'package:nutes/utils/debouncer.dart';
-import 'package:nutes/utils/responsive.dart';
-import 'package:nutes/core/view_models/base_model.dart';
-import 'package:nutes/core/view_models/login_model.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -22,170 +19,304 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController(text: 'password');
   final _emailController = TextEditingController(text: '@gmail.com');
 
+  bool isSigningIn = true;
+  bool emailIsValid = true;
+  bool usernameExists = false;
+  String errorMessage = '';
+
+  bool isLoading = false;
+
+  void setErrorMessage(String s) {
+    setState(() {
+      errorMessage = s;
+    });
+  }
+
+  void changeMode() {
+    setState(() {
+      this.isSigningIn = !this.isSigningIn;
+      errorMessage = '';
+    });
+  }
+
+  Future<bool> checkUsernameExists(String username) async {
+    if (username.isEmpty) {
+      setState(() {
+        usernameExists = false;
+      });
+      return false;
+    }
+    final exists = await Repo.usernameExists(username);
+    setState(() {
+      usernameExists = exists;
+    });
+    return exists;
+  }
+
+  void checkIfEmailIsValid(String email) {
+    final isValid = EmailValidator.validate(email);
+    setState(() {
+      emailIsValid = isValid;
+    });
+  }
+
+  Future<UserProfile> createUser() async {
+    final username = _usernameController.text;
+    if (username.isEmpty) {
+      setErrorMessage('Please enter a username');
+      return null;
+    }
+
+    setState(() {
+      isLoading = true;
+    });
+    final exists = await checkUsernameExists(username);
+
+    if (exists) {
+      setErrorMessage('Username taken. Please try another username');
+      setState(() {
+        isLoading = false;
+      });
+      return null;
+    }
+
+    final user = await Repo.createUser(
+      username: username,
+      password: _passwordController.text,
+      email: _emailController.text,
+    ).catchError((e) {
+      if (e is PlatformException) {
+        String message;
+        switch (e.code) {
+          case 'ERROR_EMAIL_ALREADY_IN_USE':
+            message =
+                'Email is already in use. Please try again with a different email';
+            break;
+          case 'ERROR_INVALID_EMAIL':
+            message = 'Please enter a valid email';
+            break;
+
+          default:
+            message = 'Cannot sign up. Please try again later';
+        }
+        setErrorMessage(message);
+      }
+    });
+
+    setState(() {
+      isLoading = false;
+    });
+    return user;
+  }
+
+  Future<UserProfile> signIn() async {
+    final username = _usernameController.text;
+
+    if (username.isEmpty) return null;
+
+    setState(() {
+      isLoading = true;
+    });
+    bool noError = true;
+    final profile = await Repo.signInWithUsernameAndPassword(
+            username: username, password: _passwordController.text)
+        .catchError((e) {
+      print(e);
+      if (e is PlatformException) {
+        String message;
+        switch (e.code) {
+          case 'ERROR_TOO_MANY_REQUESTS':
+            message = 'Too many unsuccessful attempts. Please try again later';
+            break;
+
+          case 'ERROR_WRONG_PASSWORD':
+          case 'ERROR_USER_NOT_FOUND':
+            message = 'Incorrect username or password';
+            break;
+
+          default:
+            message = 'Cannot sign in. Please try again later.';
+            break;
+        }
+        setErrorMessage(message);
+        noError = false;
+      }
+    });
+
+    if (profile == null && noError)
+      setErrorMessage('Incorrect username or password');
+
+    setState(() {
+      isLoading = false;
+    });
+
+    return profile;
+  }
+
+  @override
+  void setState(fn) {
+    if (mounted) super.setState(fn);
+  }
+
   @override
   Widget build(BuildContext context) {
     double sized(double size) {
-      return screenAwareSize(size, context);
+      return size;
     }
 
-    double textSize = sized(15.0) < 15.0 ? 15.0 : sized(13.0);
-
-    ///For use when checking if username exists during sign up
-    final _debouncer = Debouncer(milliseconds: 500);
-
-    return ProviderView<LoginModel>(
-      builder: (context, model, child) => Scaffold(
-          backgroundColor: Colors.white,
-          body: Container(
-            height: MediaQuery.of(context).size.height,
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Container(
-                        child: Stack(
-                          children: <Widget>[
-                            Container(
-                              padding: EdgeInsets.fromLTRB(
-                                  sized(60.0), sized(110.0), 0.0, 0.0),
-                              child: Text(
-                                'nutes',
-                                style: TextStyle(
-                                    fontSize: sized(80.0),
-                                    fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                          ],
+    return Scaffold(
+        backgroundColor: Colors.white,
+        body: Container(
+          height: MediaQuery.of(context).size.height,
+          child: SingleChildScrollView(
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Container(
+                    child: Stack(
+                      children: <Widget>[
+                        Container(
+                          padding: EdgeInsets.fromLTRB(
+                              sized(60.0), sized(110.0), 0.0, 0.0),
+                          child: Text(
+                            'nutes',
+                            style: TextStyle(
+                                fontSize: sized(80.0),
+                                fontWeight: FontWeight.bold),
+                          ),
                         ),
-                      ),
-                      Container(
-                          padding: EdgeInsets.only(
-                              top: sized(36.0),
-                              left: sized(60.0),
-                              right: sized(60.0)),
-                          decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(16)),
-                          child: Column(
-                            children: <Widget>[
-                              UsernameTextField(
-                                controller: _usernameController,
-                                onChanged: (model.isSigningIn)
-                                    ? null
-                                    : (text) => model.checkUsernameExists(text),
-                                onSubmit: (model.isSigningIn)
-                                    ? null
-                                    : (text) => model.checkUsernameExists(text),
-                              ),
-                              PasswordField(
-                                labelText: '',
-                                controller: _passwordController,
-                              ),
-//                            PasswordTextField(
-//                              controller: _passwordController,
-//                            ),
-                              if (!model.isSigningIn)
-                                EmailTextField(
-                                  controller: _emailController,
-                                  onChanged: (text) =>
-                                      model.checkIfEmailIsValid(text),
-                                ),
-                              SizedBox(height: sized(50.0)),
-                              Padding(
-                                padding: const EdgeInsets.all(20.0),
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
+                      ],
+                    ),
+                  ),
+                  Container(
+                      padding: EdgeInsets.only(
+                          top: sized(36.0),
+                          left: sized(60.0),
+                          right: sized(60.0)),
+                      decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16)),
+                      child: Column(
+                        children: <Widget>[
+                          UsernameTextField(
+                            usernameExists: usernameExists,
+                            controller: _usernameController,
+                            onChanged: isSigningIn
+                                ? null
+                                : (text) {
+                                    if (text.isEmpty)
+                                      setState(() {
+                                        usernameExists = false;
+                                        return;
+                                      });
+                                    return checkUsernameExists(text);
+                                  },
+                            onSubmit: isSigningIn
+                                ? null
+                                : (text) => checkUsernameExists(text),
+                          ),
+                          PasswordField(
+                            labelText: '',
+                            controller: _passwordController,
+                          ),
+                          if (!isSigningIn)
+                            EmailTextField(
+                              controller: _emailController,
+                              onChanged: (text) => checkIfEmailIsValid(text),
+                            ),
+                          Padding(
+                            padding: const EdgeInsets.all(20.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: <Widget>[
+                                Column(
                                   children: <Widget>[
-//                            SizedBox(height: sized(50.0)),
-                                    Column(
-                                      children: <Widget>[
-                                        Padding(
-                                          padding: const EdgeInsets.all(8.0),
-                                          child: Text(
-                                            model.errorMessage,
-                                            textAlign: TextAlign.center,
-                                            style: TextStyles.defaultDisplay
-                                                .copyWith(
-                                                    color: Colors.black87),
-                                          ),
-                                        ),
-                                        LoginButton(
-                                            usernameController:
-                                                _usernameController,
-                                            emailController: _emailController,
-                                            passwordController:
-                                                _passwordController,
-                                            textSize: textSize),
-                                      ],
-                                    ),
-                                    SizedBox(height: sized(20.0)),
-                                  ],
-                                ),
-                              ),
-                              SizedBox(height: 20.0),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: <Widget>[
-                                  Text(
-                                    model.isSigningIn
-                                        ? 'New to nutes?'
-                                        : 'Already have'
-                                            ' an account?',
-                                    style: TextStyle(
-                                      fontFamily: 'Montserrat',
-                                    ),
-                                  ),
-                                  SizedBox(width: 5.0),
-                                  InkWell(
-                                    onTap: () {
-                                      model.changeMode();
-                                      model.setUsernameExists(false);
-                                      print(model.isSigningIn);
-                                    },
-                                    child: Text(
-                                      model.isSigningIn
-                                          ? 'Register'
-                                          : 'Sign In',
-                                      style: TextStyle(
-                                        color: Colors.green,
-                                        fontFamily: 'Montserrat',
-                                        fontWeight: FontWeight.bold,
-                                        decoration: TextDecoration.underline,
+                                    Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Text(
+                                        errorMessage,
+                                        textAlign: TextAlign.center,
+                                        style: TextStyles.w600Text,
                                       ),
                                     ),
-                                  )
-                                ],
-                              ),
-                              SizedBox(height: 20.0),
-                            ],
-                          )),
-                    ]),
-              ),
-            ),
-          )),
-    );
+                                    LoginButton(
+                                      isSigningIn: isSigningIn,
+                                      isLoading: isLoading,
+                                      usernameExists: usernameExists,
+                                      emailIsValid: emailIsValid,
+                                      onError: (e) {
+                                        print(e);
+                                      },
+                                      onTap: () {
+                                        setErrorMessage('');
+                                        isSigningIn ? signIn() : createUser();
+                                      },
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: sized(20.0)),
+                              ],
+                            ),
+                          ),
+                          SizedBox(height: 20.0),
+                        ],
+                      )),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                      Text(
+                        isSigningIn
+                            ? 'New to nutes?'
+                            : 'Already have'
+                                ' an account?',
+                        style: TextStyle(
+                          fontFamily: 'Montserrat',
+                        ),
+                      ),
+                      SizedBox(width: 5.0),
+                      InkWell(
+                        onTap: () {
+                          changeMode();
+                          setState(() {
+                            usernameExists = false;
+                          });
+                        },
+                        child: Text(
+                          isSigningIn ? 'Register' : 'Sign In',
+                          style: TextStyle(
+                            color: Colors.green,
+                            fontFamily: 'Montserrat',
+                            fontWeight: FontWeight.bold,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      )
+                    ],
+                  ),
+                  SizedBox(height: 20.0),
+                ]),
+          ),
+        ));
   }
 }
 
 class LoginButton extends StatefulWidget {
+  final Function(String) onError;
+  final bool emailIsValid;
+  final bool usernameExists;
+  final bool isSigningIn;
+  final VoidCallback onTap;
+  final bool isLoading;
+
   const LoginButton({
     Key key,
-    @required TextEditingController usernameController,
-    @required TextEditingController emailController,
-    @required TextEditingController passwordController,
-    @required this.textSize,
-  })  : _usernameController = usernameController,
-        _emailController = emailController,
-        _passwordController = passwordController,
-        super(key: key);
-
-  final TextEditingController _usernameController;
-  final TextEditingController _emailController;
-  final TextEditingController _passwordController;
-  final double textSize;
+    this.onError,
+    this.emailIsValid = true,
+    this.usernameExists = false,
+    this.isSigningIn,
+    this.onTap,
+    this.isLoading = false,
+  }) : super(key: key);
 
   @override
   _LoginButtonState createState() => _LoginButtonState();
@@ -221,7 +352,7 @@ class _LoginButtonState extends State<LoginButton>
 
   @override
   Widget build(BuildContext context) {
-    final model = Provider.of<LoginModel>(context);
+//    final model = Provider.of<LoginModel>(context);
     return GestureDetector(
       onTapDown: _onTapDown,
       onTapUp: _onTapUp,
@@ -229,37 +360,41 @@ class _LoginButtonState extends State<LoginButton>
         print('tap login');
 
         ///remove any error messages
-        model.setErrorMessage('');
+        widget.onError('');
 
-        final username = widget._usernameController.text;
-        final email = widget._emailController.text;
-        final password = widget._passwordController.text;
+//        final username = widget._usernameController.text;
+//        final email = widget._emailController.text;
+//        final password = widget._passwordController.text;
 
-        UserProfile userProf;
-        if (model.isSigningIn) {
-          userProf = await model.signIn(username: username, password: password);
-        } else {
-          ///Create a new user
-          model.checkIfEmailIsValid(email);
-          await model.checkUsernameExists(username);
+        return widget.onTap();
 
-          if (model.emailIsValid && !model.usernameExists) {
-            await model.createUser(
-              email: email,
-              password: password,
-              username: username,
-            );
-            userProf =
-                await model.signIn(username: username, password: password);
-          } else
-            return model.setErrorMessage(model.usernameExists
-                ? 'Please '
-                    'try another username'
-                : model.emailIsValid
-                    ? 'Please '
-                        'try another email'
-                    : 'Please enter a valid email');
-        }
+//        UserProfile profile;
+//        if (model.isSigningIn) {
+//          profile = await model.signIn(username: username, password: password);
+//          Auth.instance.profile = profile;
+//        } else {
+//          ///Create a new user
+//          if (username.isEmpty)
+//            return model.setErrorMessage('Username must not be empty');
+//          model.checkIfEmailIsValid(email);
+//          await model.checkUsernameExists(username);
+//
+//          if (model.emailIsValid && !model.usernameExists) {
+//            await model.createUser(
+//              email: email,
+//              password: password,
+//              username: username,
+//            );
+//            profile =
+//                await model.signIn(username: username, password: password);
+//            Auth.instance.profile = profile;
+//          } else
+//            return model.setErrorMessage(model.usernameExists
+//                ? 'Please try another username'
+//                : model.emailIsValid
+//                    ? 'Please try another email'
+//                    : 'Please enter a valid email');
+//        }
       },
       child: Column(
         children: <Widget>[
@@ -267,23 +402,21 @@ class _LoginButtonState extends State<LoginButton>
           Transform.scale(
             scale: _animation.value / 5,
             child: Container(
-//        padding: EdgeInsets.all(_animationTween.value / 8 ?? 0),
               height: 40,
               child: Material(
                 borderRadius: BorderRadius.circular(20),
                 color: Colors.black.withOpacity(_animation.value - 4),
                 elevation: _animation.value * 2,
                 child: Center(
-                  child: model.state == ViewState.Busy
+                  child: widget.isLoading
                       ? SpinKitThreeBounce(
                           color: Colors.white,
                           size: 24,
                         )
                       : Text(
-                          model.isSigningIn ? 'LOGIN' : 'SIGNUP',
+                          widget.isSigningIn ? 'LOGIN' : 'SIGNUP',
                           style: TextStyles.w600Text.copyWith(
                             color: Colors.white,
-                            fontSize: widget.textSize,
                           ),
                         ),
                 ),

@@ -6,11 +6,16 @@ import 'package:nutes/core/services/repository.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:nutes/ui/screens/post_detail_page.dart';
 import 'package:nutes/ui/shared/refresh_list_view.dart';
+import 'package:nutes/ui/shared/shout_grid_item.dart';
 import 'package:nutes/ui/shared/shout_post.dart';
 import 'package:nutes/ui/shared/styles.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ExploreScreen extends StatefulWidget {
+  final void Function(int) onTab;
+
+  const ExploreScreen({Key key, this.onTab}) : super(key: key);
+
   @override
   _ExploreScreenState createState() => _ExploreScreenState();
 }
@@ -71,7 +76,7 @@ class _ExploreScreenState extends State<ExploreScreen>
       child: Column(
         children: <Widget>[
           TabBar(
-            onTap: (tab) => cache.searchTabIndex = tab,
+            onTap: (idx) => widget.onTab(idx),
             indicatorColor: Colors.black,
             labelColor: Colors.black,
             labelStyle: TextStyles.w600Text,
@@ -160,8 +165,7 @@ class _ExploreTabViewState extends State<ExploreTabView>
             : StaggeredGridView.countBuilder(
                 physics: NeverScrollableScrollPhysics(),
                 shrinkWrap: true,
-                mainAxisSpacing: 4,
-                crossAxisSpacing: 4,
+                mainAxisSpacing: 1,
                 itemCount: posts.length,
                 crossAxisCount: 2,
                 itemBuilder: (context, index) {
@@ -171,25 +175,12 @@ class _ExploreTabViewState extends State<ExploreTabView>
                     onTap: () =>
                         Navigator.push(context, PostDetailScreen.route(post)),
                     child: Container(
-                      color: Colors.grey[200],
+//                      color: Colors.grey[200],
                       child: post.type == PostType.shout
-                          ? Wrap(
-                              children: <Widget>[
-                                Padding(
-                                  padding: const EdgeInsets.all(4.0),
-                                  child: GridShoutBubble(
-                                    isChallenger: true,
-                                    post: post,
-                                  ),
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.all(4.0),
-                                  child: GridShoutBubble(
-                                    isChallenger: false,
-                                    post: post,
-                                  ),
-                                ),
-                              ],
+                          ? Center(
+                              child: ShoutGridItem(
+                                metadata: post.metadata,
+                              ),
                             )
                           : Image.network(
                               posts[index].urlBundles.first.medium,
@@ -203,7 +194,7 @@ class _ExploreTabViewState extends State<ExploreTabView>
                   );
                 },
                 staggeredTileBuilder: (index) => StaggeredTile.extent(
-                    1, posts[index].type == PostType.shout ? 300 : 200)),
+                    1, posts[index].type == PostType.shout ? 200 : 200)),
       ],
     );
   }

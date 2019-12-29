@@ -1,6 +1,8 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:nutes/ui/shared/styles.dart';
 import 'package:nutes/ui/widgets/profile_header.dart';
+import 'package:transparent_image/transparent_image.dart';
 
 class AvatarImage extends StatelessWidget {
   final String url;
@@ -142,7 +144,7 @@ class PhotoImage extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.grey[100],
+          color: Colors.grey[200],
           shape: BoxShape.circle,
         ),
         child: Transform.rotate(
@@ -157,7 +159,7 @@ class PhotoImage extends StatelessWidget {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(1000),
               child: Container(
-                color: Colors.grey[200],
+//                color: Colors.grey[200],
                 child: url.isEmpty
                     ? Transform.scale(
                         scale: 0.65,
@@ -165,10 +167,24 @@ class PhotoImage extends StatelessWidget {
                           'assets/images/avatar.png',
                           fit: BoxFit.cover,
                         ))
-                    : Image.network(
-                        url,
+                    : CachedNetworkImage(
+                        placeholder: (context, _) => Container(
+                          color: Colors.grey[200],
+                        ),
+                        errorWidget: (_, __, ___) => Transform.scale(
+                            scale: 0.65,
+                            child: Image.asset(
+                              'assets/images/avatar.png',
+                              fit: BoxFit.cover,
+                            )),
+                        imageUrl: url,
                         fit: BoxFit.cover,
                       ),
+//                FadeInImage(
+//                        placeholder: MemoryImage(kTransparentImage),
+//                        image: NetworkImage(url),
+//                        fit: BoxFit.cover,
+//                      ),
               ),
             ),
 //                CachedNetworkImage(

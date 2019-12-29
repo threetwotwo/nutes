@@ -111,14 +111,8 @@ class ProfileAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     return isRoot
         ? AppBar(
-            leading: IconButton(
-              icon: const Icon(
-                Icons.camera_alt,
-                color: Colors.transparent,
-              ),
-              onPressed: onLeadingPressed,
-              tooltip: MaterialLocalizations.of(context).openAppDrawerTooltip,
-            ),
+            automaticallyImplyLeading: true,
+            leading: Icon(Icons.delete, color: Colors.transparent),
             iconTheme: IconThemeData(color: Colors.black),
             actions: <Widget>[
               IconButton(
@@ -134,6 +128,7 @@ class ProfileAppBar extends StatelessWidget implements PreferredSizeWidget {
             title: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
+                if (profile.user.isPrivate) Icon(Icons.lock, size: 17),
                 Text(
                   '${profile.user.username}',
                   style: TextStyles.defaultDisplay.copyWith(fontSize: 18),

@@ -51,12 +51,10 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                   }),
               title: Text(
                 'Private Account',
-                style: TextStyles.defaultDisplay.copyWith(fontSize: 17),
+                style: TextStyles.w600Display,
               ),
-              subtitle: Text(isPrivate
-                  ? 'Only people you approve '
-                      'can see your photos and stories'
-                  : 'Anyone can see your photos and stories'),
+              subtitle: Text('${isPrivate ? 'Private' : 'Public'} - '
+                  '${isPrivate ? 'only people you approve can see your photos and stories' : 'anyone can see your photos and stories'}'),
             )
           ],
         ),

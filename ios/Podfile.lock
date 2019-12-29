@@ -115,6 +115,9 @@ PODS:
   - flutter_image_compress (0.0.1):
     - Flutter
     - Mantle
+  - FMDB (2.7.5):
+    - FMDB/standard (= 2.7.5)
+  - FMDB/standard (2.7.5)
   - GoogleAppMeasurement (6.1.5):
     - GoogleUtilities/AppDelegateSwizzler (~> 6.0)
     - GoogleUtilities/MethodSwizzler (~> 6.0)
@@ -177,6 +180,9 @@ PODS:
   - path_provider (0.0.1):
     - Flutter
   - Protobuf (3.10.0)
+  - sqflite (0.0.1):
+    - Flutter
+    - FMDB (~> 2.7.2)
   - TOCropViewController (2.5.2)
   - vibrate (0.0.1):
     - Flutter
@@ -193,6 +199,7 @@ DEPENDENCIES:
   - image_cropper (from `.symlinks/plugins/image_cropper/ios`)
   - image_picker (from `.symlinks/plugins/image_picker/ios`)
   - path_provider (from `.symlinks/plugins/path_provider/ios`)
+  - sqflite (from `.symlinks/plugins/sqflite/ios`)
   - vibrate (from `.symlinks/plugins/vibrate/ios`)
 
 SPEC REPOS:
@@ -211,6 +218,7 @@ SPEC REPOS:
     - FirebaseInstanceID
     - FirebaseMessaging
     - FirebaseStorage
+    - FMDB
     - GoogleAppMeasurement
     - GoogleDataTransport
     - GoogleDataTransportCCTSupport
@@ -247,6 +255,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/image_picker/ios"
   path_provider:
     :path: ".symlinks/plugins/path_provider/ios"
+  sqflite:
+    :path: ".symlinks/plugins/sqflite/ios"
   vibrate:
     :path: ".symlinks/plugins/vibrate/ios"
 
@@ -273,6 +283,7 @@ SPEC CHECKSUMS:
   FirebaseStorage: b7c6d00997bc21d4465453bdcc5cc65513110fed
   Flutter: 0e3d915762c693b495b44d77113d4970485de6ec
   flutter_image_compress: f69d0e0e078ce52b4810695593bc861ee319ae7d
+  FMDB: 2ce00b547f966261cd18927a3ddb07cb6f3db82a
   GoogleAppMeasurement: 037f46d1d8ae8b312720f1042585ab961a1289e3
   GoogleDataTransport: 166f9b9f82cbf60a204e8fe2daa9db3e3ec1fb15
   GoogleDataTransportCCTSupport: f6ab1962e9dc05ab1fb938b795e5b310209edeec
@@ -287,6 +298,7 @@ SPEC CHECKSUMS:
   nanopb: 18003b5e52dab79db540fe93fe9579f399bd1ccd
   path_provider: fb74bd0465e96b594bb3b5088ee4a4e7bb1f2a9d
   Protobuf: a4dc852ad69c027ca2166ed287b856697814375b
+  sqflite: 4001a31ff81d210346b500c55b17f4d6c7589dd0
   TOCropViewController: e9da34f484aedd4e5d5a8ab230ba217cfe16c729
   vibrate: 967ba16b8bd87d2fa3646472bb10429f1927c32f
 

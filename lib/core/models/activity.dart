@@ -1,19 +1,47 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:nutes/core/models/post.dart';
+import 'package:nutes/core/models/post_type.dart';
 import 'package:nutes/core/models/user.dart';
 
-enum Activities {
+enum ActivityType {
   post_like,
   comment_like,
   follow,
 }
 
+class ActivityBundle {
+  final User owner;
+  final List<Activity> activities;
+  final ActivityType activityType;
+  final Timestamp timestamp;
+
+  ActivityBundle({
+    this.owner,
+    this.activities,
+    this.activityType,
+    this.timestamp,
+  });
+
+  factory ActivityBundle.from(List<Activity> activities, ActivityType type) {
+    return ActivityBundle(
+      owner: activities.last.liker,
+      activities: activities,
+      timestamp: activities.first.timestamp,
+      activityType: type,
+    );
+  }
+}
+
 class Activity {
   ///Owner of activity
-  final User owner;
+  final User postOwner;
+
+  ///User who liked the post
+  final User liker;
 
   ///Type of activity
-  final Activities type;
+  final ActivityType activityType;
+
+  final PostType postType;
 
   final String postId;
 
@@ -23,41 +51,46 @@ class Activity {
 
   final Map metadata;
 
-  static Activities typeFromString(String val) {
-    return Activities.values
-        .firstWhere((b) => b.toString() == val, orElse: () => null);
+  static ActivityType typeFromString(String val) {
+    return ActivityType.values.firstWhere(
+        (b) => b.toString() == 'ActivityType.$val',
+        orElse: () => null);
   }
 
-  static String typeStringVal(Activities type) {
+  static String typeStringVal(ActivityType type) {
     return type.toString().split('.')[1];
   }
 
   Activity({
-    this.owner,
-    this.type,
+    this.postOwner,
+    this.activityType,
+    this.postType,
     this.postId,
     this.postUrl,
     this.metadata,
     this.timestamp,
+    this.liker,
   });
 
-  factory Activity.fromDoc(DocumentSnapshot doc, List<User> followings) {
-    final data = doc.data;
+  factory Activity.fromDoc(DocumentSnapshot doc) {
+    final owner = User.fromMap(doc['owner'] ?? {});
+    final liker = User.fromMap(doc['liker'] ?? {});
 
-    final ownerId = data['owner_id'] ?? '';
+    final activityType = Activity.typeFromString(doc['activity_type']);
 
-    final owner =
-        followings.firstWhere((f) => f.uid == ownerId, orElse: () => null);
-
-    final type = Activity.typeFromString(data['type']);
+    final postType = PostHelper.postType(doc['type']);
 
     return Activity(
-      owner: owner,
-      type: type,
+      activityType: activityType,
+      postType: postType,
       postId: doc.documentID.split('-')[1],
-      postUrl: data['post_url'] ?? '',
-      metadata: data['metadata'],
-      timestamp: data['timestamp'],
+      postOwner: owner,
+      liker: liker,
+      postUrl: (doc['urls'] ?? []).isEmpty
+          ? ''
+          : (doc['urls'] ?? []).first['medium'] ?? '',
+      metadata: doc['metadata'],
+      timestamp: doc['timestamp'],
     );
   }
 }

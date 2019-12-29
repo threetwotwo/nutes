@@ -1,12 +1,14 @@
 import 'dart:math';
 
 import 'package:bot_toast/bot_toast.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:nutes/core/services/auth.dart';
 import 'package:nutes/ui/screens/edit_post_screen.dart';
+import 'package:nutes/ui/screens/send_post_screen.dart';
 import 'package:nutes/ui/shared/comment_post_list_item.dart';
 import 'package:nutes/ui/shared/loading_indicator.dart';
 import 'package:nutes/ui/widgets/like_count_bar.dart';
@@ -27,7 +29,7 @@ import 'package:nutes/ui/shared/dots_indicator.dart';
 import 'avatar_list_item.dart';
 import 'package:vibrate/vibrate.dart';
 
-class PostListView extends StatefulWidget {
+class PostListView extends StatelessWidget {
   final List<Post> posts;
   final bool pushNavigationEnabled;
   final Function(String) onAddComment;
@@ -42,20 +44,6 @@ class PostListView extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _PostListViewState createState() => _PostListViewState();
-}
-
-class _PostListViewState extends State<PostListView> {
-  List<Post> posts;
-
-  @override
-  void initState() {
-    posts = widget.posts;
-
-    super.initState();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return ListView.builder(
         shrinkWrap: true,
@@ -64,15 +52,9 @@ class _PostListViewState extends State<PostListView> {
         itemBuilder: (context, index) {
           return PostListItem(
             post: posts[index],
-            onAddComment: (postId) => widget.onAddComment(postId),
-            shouldNavigate: widget.pushNavigationEnabled,
-            onUnfollow: (uid) {
-//              setState(() {
-//                posts = List.from(posts)
-//                  ..removeWhere((post) => post.owner.uid == uid);
-//              });
-              return widget.onUnfollow(uid);
-            },
+            onAddComment: (postId) => onAddComment(postId),
+            shouldNavigate: pushNavigationEnabled,
+            onUnfollow: (uid) => onUnfollow(uid),
           );
         });
   }
@@ -149,7 +131,6 @@ class _PostListItemState extends State<PostListItem> {
     ///Get complete post if any info is incomplete
     if (post == null || post.stats == null || post.myFollowingLikes == null)
       _getPostComplete();
-//    liked = post.myLikes?.didLike ?? false;
 
     ///Get aspect ratio for [PageViewer] from the biggest image
     ///ie. lowest aspect ratio
@@ -351,18 +332,18 @@ class _PostListItemState extends State<PostListItem> {
                     controller: _controller,
                     length: post.urlBundles.length,
                     builder: (context, index) {
-                      return FadeInImage(
-                        image: NetworkImage(post.urlBundles[index].medium),
-                        placeholder: NetworkImage(post.urlBundles[index].small),
-                        fit: BoxFit.cover,
-                      );
-//                      return CachedNetworkImage(
+//                      return FadeInImage(
+//                        image: NetworkImage(post.urlBundles[index].medium),
+//                        placeholder: NetworkImage(post.urlBundles[index].small),
 //                        fit: BoxFit.cover,
-//                        placeholder: (context, url) => Container(
-//                          color: Colors.grey[100],
-//                        ),
-//                        imageUrl: post.urlBundles[index].medium,
 //                      );
+                      return CachedNetworkImage(
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => Container(
+                          color: Colors.grey[100],
+                        ),
+                        imageUrl: post.urlBundles[index].medium,
+                      );
                     },
                   ),
                 ),
@@ -394,6 +375,8 @@ class _PostListItemState extends State<PostListItem> {
                             ),
                             onSendTapped: () {
                               print('send tpped');
+                              Navigator.of(context, rootNavigator: true)
+                                  .push(SendPostScreen.route(post));
                             },
                             controller: _controller,
                             itemCount: post.type == PostType.shout

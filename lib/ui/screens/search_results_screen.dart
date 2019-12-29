@@ -134,11 +134,7 @@ class _SearchResultsScreenState extends State<SearchResultsScreen>
 
   Future _navigateToProfile(BuildContext context, User user) {
     Repo.createRecentSearch(user);
-    return Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => ProfileScreen(uid: user.uid),
-      ),
-    );
+    return Navigator.of(context).push(ProfileScreen.route(user.uid));
   }
 
   @override

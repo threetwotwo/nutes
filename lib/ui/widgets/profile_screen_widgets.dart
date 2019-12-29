@@ -7,51 +7,6 @@ import 'package:nutes/utils/responsive.dart';
 
 enum ViewType { list, grid }
 
-class BioHeader extends StatelessWidget {
-  final UserProfile user;
-  final Function onMorePressed;
-
-  const BioHeader({
-    Key key,
-    @required this.user,
-    this.onMorePressed,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    double size(double size) {
-      return screenAwareSize(size, context);
-    }
-
-    return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: size(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: <Widget>[
-              Text(
-                user.user.displayName ?? '',
-                style: TextStyles.w600Text.copyWith(fontSize: 15),
-              ),
-              IconButton(
-                onPressed: onMorePressed,
-                icon: Icon(
-                  MdiIcons.chevronDown,
-                  size: defaultSize(24, context, defaultTo: 20),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class ProfileTabBar extends StatelessWidget {
   final ViewType view;
   final Function onPressed;

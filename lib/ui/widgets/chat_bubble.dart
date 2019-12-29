@@ -1,18 +1,21 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:bubble/bubble.dart';
 import 'package:line_icons/line_icons.dart';
 import 'package:nutes/core/models/chat_message.dart';
 import 'package:nutes/core/models/user.dart';
 import 'package:nutes/core/services/auth.dart';
+import 'package:nutes/ui/screens/post_detail_page.dart';
 import 'package:nutes/ui/screens/profile_screen.dart';
 import 'package:nutes/ui/shared/avatar_image.dart';
 import 'package:intl/intl.dart';
+import 'package:nutes/ui/shared/avatar_list_item.dart';
 import 'package:nutes/ui/shared/styles.dart';
 import 'package:nutes/utils/timeAgo.dart';
 
 final kPeerBubbleColor = Colors.white;
 const kPeerTextColor = Colors.black;
-final kMyBubbleColor = Colors.blueAccent[400];
+final kMyBubbleColor = Colors.blueAccent[700];
 const kMyTextColor = Colors.white;
 
 final kPeerTextStyle =
@@ -21,7 +24,7 @@ final kMyTextStyle =
     TextStyles.defaultText.copyWith(color: kMyTextColor, fontSize: 16);
 
 final kLabelTextStyle =
-    TextStyles.defaultText.copyWith(color: Colors.grey, fontSize: 14);
+    TextStyles.w600Text.copyWith(color: Colors.grey, fontSize: 12);
 
 const kBubbleVerticalPadding = const EdgeInsets.symmetric(vertical: 4);
 
@@ -99,12 +102,15 @@ class ChatTextBubble extends StatelessWidget {
 
   final bool showDate;
 
+  final bool isSeen;
+
   const ChatTextBubble({
     @required this.isPeer,
     @required this.message,
     @required this.isLast,
     @required this.peer,
     this.showDate = false,
+    this.isSeen = true,
   });
 
   @override
@@ -112,41 +118,80 @@ class ChatTextBubble extends StatelessWidget {
     final width = MediaQuery.of(context).size.width * 0.75;
     final isAWeekOld = message.timestamp.toDate().millisecondsSinceEpoch <
         DateTime.now().millisecondsSinceEpoch - 604800000;
+    final isToday = message.timestamp.toDate().day < DateTime.now().day;
+
+    final date = message.timestamp.toDate();
+
     return Column(
+//      crossAxisAlignment:
+//          isPeer ? CrossAxisAlignment.start : CrossAxisAlignment.end,
       children: <Widget>[
         if (showDate)
           Padding(
             padding: const EdgeInsets.all(8.0),
-            child: Text(
-              '${isAWeekOld ? (DateFormat.d().format(message.timestamp.toDate()) + ' ' + DateFormat.MMM().format(message.timestamp.toDate())) : DateFormat.EEEE().format(message.timestamp.toDate())} '
-              '${DateFormat.jm().format(message.timestamp.toDate())}',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: kLabelTextStyle,
-            ),
-          ),
-        Row(
-          mainAxisAlignment:
-              isPeer ? MainAxisAlignment.start : MainAxisAlignment.end,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: <Widget>[
-            if (isPeer) ChatPeerAvatar(peer: peer, isVisible: isLast),
-            Container(
-//          color: Colors.green,
-              padding: kBubbleVerticalPadding,
-              constraints: BoxConstraints(maxWidth: width),
-              child: Bubble(
-                alignment:
-                    isPeer ? Alignment.centerLeft : Alignment.centerRight,
-                shadowColor: isPeer ? Colors.black : Colors.black,
-                color: isPeer ? kPeerBubbleColor : kMyBubbleColor,
-                padding: BubbleEdges.symmetric(vertical: 10, horizontal: 10),
-                child: Text(
-                  message.content,
-                  style: isPeer ? kPeerTextStyle : kMyTextStyle,
-                ),
+            child: RichText(
+              text: TextSpan(
+                children: [
+                  TextSpan(
+                      text:
+                          '${isAWeekOld ? DateFormat.d().format(date) + ' ' + DateFormat.MMM().format(date) : !isToday ? 'Today' : DateFormat.EEEE().format(date)} ',
+                      style: kLabelTextStyle),
+                  TextSpan(
+                      text: '${DateFormat.jm().format(date)}',
+                      style: kLabelTextStyle.copyWith(
+                        color: Colors.grey,
+                        fontWeight: FontWeight.w400,
+                      )),
+                ],
               ),
             ),
+//            Text(
+//              '${isAWeekOld ? (DateFormat.d().format(message.timestamp.toDate()) + ' ' + DateFormat.MMM().format(message.timestamp.toDate())) : !isToday ? '' : DateFormat.EEEE().format(message.timestamp.toDate())} '
+//              '${DateFormat.jm().format(message.timestamp.toDate())}',
+//              maxLines: 1,
+//              overflow: TextOverflow.ellipsis,
+//              style: kLabelTextStyle,
+//            ),
+          ),
+        Column(
+          crossAxisAlignment:
+              isPeer ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+          children: <Widget>[
+            Row(
+              mainAxisAlignment:
+                  isPeer ? MainAxisAlignment.start : MainAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: <Widget>[
+                if (isPeer) ChatPeerAvatar(peer: peer, isVisible: isLast),
+                Container(
+//          color: Colors.green,
+                  padding: kBubbleVerticalPadding,
+                  constraints: BoxConstraints(maxWidth: width),
+                  child: Bubble(
+                    alignment:
+                        isPeer ? Alignment.centerLeft : Alignment.centerRight,
+                    shadowColor: isPeer ? Colors.black : Colors.black,
+                    color: isPeer ? kPeerBubbleColor : kMyBubbleColor,
+                    padding:
+                        BubbleEdges.symmetric(vertical: 10, horizontal: 10),
+                    child: Text(
+                      message.content,
+                      style: isPeer ? kPeerTextStyle : kMyTextStyle,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+//            if (showDate)
+//              Padding(
+//                padding: isPeer
+//                    ? const EdgeInsets.only(left: 44.0)
+//                    : const EdgeInsets.only(right: 8.0),
+//                child: Text(
+//                  DateFormat.jm().format(date),
+//                  style: kLabelTextStyle,
+//                ),
+//              ),
           ],
         ),
       ],
@@ -167,6 +212,154 @@ class TypingIndicator extends StatelessWidget {
         '${user.username} is '
         'typing...',
         style: kLabelTextStyle,
+      ),
+    );
+  }
+}
+
+class ChatPostBubble extends StatelessWidget {
+  final bool isPeer;
+  final ChatItem message;
+
+  ///Show peer avatar if true
+  final bool isLast;
+
+  final User peer;
+
+  final bool showDate;
+
+  final bool isSeen;
+
+  const ChatPostBubble(
+      {Key key,
+      this.isPeer,
+      this.message,
+      this.isLast,
+      this.peer,
+      this.showDate,
+      this.isSeen})
+      : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final data = message.metadata;
+
+    if (data == null || data.isEmpty) return SizedBox();
+
+    final owner = User.fromMap(data['owner']);
+
+    final urls = data['urls'];
+
+    return Padding(
+      padding: const EdgeInsets.all(4.0),
+      child: Column(
+        crossAxisAlignment:
+            isPeer ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              ChatPeerAvatar(
+                isVisible: isLast,
+                peer: peer,
+              ),
+              InkWell(
+                onTap: () => Navigator.of(context).push(PostDetailScreen.route(
+                    null,
+                    postId: data['post_id'],
+                    ownerId: owner.uid)),
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  constraints: BoxConstraints(
+//                maxHeight: 400,
+                      maxWidth: MediaQuery.of(context).size.width * 0.78),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border.all(color: Colors.grey[400]),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+//            child: Text(message.id),
+                  child: (message.metadata['type'] == 'text')
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              Container(
+                                margin: const EdgeInsets.all(4),
+                                height: 40,
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: <Widget>[
+                                    Row(
+                                      children: <Widget>[
+                                        AvatarImage(
+                                          url: owner.urls.small,
+                                          spacing: 0,
+                                          padding: 4,
+                                        ),
+                                        SizedBox(width: 8),
+                                        Text(
+                                          owner.username,
+                                          style: TextStyles.w600Display,
+                                        ),
+                                      ],
+                                    ),
+                                    Icon(
+                                      Icons.chevron_right,
+                                      color: Colors.grey,
+                                    )
+                                  ],
+                                ),
+                              ),
+                              Container(
+                                height: 1,
+                                color: Colors.grey[300],
+                              ),
+                              AspectRatio(
+                                aspectRatio: urls[0]['aspect_ratio'] ?? 1,
+                                child: CachedNetworkImage(
+                                  imageUrl: message.metadata['urls'][0]
+                                      ['small'],
+                                  placeholder: (_, __) => Container(
+                                    color: Colors.grey[200],
+                                  ),
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                              if (data['caption'].toString().isNotEmpty)
+                                Padding(
+                                    padding: const EdgeInsets.all(16.0),
+                                    child: RichText(
+                                      text: TextSpan(children: [
+                                        TextSpan(
+                                          text: owner.username + ' ',
+                                          style: TextStyles.w600Display,
+                                        ),
+                                        TextSpan(
+                                          text: data['caption'],
+                                          style: TextStyles.defaultText,
+                                        )
+                                      ]),
+                                    )),
+                            ],
+                          ),
+                        )
+                      : SizedBox(),
+                ),
+              ),
+            ],
+          ),
+          if (message.content.isNotEmpty)
+            ChatTextBubble(
+              isPeer: isPeer,
+              isLast: isLast,
+              isSeen: isSeen,
+              peer: peer,
+              showDate: false,
+              message: message,
+            ),
+        ],
       ),
     );
   }
@@ -198,13 +391,32 @@ class ChatShoutResponseBubble extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.all(8.0),
           child: Center(
-            child: Text(
-              '${isPeer ? '${peer.username} responded to your shout' : 'You '
-                  'responded to a shout'} · ${TimeAgo.formatShort(response.timestamp.toDate())}',
+            child: RichText(
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: kLabelTextStyle,
+              text: TextSpan(children: [
+                TextSpan(
+                  text:
+                      '${isPeer ? '${peer.username} responded to your shout' : 'You responded to a shout'}',
+                  style: kLabelTextStyle,
+                ),
+                TextSpan(
+                  text:
+                      ' · ${TimeAgo.formatShort(response.timestamp.toDate())}',
+                  style: kLabelTextStyle.copyWith(
+                    color: Colors.grey,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ]),
             ),
+//            Text(
+//              '${isPeer ? '${peer.username} responded to your shout' : 'You '
+//                  'responded to a shout'} · ${TimeAgo.formatShort(response.timestamp.toDate())}',
+//              maxLines: 1,
+//              overflow: TextOverflow.ellipsis,
+//              style: kLabelTextStyle,
+//            ),
           ),
         ),
         Row(
@@ -333,13 +545,24 @@ class ChatShoutBubble extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8.0),
             child: Center(
-              child: Text(
-                '${isPeer ? '${peer.username} started a shout' : 'You started'
-                        ' a shout'}' +
-                    ' · ${TimeAgo.formatShort(message.timestamp.toDate())}',
+              child: RichText(
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: kLabelTextStyle,
+                text: TextSpan(children: [
+                  TextSpan(
+                    text:
+                        '${isPeer ? '${peer.username} started a shout' : 'You started a shout'}',
+                    style: kLabelTextStyle,
+                  ),
+                  TextSpan(
+                    text:
+                        ' · ${TimeAgo.formatShort(message.timestamp.toDate())}',
+                    style: kLabelTextStyle.copyWith(
+                      color: Colors.grey,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ]),
               ),
             ),
           ),
@@ -397,7 +620,7 @@ class ChatShoutBubble extends StatelessWidget {
                                 radius: 30,
                                 backgroundColor: Colors.black.withOpacity(0.35),
                                 child: Icon(
-                                  LineIcons.bullhorn,
+                                  LineIcons.volume_up,
                                   color: Colors.white.withOpacity(0.95),
                                   size: 28,
                                 ),

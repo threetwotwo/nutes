@@ -1,13 +1,10 @@
 import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-//import 'package:provider/provider.dart';
+import 'package:line_icons/line_icons.dart';
 import 'package:nutes/core/models/filter.dart';
 import 'package:nutes/core/services/local_cache.dart';
-//import 'package:nutes/core/view_models/base_model.dart';
-import 'package:nutes/core/view_models/upload_model.dart';
 import 'package:nutes/ui/shared/buttons.dart';
-import 'package:nutes/ui/shared/provider_view.dart';
 import 'package:nutes/ui/screens/confirm_upload_page.dart';
 import 'package:nutes/ui/shared/styles.dart';
 import 'package:nutes/ui/widgets/capturable_area.dart';
@@ -36,7 +33,7 @@ class _EditorPageState extends State<EditorPage>
   bool isLoading = false;
 
   final filterController =
-      PageController(viewportFraction: 0.25, initialPage: 1);
+      PageController(viewportFraction: 0.23, initialPage: 1);
 
   bool isKeyboardVisible = false;
   bool isVisible = false;
@@ -124,8 +121,6 @@ class _EditorPageState extends State<EditorPage>
 
     ///update local cache filter
     cache.filters[currentPage] = Map()..[currentFilter] = filter;
-//    [currentFilter] = filter;
-//    print(cache.filters[page].type);
 
     if (mounted) setState(() {});
   }
@@ -244,125 +239,138 @@ class _EditorPageState extends State<EditorPage>
 
   @override
   Widget build(BuildContext context) {
-    return ProviderView<UploadModel>(
-      builder: (context, model, child) {
-        final filter = capturePages[currentPage].filter;
+    final filter = capturePages[currentPage].filter;
 
-        return Scaffold(
-          body: Container(
-            decoration: filter.variant.bgDecor,
-            child: SafeArea(
-              child: Stack(
-                children: <Widget>[
-                  Container(
-                    width: MediaQuery.of(context).size.width,
-                    height: MediaQuery.of(context).size.height,
-                    child: PageView.builder(
-                      onPageChanged: (value) {
-                        print(
-                            'on page change $value filter type ${filter.type}');
-                        setState(() {
-                          currentPage = value;
-                          filterController.animateToPage(
-                            FilterType.values
-                                .indexOf(capturePages[currentPage].filter.type),
-                            duration: Duration(milliseconds: 200),
-                            curve: Curves.easeInOut,
-                          );
-                        });
-                      },
-                      itemCount: capturePages.length,
-                      controller: pageController,
-                      itemBuilder: (context, index) {
-                        return capturePages[index];
-                      },
-                    ),
-                  ),
-                  Container(
-                    height: MediaQuery.of(context).size.height,
-                    child: Column(
-                      children: <Widget>[
-                        EditorDefaultTopButtons(
-                          currentPage: currentPage,
-                          pages: capturePages,
-                          onAddPressed: () => incrementPageCount(context),
-                          onDeletePressed: () => deletePage(context),
-                          onBackPressed: widget.onBackPressed,
-                          isStory: widget.isStoryMode,
-                          controller: filterController,
-                          onFilterChanged: (filterIndex, filter) =>
-                              onFilter(filterIndex, filter),
-                          onVariantChange: (val) {
-                            return onVariant(val);
-                          },
-                        ),
-                        Expanded(
-                          child: SizedBox(
-                            child: Align(
-                              alignment: Alignment.topRight,
-                              child: capturePages.length < 2
-                                  ? SizedBox()
-                                  : Container(
-                                      padding: const EdgeInsets.all(5.0),
-                                      margin: const EdgeInsets.all(5.0),
-                                      decoration: BoxDecoration(
-                                          color: Colors.black54,
-                                          borderRadius:
-                                              BorderRadius.circular(100)),
-                                      child: Text(
-                                        ' ${currentPage + 1}/${capturePages.length} ',
-                                        style: TextStyles.defaultText
-                                            .copyWith(color: Colors.white),
-                                      ),
-                                    ),
-                            ),
-                          ),
-                        ),
-                        EditorFooter(
-                            doneColor: Colors.blueAccent,
-                            onColor: (val) {
-                              return changeTextColor(val);
-                            },
-                            pageController: _pageController,
-//                            currentPage: currentPage,
-                            itemCount: capturePages.length,
-                            isLoading: isLoading,
-                            onSendPressed: () async {
-                              FocusScope.of(context).requestFocus(FocusNode());
-
-                              ///hacky way to ensure keyboard is fully dismissed
-                              await Future.delayed(Duration(milliseconds: 100));
-
-                              final bundles = await takeScreenshots();
-
-                              final result = await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (ctx) => ConfirmUploadPage(
-                                            fileBundles: bundles,
-                                            enableStory: bundles.length <= 1,
-                                          )));
-
-                              if (result is bool && result == true) {
-                                print('should go to home');
-                                await Navigator.popUntil(
-                                    context, (r) => r.isFirst);
-                                await cache.animateTo(1);
-                                BotToast.showText(
-                                  text: 'Shared story',
-                                  align: Alignment(0, -0.75),
-                                );
-                              }
-                            }),
-                      ],
-                    ),
-                  ),
-                ],
+    return Scaffold(
+      body: Container(
+        decoration: filter.variant.bgDecor,
+        child: SafeArea(
+          child: Stack(
+            children: <Widget>[
+              ///Main view
+              Container(
+                width: MediaQuery.of(context).size.width,
+                height: MediaQuery.of(context).size.height,
+                child: PageView.builder(
+                  onPageChanged: (value) {
+                    print('on page change $value filter type ${filter.type}');
+                    setState(() {
+                      currentPage = value;
+                      filterController.animateToPage(
+                        FilterType.values
+                            .indexOf(capturePages[currentPage].filter.type),
+                        duration: Duration(milliseconds: 200),
+                        curve: Curves.easeInOut,
+                      );
+                    });
+                  },
+                  itemCount: capturePages.length,
+                  controller: pageController,
+                  itemBuilder: (context, index) {
+                    return capturePages[index];
+                  },
+                ),
               ),
-            ),
+              Container(
+                height: MediaQuery.of(context).size.height,
+                child: Column(
+                  children: <Widget>[
+                    EditorDefaultTopButtons(
+                      currentPage: currentPage,
+                      pages: capturePages,
+                      onAddPressed: () => incrementPageCount(context),
+                      onBackPressed: widget.onBackPressed,
+                      isStory: widget.isStoryMode,
+                      controller: filterController,
+                      onFilterChanged: (filterIndex, filter) =>
+                          onFilter(filterIndex, filter),
+                      onVariantChange: (val) {
+                        return onVariant(val);
+                      },
+                    ),
+                    Expanded(
+                      child: capturePages.length < 2
+                          ? SizedBox()
+                          : Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: <Widget>[
+                                currentPage == 0
+                                    ? SizedBox()
+                                    : Container(
+                                        padding: const EdgeInsets.all(5.0),
+                                        margin: const EdgeInsets.symmetric(
+                                            horizontal: 8.0),
+                                        decoration: BoxDecoration(
+                                            color: Colors.black54,
+                                            borderRadius:
+                                                BorderRadius.circular(100)),
+                                        child: InkWell(
+                                          onTap: () => deletePage(context),
+                                          child: Icon(
+                                            Icons.delete,
+                                            color: Colors.white,
+                                            size: 20,
+                                          ),
+                                        ),
+                                      ),
+                                Container(
+                                  padding: const EdgeInsets.all(5.0),
+                                  margin: const EdgeInsets.symmetric(
+                                      horizontal: 8.0),
+                                  decoration: BoxDecoration(
+                                      color: Colors.black54,
+                                      borderRadius: BorderRadius.circular(100)),
+                                  child: Text(
+                                    ' ${currentPage + 1}/${capturePages.length} ',
+                                    style: TextStyles.defaultText
+                                        .copyWith(color: Colors.white),
+                                  ),
+                                ),
+                              ],
+                            ),
+                    ),
+                    EditorFooter(
+                        onColor: (val) {
+                          return changeTextColor(val);
+                        },
+                        pageController: _pageController,
+//                            currentPage: currentPage,
+                        itemCount: capturePages.length,
+                        isLoading: isLoading,
+                        onSendPressed: () async {
+                          FocusScope.of(context).requestFocus(FocusNode());
+
+                          ///hacky way to ensure keyboard is fully dismissed
+                          await Future.delayed(Duration(milliseconds: 100));
+
+                          final bundles = await takeScreenshots();
+
+                          final result = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (ctx) => ConfirmUploadPage(
+                                        fileBundles: bundles,
+                                        enableStory: bundles.length <= 1,
+                                      )));
+
+                          if (result is bool && result == true) {
+                            print('should go to home');
+                            await Navigator.popUntil(context, (r) => r.isFirst);
+                            await cache.animateTo(1);
+                            BotToast.showText(
+                              text: 'Shared story',
+                              align: Alignment(0, -0.75),
+                            );
+                          }
+                        }),
+                  ],
+                ),
+              ),
+            ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }
@@ -408,7 +416,6 @@ class EditorDefaultTopButtons extends StatefulWidget {
   final bool isStory;
   final Function onBackPressed;
   final VoidCallback onAddPressed;
-  final VoidCallback onDeletePressed;
   final List<CapturePage> pages;
   final int currentPage;
 
@@ -422,7 +429,6 @@ class EditorDefaultTopButtons extends StatefulWidget {
     this.onVariantChange,
     this.pages,
     this.currentPage,
-    this.onDeletePressed,
   }) : super(key: key);
 
   @override
@@ -462,26 +468,21 @@ class _EditorDefaultTopButtonsState extends State<EditorDefaultTopButtons> {
                     print('settings pressed');
                   },
                 )
-              : CancelButton(
-                  onPressed: () => Navigator.of(context).pop(),
+              : Row(
+                  children: <Widget>[
+                    AddButton(
+                      onPressed:
+                          widget.currentPage == 6 ? null : widget.onAddPressed,
+                    ),
+                  ],
                 ),
           buildFilterAvatars(widget.pages),
           widget.isStory
               ? RightBackButton(
                   onPressed: widget.onBackPressed,
                 )
-              : Row(
-                  children: <Widget>[
-                    if (widget.pages.length > 1 && widget.currentPage != 0)
-                      DeleteButton(
-                        onPressed: widget.onDeletePressed,
-                      ),
-//                    if (widget.currentPage != 6)
-                    AddButton(
-                      onPressed:
-                          widget.currentPage == 6 ? null : widget.onAddPressed,
-                    ),
-                  ],
+              : CancelButton(
+                  onPressed: () => Navigator.of(context).pop(),
                 ),
         ],
       ),
@@ -492,13 +493,31 @@ class _EditorDefaultTopButtonsState extends State<EditorDefaultTopButtons> {
     return Expanded(
       child: Column(
         children: <Widget>[
-          ///Current avatar label
+          ///filter label
           Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Text(
-              filters[filterIndex].avatar.title,
-              style:
-                  TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+            padding: const EdgeInsets.all(4.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                Text(
+                  filters[filterIndex].avatar.title,
+                  style: TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.w600),
+                ),
+                InkWell(
+//                  highlightColor: Colors.transparent,
+                  splashColor: Colors.red,
+                  onTap: () => print('tapped filter bookmark'),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                    child: Icon(
+                      Icons.bookmark_border,
+                      color: Colors.white,
+                      size: 22,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           Container(
@@ -509,13 +528,10 @@ class _EditorDefaultTopButtonsState extends State<EditorDefaultTopButtons> {
                 ///Filter avatars
                 PageView.builder(
                   onPageChanged: (filter) {
-//                    print('change to page $page');
                     setState(() {
                       filterIndex = filter;
 
                       final cache = LocalCache.instance;
-
-                      print('cached filter: ${cache.filters}');
 
                       final Filter existingFilter =
                           cache.filters[widget.currentPage] == null
@@ -547,7 +563,7 @@ class _EditorDefaultTopButtonsState extends State<EditorDefaultTopButtons> {
                           if (widget.controller.position.haveDimensions) {
 //                      value = widget.controller.page.round();
                             value = widget.controller.page - index;
-                            value = (1 - (value.abs() * .35)).clamp(0.0, 1.0);
+                            value = (1 - (value.abs() * .18)).clamp(0.0, 1.0);
                           }
                           return Container(
                             child: Padding(
@@ -584,17 +600,17 @@ class _EditorDefaultTopButtonsState extends State<EditorDefaultTopButtons> {
                       child: Container(
                         decoration: BoxDecoration(
                           color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(999),
+                          borderRadius: BorderRadius.circular(99),
                           border: Border.all(color: Colors.grey, width: 0.5),
                         ),
                         child: Container(
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(999),
+                            borderRadius: BorderRadius.circular(99),
                             border: Border.all(color: Colors.white, width: 4),
                           ),
                           child: Container(
                             decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(999),
+                              borderRadius: BorderRadius.circular(99),
                               border:
                                   Border.all(color: Colors.grey, width: 0.5),
                             ),
@@ -621,7 +637,6 @@ class EditorFooter extends StatelessWidget {
 //  final int currentPage;
   final int itemCount;
   final void Function(Color) onColor;
-  final Color doneColor;
 
   const EditorFooter({
     Key key,
@@ -631,7 +646,6 @@ class EditorFooter extends StatelessWidget {
 //    this.currentPage,
     this.itemCount,
     this.onColor,
-    this.doneColor,
   }) : super(key: key);
   @override
   Widget build(BuildContext context) {
@@ -645,7 +659,7 @@ class EditorFooter extends StatelessWidget {
               onPressed: () => FocusScope.of(context).requestFocus(FocusNode()),
               child: Text(
                 'Done',
-                style: TextStyle(color: doneColor, fontSize: 16),
+                style: TextStyle(color: Colors.blueAccent, fontSize: 16),
               ),
             ),
           ),

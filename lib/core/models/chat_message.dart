@@ -9,6 +9,8 @@ enum Bubbles {
   photo,
   photo_temp,
 
+  post,
+
   shout_challenge,
   shout_challenge_temp,
 

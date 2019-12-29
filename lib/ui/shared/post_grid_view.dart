@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:nutes/core/models/post.dart';
 import 'package:nutes/core/models/post_type.dart';
@@ -36,26 +37,22 @@ class PostGridView extends StatelessWidget {
                     runSpacing: 5,
                     children: <Widget>[
                       GridShoutBubble(
-                        post: post,
+                        data: post.metadata,
                         isChallenger: true,
                       ),
                       GridShoutBubble(
-                        post: post,
+                        data: post.metadata,
                         isChallenger: false,
                       ),
                     ],
                   ),
                 )
-              : Container(
-                  decoration: BoxDecoration(
-                    color: Colors.grey[200],
-//                    border: Border.all(color: Colors.grey[50]),
+              : CachedNetworkImage(
+                  fit: BoxFit.cover,
+                  placeholder: (context, url) => Container(
+                    color: Colors.grey[100],
                   ),
-                  child: Image.network(
-                    ///show the first image if post has multiple images
-                    post.urlBundles.first.medium,
-                    fit: BoxFit.fitWidth,
-                  ),
+                  imageUrl: post.urlBundles.first.medium,
                 ),
         );
       },

@@ -65,7 +65,7 @@ class TextStyles {
   );
   static final header = TextStyle(
     fontFamily: textFamily,
-    fontSize: 17,
+    fontSize: 18,
     color: Colors.black,
   );
 
