@@ -67,6 +67,11 @@ class _SendPostScreenState extends State<SendPostScreen> {
           : tappedUsers.add(user);
 
       if (isSearched) users.insert(0, user);
+
+      _searchController.clear();
+
+      searchedUsers.clear();
+      filteredUsers.clear();
     });
   }
 
@@ -187,7 +192,7 @@ class _SendPostScreenState extends State<SendPostScreen> {
                       padding: const EdgeInsets.all(8.0),
                       decoration: BoxDecoration(
                           color: Colors.white,
-                          border: Border.all(color: Colors.black)),
+                          border: Border.all(color: Colors.grey[200])),
                       child: TextField(
                         controller: _messageController,
                         style: TextStyles.defaultText,

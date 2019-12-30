@@ -122,9 +122,11 @@ class _FollowerTabViewState extends State<FollowerTabView> {
       children: <Widget>[
         users == null
             ? EmptyIndicator('Loading...')
-            : AvatarListExtended(
-                users: users,
-              ),
+            : users.isEmpty
+                ? EmptyIndicator('No users')
+                : AvatarListExtended(
+                    users: users,
+                  ),
       ],
     );
   }

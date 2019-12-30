@@ -9,8 +9,8 @@ import 'package:nutes/ui/screens/post_detail_page.dart';
 import 'package:nutes/ui/screens/profile_screen.dart';
 import 'package:nutes/ui/shared/avatar_image.dart';
 import 'package:intl/intl.dart';
-import 'package:nutes/ui/shared/avatar_list_item.dart';
 import 'package:nutes/ui/shared/styles.dart';
+import 'package:nutes/ui/widgets/chat_post_content.dart';
 import 'package:nutes/utils/timeAgo.dart';
 
 final kPeerBubbleColor = Colors.white;
@@ -43,7 +43,7 @@ class ChatPeerAvatar extends StatelessWidget {
                 uid: peer.uid,
               ))),
       child: SizedBox(
-        width: 36,
+        width: 32,
         child: Visibility(
           visible: isVisible,
           child: AvatarImage(
@@ -162,7 +162,11 @@ class ChatTextBubble extends StatelessWidget {
                   isPeer ? MainAxisAlignment.start : MainAxisAlignment.end,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: <Widget>[
-                if (isPeer) ChatPeerAvatar(peer: peer, isVisible: isLast),
+                ///Peer avatar
+                if (isPeer)
+                  ChatPeerAvatar(peer: peer, isVisible: isLast),
+
+                ///Bubble
                 Container(
 //          color: Colors.green,
                   padding: kBubbleVerticalPadding,
@@ -248,108 +252,112 @@ class ChatPostBubble extends StatelessWidget {
 
     final owner = User.fromMap(data['owner']);
 
-    final urls = data['urls'];
+//    final urls = data['urls'];
+
+    final hasCaption = data['caption'].toString().isNotEmpty;
 
     return Padding(
-      padding: const EdgeInsets.all(4.0),
+      padding: kBubbleVerticalPadding,
       child: Column(
         crossAxisAlignment:
             isPeer ? CrossAxisAlignment.start : CrossAxisAlignment.end,
         children: <Widget>[
           Row(
+            mainAxisAlignment:
+                isPeer ? MainAxisAlignment.start : MainAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: <Widget>[
-              ChatPeerAvatar(
-                isVisible: isLast,
-                peer: peer,
-              ),
-              InkWell(
+              if (isPeer)
+                ChatPeerAvatar(
+                  isVisible: hasCaption ? false : isLast,
+                  peer: peer,
+                ),
+
+              ///Post Bubble
+              GestureDetector(
                 onTap: () => Navigator.of(context).push(PostDetailScreen.route(
                     null,
                     postId: data['post_id'],
                     ownerId: owner.uid)),
                 child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  constraints: BoxConstraints(
-//                maxHeight: 400,
-                      maxWidth: MediaQuery.of(context).size.width * 0.78),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border.all(color: Colors.grey[400]),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-//            child: Text(message.id),
-                  child: (message.metadata['type'] == 'text')
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: <Widget>[
-                              Container(
-                                margin: const EdgeInsets.all(4),
-                                height: 40,
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    constraints: BoxConstraints(
+                        maxWidth: MediaQuery.of(context).size.width * 0.78),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border.all(color: Colors.grey[400]),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          ///Post header
+
+                          Container(
+                            margin: const EdgeInsets.all(4),
+                            height: 40,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: <Widget>[
+                                Row(
                                   children: <Widget>[
-                                    Row(
-                                      children: <Widget>[
-                                        AvatarImage(
-                                          url: owner.urls.small,
-                                          spacing: 0,
-                                          padding: 4,
-                                        ),
-                                        SizedBox(width: 8),
-                                        Text(
-                                          owner.username,
-                                          style: TextStyles.w600Display,
-                                        ),
-                                      ],
+                                    AvatarImage(
+                                      url: owner.urls.small,
+                                      spacing: 0,
+                                      padding: 4,
                                     ),
-                                    Icon(
-                                      Icons.chevron_right,
-                                      color: Colors.grey,
-                                    )
+                                    SizedBox(width: 8),
+                                    Text(
+                                      owner.username,
+                                      style: TextStyles.w600Display,
+                                    ),
                                   ],
                                 ),
-                              ),
-                              Container(
-                                height: 1,
-                                color: Colors.grey[300],
-                              ),
-                              AspectRatio(
-                                aspectRatio: urls[0]['aspect_ratio'] ?? 1,
-                                child: CachedNetworkImage(
-                                  imageUrl: message.metadata['urls'][0]
-                                      ['small'],
-                                  placeholder: (_, __) => Container(
-                                    color: Colors.grey[200],
-                                  ),
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                              if (data['caption'].toString().isNotEmpty)
-                                Padding(
-                                    padding: const EdgeInsets.all(16.0),
-                                    child: RichText(
-                                      text: TextSpan(children: [
-                                        TextSpan(
-                                          text: owner.username + ' ',
-                                          style: TextStyles.w600Display,
-                                        ),
-                                        TextSpan(
-                                          text: data['caption'],
-                                          style: TextStyles.defaultText,
-                                        )
-                                      ]),
-                                    )),
-                            ],
+                                Icon(
+                                  Icons.chevron_right,
+                                  color: Colors.grey,
+                                )
+                              ],
+                            ),
                           ),
-                        )
-                      : SizedBox(),
-                ),
+
+                          ///Divider
+                          Container(
+                            height: 1,
+                            color: Colors.grey[300],
+                          ),
+
+                          ///Post Image
+                          ChatPostContent(
+                            data: data,
+                          ),
+
+                          ///Post caption
+                          if (hasCaption)
+                            Padding(
+                                padding: const EdgeInsets.all(16.0),
+                                child: RichText(
+                                  text: TextSpan(children: [
+                                    TextSpan(
+                                      text: owner.username + ' ',
+                                      style: TextStyles.w600Display,
+                                    ),
+                                    TextSpan(
+                                      text: data['caption'],
+                                      style: TextStyles.defaultText,
+                                    )
+                                  ]),
+                                )),
+                        ],
+                      ),
+                    )),
               ),
             ],
           ),
+
+          ///Optional message
           if (message.content.isNotEmpty)
             ChatTextBubble(
               isPeer: isPeer,

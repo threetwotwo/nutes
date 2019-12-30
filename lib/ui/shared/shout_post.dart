@@ -73,11 +73,18 @@ class GridShoutBubble extends StatelessWidget {
                   ? CrossAxisAlignment.start
                   : CrossAxisAlignment.end,
               children: <Widget>[
+                ///Username
                 Text(
                   user.username,
                   style: isChallenger
-                      ? kPeerTextStyle.copyWith(fontSize: fontSize)
-                      : kMyTextStyle.copyWith(fontSize: fontSize),
+                      ? kPeerTextStyle.copyWith(
+                          fontSize: fontSize,
+                          fontWeight: FontWeight.w600,
+                        )
+                      : kMyTextStyle.copyWith(
+                          fontSize: fontSize,
+                          fontWeight: FontWeight.w600,
+                        ),
                 ),
                 Text(
                   content,

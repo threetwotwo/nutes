@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:line_icons/line_icons.dart';
 import 'package:nutes/core/models/chat_message.dart';
-import 'package:nutes/core/models/post_type.dart';
 import 'package:nutes/core/models/user.dart';
 import 'package:nutes/core/services/auth.dart';
 import 'package:nutes/core/services/repository.dart';
@@ -11,7 +10,6 @@ import 'package:nutes/ui/shared/avatar_image.dart';
 import 'package:nutes/ui/shared/styles.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:nutes/ui/widgets/chat_bubble.dart';
-import 'package:nutes/utils/screenshot.dart';
 
 ///Screen that allows user to respond to a shout challenge
 ///
@@ -24,6 +22,8 @@ class ShoutScreen extends StatefulWidget {
   ShoutScreen(
       {Key key, this.message, this.challenger, this.onSendPressed, this.chatId})
       : super(key: key);
+
+  static Route route() => null;
 
   @override
   _ShoutScreenState createState() => _ShoutScreenState();

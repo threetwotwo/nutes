@@ -87,8 +87,7 @@ class _MainBuilderState extends State<MainBuilder> {
   void initState() {
     super.initState();
 
-    _fcm.requestNotificationPermissions(
-        const IosNotificationSettings(sound: true, badge: true, alert: true));
+    _fcm.requestNotificationPermissions();
 
     _fcm.onIosSettingsRegistered.listen((IosNotificationSettings settings) {
       print("Settings registered: $settings");

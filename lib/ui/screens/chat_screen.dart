@@ -74,6 +74,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
   bool peerHasSeenMyLastMessage = false;
 
+  double bottomPadding = 64.0;
+
   ///For pagination
   Timestamp endAt;
   Timestamp startAt;
@@ -209,6 +211,12 @@ class _ChatScreenState extends State<ChatScreen> {
     final offset = _scrollController.offset;
 //    print('max extent: $maxExtent, offset: $offset');
 
+    if (offset < 64) {
+      setState(() {
+        bottomPadding = 64.0 - offset;
+      });
+    }
+
     if (offset > maxExtent + 40) {
       if (!loadMoreIndicatorIsVisibible) {
         _loadMoreMessages();
@@ -220,6 +228,12 @@ class _ChatScreenState extends State<ChatScreen> {
         });
       }
     }
+
+//    if (offset > 64) {
+//      setState(() {
+//        bottomPadding = 4.0;
+//      });
+//    }
 
     if (offset > 300) {
       FocusScope.of(context).requestFocus(new FocusNode());
@@ -301,155 +315,158 @@ class _ChatScreenState extends State<ChatScreen> {
       ),
       body: SafeArea(
         child: Container(
-          child: Column(
+          child: Stack(
             children: <Widget>[
-              Expanded(
-                child: Container(
-                  child: Center(
-                    child: !initialMessagedFinishedLoading
-                        ? LoadingIndicator()
-                        : Padding(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8.0, vertical: 4.0),
-                            child: ListView.builder(
-                              physics: AlwaysScrollableScrollPhysics(),
-                              reverse: true,
-                              controller: _scrollController,
-                              itemCount: messages.length,
-                              itemBuilder: (context, index) {
-                                final message = messages[index];
-
-                                final isPeer =
-                                    message.senderId != auth.profile.uid;
-
-                                ///Remember: list view is reversed
-                                final isLast = index < 1;
-                                final lastMessageIsMine = isLast && !isPeer;
-
-                                final nextBubbleIsMine = (!isLast &&
-                                    messages[index - 1].senderId ==
-                                        auth.profile.uid);
-
-                                final showPeerAvatar = (isLast &&
-                                        message.senderId == widget.peer.uid) ||
-                                    nextBubbleIsMine;
-
-                                ///Show message date if previous message is
-                                ///sent more than an hour ago
-                                final isFirst = index == messages.length - 1;
-                                final currentMessage = messages[index];
-                                final previousMessage =
-                                    isFirst ? null : messages[index + 1];
-
-                                bool showDate;
-
-                                if (previousMessage == null) {
-                                  showDate = true;
-                                } else if (currentMessage.timestamp == null ||
-                                    previousMessage.timestamp == null) {
-                                  showDate = true;
-                                } else {
-                                  showDate = previousMessage.timestamp.seconds <
-                                      currentMessage.timestamp.seconds - 3600;
-                                }
-
-                                switch (message.type) {
-                                  case Bubbles.text:
-                                    return Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.end,
-                                      children: <Widget>[
-                                        ChatTextBubble(
-                                          isPeer: isPeer,
-                                          message: message,
-                                          isLast: showPeerAvatar,
-                                          peer: widget.peer,
-                                          showDate: showDate,
-                                        ),
-                                        if (lastMessageIsMine &&
-                                            peerHasSeenMyLastMessage)
-                                          Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 8.0),
-                                            child: Text(
-                                              'Seen',
-                                              style: kLabelTextStyle,
-                                            ),
-                                          ),
-                                      ],
-                                    );
-                                  case Bubbles.photo:
-                                    return SizedBox();
-                                  case Bubbles.shout_challenge:
-                                    return ChatShoutBubble(
-                                      isPeer: isPeer,
-                                      message: message,
-                                      peer: isPeer
-                                          ? widget.peer
-                                          : auth.profile.user,
-                                      onTapped: isPeer
-                                          ? () => Navigator.of(context).push(
-                                              MaterialPageRoute(
-                                                  builder: (context) =>
-                                                      ShoutScreen(
-                                                        chatId: chatId,
-                                                        message: message,
-                                                        challenger: widget.peer,
-                                                      )))
-                                          : () {},
-                                      isLast: showPeerAvatar,
-                                    );
-                                  case Bubbles.shout_complete:
-                                    return ChatShoutResponseBubble(
-                                      isPeer: isPeer,
-                                      response: message,
-                                      message:
-                                          message.metadata['responding_to'],
-                                      peer: widget.peer,
-                                      isLast: showPeerAvatar,
-                                      onTapped: () {
-                                        print('tapped shout response');
-                                      },
-                                    );
-
-                                  case Bubbles.post:
-                                    return ChatPostBubble(
-                                      isPeer: isPeer,
-                                      isLast: isLast,
-                                      peer: widget.peer,
-                                      message: message,
-//                                      showDate: showDate,
-                                    );
-                                  case Bubbles.text_temp:
-                                    return ChatPlaceholderBubble(message);
-                                  case Bubbles.photo_temp:
-                                    return SizedBox();
-                                  case Bubbles.shout_challenge_temp:
-                                    return SizedBox();
-                                  case Bubbles.shout_complete_temp:
-                                    return SizedBox();
-                                  case Bubbles.isTyping:
-                                    return TypingIndicator(
-                                      user: widget.peer,
-                                    );
-                                  case Bubbles.loadMore:
-                                    return LoadingIndicator();
-
-                                  default:
-                                    return SizedBox();
-                                }
-                              },
-                            ),
+              Container(
+                child: Center(
+                  child: !initialMessagedFinishedLoading
+                      ? LoadingIndicator()
+                      : Padding(
+                          padding: EdgeInsets.only(
+                            left: 8.0,
+                            right: 8.0,
+                            top: 4.0,
+                            bottom: bottomPadding,
                           ),
-                  ),
+                          child: ListView.builder(
+                            physics: AlwaysScrollableScrollPhysics(),
+                            reverse: true,
+                            controller: _scrollController,
+                            itemCount: messages.length,
+                            itemBuilder: (context, index) {
+                              final message = messages[index];
+
+                              final isPeer =
+                                  message.senderId != auth.profile.uid;
+
+                              ///Remember: list view is reversed
+                              final isLast = index < 1;
+                              final lastMessageIsMine = isLast && !isPeer;
+
+                              final nextBubbleIsMine = (!isLast &&
+                                  messages[index - 1].senderId ==
+                                      auth.profile.uid);
+
+                              final showPeerAvatar = (isLast &&
+                                      message.senderId == widget.peer.uid) ||
+                                  nextBubbleIsMine;
+
+                              ///Show message date if previous message is
+                              ///sent more than an hour ago
+                              final isFirst = index == messages.length - 1;
+                              final currentMessage = messages[index];
+                              final previousMessage =
+                                  isFirst ? null : messages[index + 1];
+
+                              bool showDate;
+
+                              if (previousMessage == null) {
+                                showDate = true;
+                              } else if (currentMessage.timestamp == null ||
+                                  previousMessage.timestamp == null) {
+                                showDate = true;
+                              } else {
+                                showDate = previousMessage.timestamp.seconds <
+                                    currentMessage.timestamp.seconds - 3600;
+                              }
+
+                              switch (message.type) {
+                                case Bubbles.text:
+                                  return Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: <Widget>[
+                                      ChatTextBubble(
+                                        isPeer: isPeer,
+                                        message: message,
+                                        isLast: showPeerAvatar,
+                                        peer: widget.peer,
+                                        showDate: showDate,
+                                      ),
+                                      if (lastMessageIsMine &&
+                                          peerHasSeenMyLastMessage)
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 8.0),
+                                          child: Text(
+                                            'Seen',
+                                            style: kLabelTextStyle,
+                                          ),
+                                        ),
+                                    ],
+                                  );
+                                case Bubbles.photo:
+                                  return SizedBox();
+                                case Bubbles.shout_challenge:
+                                  return ChatShoutBubble(
+                                    isPeer: isPeer,
+                                    message: message,
+                                    peer: isPeer
+                                        ? widget.peer
+                                        : auth.profile.user,
+                                    onTapped: isPeer
+                                        ? () => Navigator.of(context).push(
+                                            MaterialPageRoute(
+                                                builder: (context) =>
+                                                    ShoutScreen(
+                                                      chatId: chatId,
+                                                      message: message,
+                                                      challenger: widget.peer,
+                                                    )))
+                                        : () {},
+                                    isLast: showPeerAvatar,
+                                  );
+                                case Bubbles.shout_complete:
+                                  return ChatShoutResponseBubble(
+                                    isPeer: isPeer,
+                                    response: message,
+                                    message: message.metadata['responding_to'],
+                                    peer: widget.peer,
+                                    isLast: showPeerAvatar,
+                                    onTapped: () {
+                                      print('tapped shout response');
+                                    },
+                                  );
+
+                                case Bubbles.post:
+                                  return ChatPostBubble(
+                                    isPeer: isPeer,
+                                    isLast: isLast,
+                                    peer: widget.peer,
+                                    message: message,
+//                                      showDate: showDate,
+                                  );
+                                case Bubbles.text_temp:
+                                  return ChatPlaceholderBubble(message);
+                                case Bubbles.photo_temp:
+                                  return SizedBox();
+                                case Bubbles.shout_challenge_temp:
+                                  return SizedBox();
+                                case Bubbles.shout_complete_temp:
+                                  return SizedBox();
+                                case Bubbles.isTyping:
+                                  return TypingIndicator(
+                                    user: widget.peer,
+                                  );
+                                case Bubbles.loadMore:
+                                  return LoadingIndicator();
+
+                                default:
+                                  return SizedBox();
+                              }
+                            },
+                          ),
+                        ),
                 ),
               ),
-              ChatTextField(
-                controller: textController,
-                onImagePressed: () {},
-                onSendPressed: onSendPressed,
-                focusNode: focusNode,
-                showModalBottomSheet: () => _showBottomModalSheet(context),
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: ChatTextField(
+                  controller: textController,
+                  onImagePressed: () {},
+                  onSendPressed: onSendPressed,
+                  focusNode: focusNode,
+                  showModalBottomSheet: () => _showBottomModalSheet(context),
+                ),
               ),
             ],
           ),
