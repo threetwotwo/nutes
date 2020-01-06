@@ -143,6 +143,10 @@ class _StoryViewState extends State<StoryView>
 
   @override
   void initState() {
+//    Navigator.of(context).userGestureInProgressNotifier.addListener(() {
+//      final val = Navigator.of(context).userGestureInProgress;
+//      print('user gesture in progress: $val');
+//    });
     _init();
 
     super.initState();
@@ -272,7 +276,6 @@ class _StoryViewState extends State<StoryView>
   @override
   void dispose() {
 //    SystemChrome.setEnabledSystemUIOverlays(SystemUiOverlay.values);
-//    controller.stop();
     controller.dispose();
     super.dispose();
   }
@@ -294,7 +297,6 @@ class _StoryViewState extends State<StoryView>
                       if (progress == null) {
                         return child;
                       }
-                      print(progress);
                       if (progress.cumulativeBytesLoaded ==
                               progress.expectedTotalBytes &&
                           mounted) {
@@ -321,14 +323,15 @@ class _StoryViewState extends State<StoryView>
                     opacity: isInFullscreenMode ? 0.0 : 1.0,
                     duration: widget.progressOpacityDuration,
                     child: Container(
-                      height: 72 + widget.topPadding ?? 24,
+                      height: 184 + widget.topPadding ?? 16,
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
-                            Colors.black.withOpacity(0.18),
+                            Colors.black.withOpacity(0.16),
+                            Colors.black.withOpacity(0.04),
                             Colors.transparent,
                           ],
-                          stops: [0.15, 0.85],
+                          stops: [0.06, 0.44, 0.86],
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
                         ),
@@ -375,6 +378,8 @@ class _StoryViewState extends State<StoryView>
                             ),
                           ],
                         ),
+
+                        ///Avatar
                         Container(
                           height: 44,
                           child: Row(
@@ -400,9 +405,17 @@ class _StoryViewState extends State<StoryView>
                                         TextSpan(
                                           text: widget.uploader.username,
                                           style: TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 15,
-                                              fontWeight: FontWeight.w500),
+                                            color: Colors.white,
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w500,
+                                            shadows: [
+                                              Shadow(
+                                                blurRadius: 4.0,
+                                                color: Colors.black
+                                                    .withOpacity(0.2),
+                                              ),
+                                            ],
+                                          ),
                                         ),
                                         TextSpan(text: '  '),
                                         TextSpan(
@@ -410,21 +423,20 @@ class _StoryViewState extends State<StoryView>
                                               .moments[momentIndex].timestamp
                                               .toDate()),
                                           style: TextStyle(
-                                              color:
-                                                  Colors.white.withOpacity(0.9),
-                                              fontSize: 15,
-                                              fontWeight: FontWeight.w300),
+                                            color: Colors.white,
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w300,
+                                            shadows: [
+                                              Shadow(
+                                                blurRadius: 4.0,
+                                                color: Colors.black
+                                                    .withOpacity(0.2),
+                                              ),
+                                            ],
+                                          ),
                                         ),
                                       ]),
                                     ),
-//                                    Text(
-//                                      '${widget.uploader.username} • '
-//                                      '${TimeAgo.formatShort(widget.story.moments[momentIndex].timestamp.toDate())}',
-//                                      style: TextStyle(
-//                                          color: Colors.white,
-//                                          fontSize: 15,
-//                                          fontWeight: FontWeight.w500),
-//                                    ),
                                   ],
                                 ),
                               ),

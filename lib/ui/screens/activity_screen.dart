@@ -7,7 +7,7 @@ import 'package:nutes/core/models/post_type.dart';
 import 'package:nutes/core/services/auth.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/screens/follow_request_screen.dart';
-import 'package:nutes/ui/screens/post_detail_page.dart';
+import 'package:nutes/ui/screens/post_detail_screen.dart';
 import 'package:nutes/ui/shared/avatar_image.dart';
 import 'package:nutes/ui/shared/avatar_list_item.dart';
 import 'package:nutes/ui/shared/empty_indicator.dart';

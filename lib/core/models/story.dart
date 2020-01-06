@@ -1,7 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:nutes/core/models/user.dart';
-import 'package:nutes/core/services/firestore_service.dart';
-import 'package:nutes/core/services/repository.dart';
 
 ///Object to represent users who have uploaded stories recently
 ///To be used in Inline Stories for laxy loading of stories(load stories only

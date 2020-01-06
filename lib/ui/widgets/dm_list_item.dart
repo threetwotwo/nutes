@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
+import 'package:nutes/core/models/chat_message.dart';
 import 'package:nutes/core/models/user.dart';
 import 'package:nutes/core/services/auth.dart';
 import 'package:nutes/core/services/repository.dart';
@@ -42,6 +43,8 @@ class _DMListItemState extends State<DMListItem> {
   Widget build(BuildContext context) {
     final lastChecked = widget.lastChecked;
     final lastCheckedTimestamp = lastChecked['timestamp'];
+
+    final type = BubbleHelper.getBubbleFromString(lastChecked['type']);
 
     return GestureDetector(
       onHorizontalDragUpdate: (details) => print(details),
@@ -94,10 +97,10 @@ class _DMListItemState extends State<DMListItem> {
           ),
           title: widget.user.username,
           subtitleStyle: !widget.hasUnreadMessages ? null : TextStyles.w600Text,
-          subtitle: (lastChecked['type'] == 1
+          subtitle: (type == Bubbles.post
                   ? lastChecked['sender_id'] == auth.profile.uid
-                      ? 'You sent a message'
-                      : 'Sent you a message'
+                      ? 'You shared a post'
+                      : 'Shared you a post'
                   : lastChecked['content'] ?? '') +
               ' · ' +
               TimeAgo.formatShort(lastCheckedTimestamp.toDate()),

@@ -4,7 +4,7 @@ import 'package:nutes/core/models/post_type.dart';
 import 'package:nutes/core/services/local_cache.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
-import 'package:nutes/ui/screens/post_detail_page.dart';
+import 'package:nutes/ui/screens/post_detail_screen.dart';
 import 'package:nutes/ui/shared/refresh_list_view.dart';
 import 'package:nutes/ui/shared/shout_grid_item.dart';
 import 'package:nutes/ui/shared/shout_post.dart';
@@ -142,14 +142,14 @@ class ExploreTabView extends StatefulWidget {
 
 class _ExploreTabViewState extends State<ExploreTabView>
     with AutomaticKeepAliveClientMixin {
-  List<Post> posts;
+//  List<Post> posts;
 
   @override
   bool get wantKeepAlive => true;
 
   @override
   void initState() {
-    posts = widget.posts;
+//    posts = widget.posts;
     super.initState();
   }
 
@@ -160,16 +160,16 @@ class _ExploreTabViewState extends State<ExploreTabView>
       onLoadMore: widget.onLoadMore,
       controller: widget.controller,
       children: <Widget>[
-        posts == null
+        widget.posts == null
             ? SizedBox()
             : StaggeredGridView.countBuilder(
                 physics: NeverScrollableScrollPhysics(),
                 shrinkWrap: true,
                 mainAxisSpacing: 1,
-                itemCount: posts.length,
+                itemCount: widget.posts.length,
                 crossAxisCount: 2,
                 itemBuilder: (context, index) {
-                  final post = posts[index];
+                  final post = widget.posts[index];
 
                   return GestureDetector(
                     onTap: () =>
@@ -183,7 +183,7 @@ class _ExploreTabViewState extends State<ExploreTabView>
                               ),
                             )
                           : Image.network(
-                              posts[index].urlBundles.first.medium,
+                              widget.posts[index].urlBundles.first.medium,
                               fit: BoxFit.cover,
                             ),
 //                      CachedNetworkImage(
@@ -194,7 +194,7 @@ class _ExploreTabViewState extends State<ExploreTabView>
                   );
                 },
                 staggeredTileBuilder: (index) => StaggeredTile.extent(
-                    1, posts[index].type == PostType.shout ? 200 : 200)),
+                    1, widget.posts[index].type == PostType.shout ? 200 : 200)),
       ],
     );
   }

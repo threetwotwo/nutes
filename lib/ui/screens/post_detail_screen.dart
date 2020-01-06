@@ -37,6 +37,8 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
   Post post;
 
+  bool isDoodling = false;
+
   Future<void> _getPost() async {
     setState(() {
       isLoading = true;
@@ -71,6 +73,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       appBar: BaseAppBar(),
       body: SafeArea(
           child: DismissView(
+        enabled: !isDoodling,
         child: isLoading
             ? LoadingIndicator()
             : CommentOverlay(
@@ -83,18 +86,24 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                     showCommentTextField = false;
                   });
                 },
-                child: SingleChildScrollView(
-                  child: PostListView(
-                    posts: [post],
-                    onAddComment: (postId) {
-                      print('add comment for post $postId');
-
-                      setState(() {
-                        showCommentTextField = true;
-                      });
-                      FocusScope.of(context).requestFocus(commentFocusNode);
-                    },
-                  ),
+                child: PostListView(
+                  posts: [post],
+                  onAddComment: (postId) {
+                    setState(() {
+                      showCommentTextField = true;
+                    });
+                    FocusScope.of(context).requestFocus(commentFocusNode);
+                  },
+                  onDoodleStart: () {
+                    setState(() {
+                      isDoodling = true;
+                    });
+                  },
+                  onDoodleEnd: () {
+                    setState(() {
+                      isDoodling = false;
+                    });
+                  },
                 ),
               ),
       )),

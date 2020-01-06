@@ -1,7 +1,9 @@
 import 'dart:math';
 
+import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:nutes/core/services/auth.dart';
+import 'package:nutes/core/services/local_cache.dart';
 import 'package:preload_page_view/preload_page_view.dart';
 import 'package:nutes/core/models/post_type.dart';
 import 'package:nutes/ui/shared/app_bars.dart';
@@ -175,7 +177,7 @@ class ConfirmUploadPage extends StatelessWidget {
                 trailingWidget: Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: RaisedButton(
-                    onPressed: () {
+                    onPressed: () async {
                       print('pressed share to post');
                       Repo.uploadPost(
                         type: PostType.text,
@@ -183,7 +185,13 @@ class ConfirmUploadPage extends StatelessWidget {
                         isPrivate: auth.profile.user.isPrivate,
                         caption: captionController.text,
                       );
+
                       Navigator.popUntil(context, (r) => r.isFirst);
+
+                      await LocalCache.instance.animateTo(1);
+
+                      return BotToast.showText(
+                          text: 'Shared post', align: Alignment.center);
                     },
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(80.0)),

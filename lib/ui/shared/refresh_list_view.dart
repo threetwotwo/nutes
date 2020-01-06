@@ -7,13 +7,15 @@ class RefreshListView extends StatefulWidget {
   final Future<void> Function() onRefresh;
   final Future<void> Function() onLoadMore;
   final List<Widget> children;
+  final ScrollPhysics physics;
 
   const RefreshListView(
       {Key key,
       this.controller,
       this.onRefresh,
       this.children,
-      this.onLoadMore})
+      this.onLoadMore,
+      this.physics})
       : super(key: key);
 
   @override
@@ -25,6 +27,11 @@ class _RefreshListViewState extends State<RefreshListView> {
   ScrollController _controller;
 
   _loadMore() async {
+    if (mounted)
+      setState(() {
+        isLoadingMore = true;
+      });
+
     if (widget.onLoadMore != null) {
       await widget.onLoadMore();
       isLoadingMore = false;
@@ -40,10 +47,9 @@ class _RefreshListViewState extends State<RefreshListView> {
     _controller = widget.controller ?? ScrollController();
     _controller.addListener(() {
       if (!isLoadingMore &&
-          _controller.position.pixels > _controller.position.maxScrollExtent) {
+          _controller.position.pixels >= _controller.position.maxScrollExtent) {
         print('load more');
         _loadMore();
-        isLoadingMore = true;
 
         if (mounted) setState(() {});
 
@@ -62,7 +68,7 @@ class _RefreshListViewState extends State<RefreshListView> {
   Widget build(BuildContext context) {
     return CustomScrollView(
       controller: _controller,
-      physics: AlwaysScrollableScrollPhysics(),
+      physics: widget.physics ?? BouncingScrollPhysics(),
       slivers: <Widget>[
         CupertinoSliverRefreshControl(
           refreshIndicatorExtent: 80,

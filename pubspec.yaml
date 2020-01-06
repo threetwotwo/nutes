@@ -52,6 +52,8 @@ dependencies:
 
   preload_page_view: ^0.1.4
 
+  icon_shadow: ^1.0.1
+
   #haptic feedback
   vibrate: ^0.0.4
 

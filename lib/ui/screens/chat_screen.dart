@@ -325,7 +325,7 @@ class _ChatScreenState extends State<ChatScreen> {
                           padding: EdgeInsets.only(
                             left: 8.0,
                             right: 8.0,
-                            top: 4.0,
+                            top: 0.0,
                             bottom: bottomPadding,
                           ),
                           child: ListView.builder(
@@ -409,8 +409,9 @@ class _ChatScreenState extends State<ChatScreen> {
                                                 builder: (context) =>
                                                     ShoutScreen(
                                                       chatId: chatId,
-                                                      message: message,
-                                                      challenger: widget.peer,
+                                                      messageId: message.id,
+                                                      content: message.content,
+                                                      peer: widget.peer,
                                                     )))
                                         : () {},
                                     isLast: showPeerAvatar,

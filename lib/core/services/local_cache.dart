@@ -34,12 +34,14 @@ class LocalCache {
   }
 
   Future animateTo(int page) {
-    print('animate app to page $page');
+    print('should animate app to page $page');
     if (appScrollController.hasClients)
       return appScrollController.animateToPage(page,
           duration: scrollDuration, curve: scrollCurve);
-    else
+    else {
+      print('no clients');
       return null;
+    }
   }
 
   void animateToTop(TabItem tabItem) {

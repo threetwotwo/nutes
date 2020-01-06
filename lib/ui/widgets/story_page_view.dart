@@ -28,7 +28,7 @@ class StoryPageView extends StatefulWidget {
           child: StoryPageView(
             initialPage: initialPage,
             userStories: userStories,
-            topPadding: topPadding,
+            topPadding: topPadding + 8,
             onPageChange: (val) => onPageChange(val),
           ),
         ),

@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:nutes/core/models/user.dart';
 import 'package:nutes/core/services/auth.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/screens/direct_screen.dart';
@@ -19,11 +20,12 @@ class AppPageView extends StatefulWidget {
 
 class _AppPageViewState extends State<AppPageView> {
   final _focusNode = FocusScopeNode();
-  final auth = Auth.instance;
 
   ScrollPhysics scrollPhysics = ClampingScrollPhysics();
 
   final appPageController = PageController(initialPage: 1);
+
+  UserProfile profile;
 
   Future animateTo(int page) {
     print('animate app to page $page');
@@ -35,8 +37,12 @@ class _AppPageViewState extends State<AppPageView> {
   }
 
   _getProfile() async {
-    Auth.instance.profile = await Repo.getUserProfile(widget.uid);
-    setState(() {});
+    final result = await Repo.getUserProfile(widget.uid);
+    Auth.instance.profile = result;
+    if (mounted)
+      setState(() {
+        profile = result;
+      });
   }
 
   @override
@@ -68,42 +74,33 @@ class _AppPageViewState extends State<AppPageView> {
 
   @override
   Widget build(BuildContext context) {
-    return Auth.instance.profile == null
-        ? Scaffold(
-            body: Container(
-              color: Colors.white,
-              child: Center(
-                child: CupertinoActivityIndicator(),
-              ),
-            ),
-          )
-        : PageView(
-            physics: scrollPhysics,
-            controller: appPageController,
-            children: <Widget>[
-              FocusScope(
-                node: _focusNode,
-                child: EditorPage(
-                  isStoryMode: true,
-                  onBackPressed: () => animateTo(1),
-                ),
-              ),
-              HomeScreen(
-                onCreatePressed: () => animateTo(0),
-                onDM: () => animateTo(2),
+    return PageView(
+      physics: scrollPhysics,
+      controller: appPageController,
+      children: <Widget>[
+        FocusScope(
+          node: _focusNode,
+          child: EditorPage(
+            isStoryMode: true,
+            onBackPressed: () => animateTo(1),
+          ),
+        ),
+        HomeScreen(
+          onCreatePressed: () => animateTo(0),
+          onDM: () => animateTo(2),
 
-                ///Page view is scrollable only when on feed page
-                onTabTapped: (index) => setState(() {
-                  scrollPhysics = index == 0
-                      ? ClampingScrollPhysics()
-                      : NeverScrollableScrollPhysics();
-                }),
-              ),
-              DirectScreen(
-                onLeadingPressed: () => animateTo(1),
-                onTrailingPressed: () {},
-              ),
-            ],
-          );
+          ///Page view is scrollable only when on feed page
+          onTabTapped: (index) => setState(() {
+            scrollPhysics = index == 0
+                ? ClampingScrollPhysics()
+                : NeverScrollableScrollPhysics();
+          }),
+        ),
+        DirectScreen(
+          onLeadingPressed: () => animateTo(1),
+          onTrailingPressed: () {},
+        ),
+      ],
+    );
   }
 }

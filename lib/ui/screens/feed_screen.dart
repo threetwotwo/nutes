@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:nutes/core/models/post.dart';
 import 'package:nutes/core/models/story.dart';
@@ -6,6 +7,7 @@ import 'package:nutes/core/services/auth.dart';
 import 'package:nutes/core/services/local_cache.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/shared/comment_overlay.dart';
+import 'package:nutes/ui/shared/dismiss_view.dart';
 import 'package:nutes/ui/shared/loading_indicator.dart';
 import 'package:nutes/ui/shared/refresh_list_view.dart';
 import 'package:nutes/ui/shared/story_avatar.dart';
@@ -18,6 +20,8 @@ import 'package:flutter/cupertino.dart';
 class FeedScreen extends StatefulWidget {
   final VoidCallback onCreatePressed;
   final VoidCallback onDM;
+  final VoidCallback onDoodleStart;
+  final VoidCallback onDoodleEnd;
   final ScrollController scrollController;
 
   FeedScreen({
@@ -25,6 +29,8 @@ class FeedScreen extends StatefulWidget {
     this.onCreatePressed,
     this.onDM,
     this.scrollController,
+    this.onDoodleStart,
+    this.onDoodleEnd,
 //      this.onAddStoryPressed,
   }) : super(key: key);
 
@@ -90,6 +96,8 @@ class _FeedScreenState extends State<FeedScreen>
 
   @override
   void initState() {
+//    debugPrintGestureArenaDiagnostics = true;
+
     _getInitialPosts();
     _getMyStory();
     _getStoriesOfFollowings();
@@ -114,105 +122,119 @@ class _FeedScreenState extends State<FeedScreen>
         onLogoutPressed: () => Repo.logout(),
         onDM: widget.onDM,
       ),
-      body: CommentOverlay(
-        onSend: (text) {
-          if (commentingTo == null) return;
+      body: Auth.instance.profile == null
+          ? LoadingIndicator()
+          : CommentOverlay(
+              onSend: (text) {
+                if (commentingTo == null) return;
 
-          final comment = Repo.createComment(
-            text: text,
-            postId: commentingTo,
-          );
+                final comment = Repo.createComment(
+                  text: text,
+                  postId: commentingTo,
+                );
 
-          Repo.uploadComment(postId: commentingTo, comment: comment);
-          final post = posts.firstWhere((post) => post.id == commentingTo);
+                Repo.uploadComment(postId: commentingTo, comment: comment);
+                final post =
+                    posts.firstWhere((post) => post.id == commentingTo);
 
-          if (mounted)
-            setState(() {
-              post.topComments.add(comment);
-              showCommentTextField = false;
-              commentingTo = null;
-            });
-        },
-        controller: commentController,
-        focusNode: commentFocusNode,
-        showTextField: showCommentTextField,
-        onScroll: () {
-          setState(() {
-            commentingTo = null;
-            showCommentTextField = false;
-          });
-          return;
-        },
-        child: RefreshListView(
-          controller: widget.scrollController,
-          onRefresh: () {
-            _getStoriesOfFollowings();
-            return _getInitialPosts();
-          },
-          onLoadMore: _getMorePosts,
-          children: <Widget>[
-            Container(
-              height: 112,
-              width: MediaQuery.of(context).size.width,
-              color: Colors.white,
-              child: myStory == null
-                  ? Center(child: LoadingIndicator())
-                  : Row(
-                      children: <Widget>[
-                        Visibility(
-                          visible: myStory.story.moments.isEmpty,
-                          child: StoryAvatar(
-                            isOwner: true,
+                if (mounted)
+                  setState(() {
+                    post.topComments.add(comment);
+                    showCommentTextField = false;
+                    commentingTo = null;
+                  });
+              },
+              controller: commentController,
+              focusNode: commentFocusNode,
+              showTextField: showCommentTextField,
+              onScroll: () {
+//                print('on scroll');
+                setState(() {
+                  commentingTo = null;
+                  showCommentTextField = false;
+                });
+                return;
+              },
+              child: RefreshListView(
+//          physics: isDoodling
+//              ? NeverScrollableScrollPhysics()
+//              : BouncingScrollPhysics(),
+                controller: widget.scrollController,
+                onRefresh: () {
+                  _getStoriesOfFollowings();
+                  return _getInitialPosts();
+                },
+                onLoadMore: _getMorePosts,
+                children: <Widget>[
+                  Container(
+                    height: 112,
+                    width: MediaQuery.of(context).size.width,
+                    color: Colors.white,
+                    child: myStory == null
+                        ? Center(child: LoadingIndicator())
+                        : Row(
+                            children: <Widget>[
+                              Visibility(
+                                visible: myStory.story.moments.isEmpty,
+                                child: StoryAvatar(
+                                  isOwner: true,
 //                            user: User.empty(),
 
-                            ///TODO: fix this bug causing app to not load
-                            user: auth.profile.user,
-                            isEmpty: true,
-                            onTap: widget.onCreatePressed,
-                            onLongPress: widget.onCreatePressed,
-                          ),
-                        ),
-                        InlineStories(
-                          userStories: [
-                                if (myStory.story.moments.isNotEmpty) myStory
-                              ] +
-                              followingsStories,
+                                  ///TODO: fix this bug causing app to not load
+                                  user: auth.profile.user,
+                                  isEmpty: true,
+                                  onTap: widget.onCreatePressed,
+                                  onLongPress: widget.onCreatePressed,
+                                ),
+                              ),
+                              InlineStories(
+                                userStories: [
+                                      if (myStory.story.moments.isNotEmpty)
+                                        myStory
+                                    ] +
+                                    followingsStories,
 //                          onCreateStory: widget.onCreatePressed,
-                          topPadding: topPadding,
-                        ),
-                      ],
-                    ),
+                                topPadding: topPadding,
+                              ),
+                            ],
+                          ),
+                  ),
+                  Divider(),
+                  isFetchingPosts
+                      ? LoadingIndicator()
+                      : posts.isEmpty
+                          ? EmptyView(
+                              title: 'No posts to show',
+                              subtitle:
+                                  'Start following users to see their posts',
+                            )
+                          : PostListView(
+                              posts: posts,
+                              onUnfollow: (uid) {
+                                print('onUnfollow $uid');
+                                return setState(() {
+                                  posts = List<Post>.from(posts)
+                                    ..removeWhere(
+                                        (post) => post.owner.uid == uid);
+                                });
+                              },
+                              onAddComment: (postId) {
+                                print('add comment for post $postId');
+                                setState(() {
+                                  commentingTo = postId;
+                                  showCommentTextField = !showCommentTextField;
+                                });
+                                FocusScope.of(context)
+                                    .requestFocus(commentFocusNode);
+                                return;
+                              },
+                              onDoodleStart: _onDoodleStart,
+                              onDoodleEnd: _onDoodleEnd,
+                            ),
+                  SizedBox(height: 64),
+                ],
+              ),
             ),
-            Divider(),
-            isFetchingPosts
-                ? LoadingIndicator()
-                : posts.isEmpty
-                    ? EmptyView(
-                        title: 'No posts to show',
-                        subtitle: 'Start following users to see their posts',
-                      )
-                    : PostListView(
-                        posts: posts,
-                        onUnfollow: (uid) {
-                          print('onUnfollow $uid');
-                          return setState(() {
-                            posts = List<Post>.from(posts)
-                              ..removeWhere((post) => post.owner.uid == uid);
-                          });
-                        },
-                        onAddComment: (postId) {
-                          print('add comment for post $postId');
-                          setState(() {
-                            commentingTo = postId;
-                            showCommentTextField = !showCommentTextField;
-                          });
-                          FocusScope.of(context).requestFocus(commentFocusNode);
-                          return;
-                        }),
-            SizedBox(height: 64),
-          ],
-        ),
-      ),
     );
   }
 
@@ -271,5 +293,21 @@ class _FeedScreenState extends State<FeedScreen>
               lastTimestamp: moments[moments.length - 1].timestamp);
         });
     });
+  }
+
+  bool isDoodling = false;
+  VoidCallback _onDoodleStart() {
+    print('feed on doodle');
+    setState(() {
+      isDoodling = true;
+    });
+    return widget.onDoodleStart;
+  }
+
+  VoidCallback _onDoodleEnd() {
+    setState(() {
+      isDoodling = false;
+    });
+    return widget.onDoodleEnd;
   }
 }

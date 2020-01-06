@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:line_icons/line_icons.dart';
-import 'package:nutes/core/models/chat_message.dart';
 import 'package:nutes/core/models/user.dart';
 import 'package:nutes/core/services/auth.dart';
 import 'package:nutes/core/services/repository.dart';
@@ -15,15 +14,32 @@ import 'package:nutes/ui/widgets/chat_bubble.dart';
 ///
 class ShoutScreen extends StatefulWidget {
   final String chatId;
-  final ChatItem message;
-  final User challenger;
-  final Function(String) onSendPressed;
+  final String messageId;
+  final String content;
+  final User peer;
 
-  ShoutScreen(
-      {Key key, this.message, this.challenger, this.onSendPressed, this.chatId})
-      : super(key: key);
+  ShoutScreen({
+    Key key,
+    this.messageId,
+    this.content,
+    this.peer,
+    this.chatId,
+  }) : super(key: key);
 
-  static Route route() => null;
+  static Route route({
+    @required String chatId,
+    @required User peer,
+    @required String messageId,
+    @required String content,
+  }) =>
+      MaterialPageRoute(builder: (context) {
+        return ShoutScreen(
+          chatId: chatId,
+          peer: peer,
+          messageId: messageId,
+          content: content,
+        );
+      });
 
   @override
   _ShoutScreenState createState() => _ShoutScreenState();
@@ -45,11 +61,8 @@ class _ShoutScreenState extends State<ShoutScreen> {
             context: context,
             builder: (context) => CupertinoAlertDialog(
                   title: Text('Who can see this?'),
-                  content: Text('\nOnce you choose to respond'
-                      ', followers from both parties can view and '
-                      'vote on the responses. \n\n'
-                      'Unanswered shouts will be removed from your inbox '
-                      'within 24 hours.'),
+                  content: Text(
+                      '\nOnce you choose to respond, followers of both parties can view the shout on their feeds.'),
                   actions: <Widget>[
                     CupertinoDialogAction(
                       child: Text('OK'),
@@ -59,9 +72,9 @@ class _ShoutScreenState extends State<ShoutScreen> {
                   ],
                 )),
         title: Text(
-          'Shout with ${widget.challenger.username}',
+          'Shout with ${widget.peer.username}',
           overflow: TextOverflow.fade,
-          style: TextStyles.w600Text,
+          style: TextStyles.header,
         ),
         trailing: Padding(
           padding: const EdgeInsets.all(8.0),
@@ -79,23 +92,24 @@ class _ShoutScreenState extends State<ShoutScreen> {
           child: ListView(
 //            crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
+              ///Peer bubble
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: <Widget>[
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 5.0),
-                      child: SizedBox(
-                          width: 50,
-                          child: AvatarImage(
-                              spacing: 0,
-                              url: this.widget.challenger.urls.small)),
-                    ),
+                    Container(
+                        padding: const EdgeInsets.all(4.0),
+                        width: 48,
+                        child: AvatarImage(
+                          url: this.widget.peer.urls.small,
+                          spacing: 0,
+                          padding: 0,
+                        )),
                     Container(
                       padding: const EdgeInsets.symmetric(vertical: 4),
                       constraints: BoxConstraints(
-                          maxWidth: MediaQuery.of(context).size.width * 0.75),
+                          maxWidth: MediaQuery.of(context).size.width * 0.65),
                       child: Bubble(
                         alignment: Alignment.centerLeft,
                         shadowColor: Colors.black,
@@ -107,7 +121,7 @@ class _ShoutScreenState extends State<ShoutScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: <Widget>[
                             Text(
-                              widget.challenger.username,
+                              widget.peer.username,
                               style: TextStyle(
                                   fontWeight: FontWeight.w500,
                                   color: kPeerTextColor,
@@ -115,7 +129,7 @@ class _ShoutScreenState extends State<ShoutScreen> {
                             ),
                             SizedBox(height: 10),
                             Text(
-                              widget.message.content,
+                              widget.content,
                               style: TextStyle(
                                   color: kPeerTextColor, fontSize: 16),
                             ),
@@ -126,14 +140,16 @@ class _ShoutScreenState extends State<ShoutScreen> {
                   ],
                 ),
               ),
+
+              ///Your response bubble
               Padding(
-                padding: const EdgeInsets.all(8.0),
+                padding: const EdgeInsets.all(4.0),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: <Widget>[
                     Container(
-                      constraints: BoxConstraints(maxWidth: size.width * 0.7),
+                      constraints: BoxConstraints(maxWidth: size.width * 0.65),
                       child: Bubble(
                         color: Colors.blueAccent[400],
                         nip: BubbleNip.rightBottom,
@@ -149,7 +165,7 @@ class _ShoutScreenState extends State<ShoutScreen> {
                                     .copyWith(color: Colors.white),
                                 maxLines: 1,
                               ),
-                              SizedBox(height: 10),
+                              SizedBox(height: 8),
                               finishedEditing
                                   ? Text(
                                       controller.text,
@@ -178,7 +194,7 @@ class _ShoutScreenState extends State<ShoutScreen> {
                                                   hintStyle: TextStyle(
                                                       color: Colors.white),
                                                   hintText:
-                                                      'What is your reply?'),
+                                                      'What is your response?'),
                                             ),
                                           ),
                                           Column(
@@ -228,13 +244,14 @@ class _ShoutScreenState extends State<ShoutScreen> {
                         ),
                       ),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 5.0),
-                      child: SizedBox(
-                          width: 50,
-                          child: AvatarImage(
-                              spacing: 0, url: auth.profile.user.urls.small)),
-                    ),
+                    Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                        width: 48,
+                        child: AvatarImage(
+                          url: auth.profile.user.urls.small,
+                          spacing: 0,
+                          padding: 0,
+                        )),
                   ],
                 ),
               ),
@@ -250,13 +267,8 @@ class _ShoutScreenState extends State<ShoutScreen> {
         context: context,
         builder: (context) => CupertinoAlertDialog(
               title: Text('Start a shout?'),
-              content: Text('\nOnce the other person '
-                  'responds, shouts become public and anyone can '
-                  'vote on the responses.\n'
-                  '\nUnanswered shouts will be removed '
-                  'from '
-                  'your '
-                  'inbox within 24 hours.'),
+              content: Text(
+                  '\nOnce you choose to respond, followers of both parties can view the shout on their feeds.'),
               actions: <Widget>[
                 CupertinoDialogAction(
                   child: Text('Cancel'),
@@ -283,22 +295,20 @@ class _ShoutScreenState extends State<ShoutScreen> {
 
   Future _completeShoutChallenge() async {
     final metadata = {
-      'challenger': widget.challenger.toMap(),
+      'challenger': widget.peer.toMap(),
       'challenged': auth.profile.toMap(),
-      'challenger_text': widget.message.content,
+      'challenger_text': widget.content,
       'challenged_text': controller.text,
     };
 
     Repo.completeShoutChallenge(
         chatId: widget.chatId,
-        messageId: widget.message.id,
-        content: widget.message.content,
+        messageId: widget.messageId,
+        content: widget.content,
         response: controller.text,
-        peer: widget.challenger);
+        peer: widget.peer);
 
-//    await Repo.uploadPublicShout(peer: widget.challenger, data: metadata);
-
-    await Repo.uploadShoutPost(peer: widget.challenger, data: metadata);
+    await Repo.uploadShoutPost(peer: widget.peer, data: metadata);
     return Navigator.pop(context);
   }
 }

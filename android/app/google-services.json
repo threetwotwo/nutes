@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "917984579481",
+    "firebase_url": "https://nutes-app.firebaseio.com",
+    "project_id": "nutes-app",
+    "storage_bucket": "nutes-app.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:917984579481:android:d0da8419810cd9a5b4cd08",
+        "android_client_info": {
+          "package_name": "com.garypiong.nutes"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "917984579481-pj0n3kki2763eildfbguq1kc0o7mdh8q.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBZPq4JtxxJyC2_69g_VyVcnKBe4roYesA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "917984579481-pj0n3kki2763eildfbguq1kc0o7mdh8q.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "917984579481-fhh154hjplv38f4us2t9v6mk7569o1pm.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.garypiong.sendnutes"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

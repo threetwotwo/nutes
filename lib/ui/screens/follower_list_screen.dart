@@ -73,10 +73,12 @@ class _FollowerListScreenState extends State<FollowerListScreen> {
                 ],
               ),
               Expanded(
-                child: TabBarView(children: [
-                  FollowerTabView(uid: widget.user.uid, isFollowers: true),
-                  FollowerTabView(uid: widget.user.uid, isFollowers: false),
-                ]),
+                child: TabBarView(
+                  children: [
+                    FollowerTabView(uid: widget.user.uid, isFollowers: true),
+                    FollowerTabView(uid: widget.user.uid, isFollowers: false),
+                  ],
+                ),
               ),
             ],
           ),
@@ -117,8 +119,8 @@ class _FollowerTabViewState extends State<FollowerTabView> {
   @override
   Widget build(BuildContext context) {
     return RefreshListView(
-//      onRefresh: () {},
-//      onLoadMore: () {},
+      onRefresh: () {},
+      onLoadMore: () {},
       children: <Widget>[
         users == null
             ? EmptyIndicator('Loading...')

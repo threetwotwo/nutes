@@ -4,12 +4,12 @@ import 'package:meta/meta.dart';
 import 'package:nutes/core/models/activity.dart';
 import 'package:nutes/core/models/chat_message.dart';
 import 'package:nutes/core/models/comment.dart';
+import 'package:nutes/core/models/doodle.dart';
 import 'package:nutes/core/models/post.dart';
 import 'package:nutes/core/models/story.dart';
 import 'package:nutes/core/models/user.dart';
 import 'package:nutes/core/services/auth.dart';
 import 'package:nutes/core/services/local_cache.dart';
-import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/utils/image_file_bundle.dart';
 
 ///The service that handles all reads and writes to firestore
@@ -142,6 +142,10 @@ class FirestoreService {
         .getDocuments();
 
     return q.documents.isEmpty ? null : UserProfile.fromDoc(q.documents.first);
+  }
+
+  Stream<DocumentSnapshot> userProfileStream(String uid) {
+    return userRef(uid).snapshots();
   }
 
   Future<UserProfile> getUserProfile(String uid) async {
@@ -495,6 +499,28 @@ class FirestoreService {
     return batch.commit();
   }
 
+  Future<List<Doodle>> getDoodles({@required String postId}) async {
+    final ref = postRef(postId)
+        .collection('doodles')
+        .limit(8)
+        .orderBy('timestamp', descending: true);
+
+    final docs = await ref.getDocuments();
+
+    return docs.documents.map((doc) => Doodle.fromDoc(doc)).toList();
+  }
+
+  Future<void> uploadDoodle({@required String postId, @required String url}) {
+    final ref =
+        postRef(postId).collection('doodles').document(auth.profile.uid);
+
+    return ref.setData({
+      'owner': auth.profile.user.toMap(),
+      'url': url,
+      'timestamp': Timestamp.now(),
+    });
+  }
+
   ///Uploads message to the chat ref
   ///
   ///Updates the last_checked of both chat participants
@@ -566,36 +592,6 @@ class FirestoreService {
           payload..putIfAbsent('user', () => selfMap));
 
     return batch.commit();
-  }
-
-  ///Create a new message
-  Future<void> createMessage(
-      {@required String chatId,
-      @required User recipient,
-      @required String content,
-      int type = 0}) async {
-    // type: 0 = text, 1 = image, 2 = sticker
-    final docRef = _messagesRef(chatId).document();
-
-    final timestamp = Timestamp.now();
-
-    final data = {
-      'sender_id': auth.profile.uid,
-      'timestamp': timestamp,
-      'content': content,
-      'type': type
-    };
-
-    return Firestore.instance.runTransaction((transaction) async {
-      await transaction.set(
-        docRef,
-        data,
-      );
-
-      ///if chat does not exists, initialize its participants
-      await resolveParticipants(chatId, timestamp, recipient);
-      updateChatLastChecked(chatId, data);
-    });
   }
 
   UserProfile updateProfile({
@@ -1678,30 +1674,32 @@ class FirestoreService {
       {String username, String password}) async {
     ///check if username exists
     print('signing in $username');
-    final qs = await shared
+    final snap = await shared
         .collection('users')
         .where('username', isEqualTo: username)
         .limit(1)
         .getDocuments();
 
-    if (qs.documents.isEmpty) return null;
+    if (snap.documents.isEmpty) return null;
+
+    final doc = snap.documents.first;
 
     String email;
 
     ///get email associated with username
-    email = qs.documents.first.data['email'];
+    email = doc['email'];
 
     if (email == null ?? email.isEmpty) {
-      final info = await qs.documents.first.reference
-          .collection('private')
-          .document('info')
-          .get();
+      final info =
+          await doc.reference.collection('private').document('info').get();
 
       email = info['email'] ?? '';
     }
 
     ///check if email matches with password entered
     ///
+
+    print('FIR sign in for uid ${doc.documentID}, data: ${doc.data}');
 
     final authenticatedUser = await FirebaseAuth.instance
         .signInWithEmailAndPassword(email: email, password: password)
@@ -1712,7 +1710,7 @@ class FirestoreService {
 
 //      ///return user object
     if (authenticatedUser != null)
-      return UserProfile.fromDoc(qs.documents.first);
+      return UserProfile.fromDoc(snap.documents.first);
 
     return null;
   }

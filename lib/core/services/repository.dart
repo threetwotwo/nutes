@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/widgets.dart';
+import 'package:nutes/core/models/doodle.dart';
 //import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart' as path_provider;
 import 'package:image/image.dart' as img;
@@ -218,15 +219,6 @@ class Repo {
     );
   }
 
-  static Future<void> createMessage(
-      {@required String chatId,
-      @required User recipient,
-      @required content,
-      int type = 0}) {
-    return shared._firestore.createMessage(
-        chatId: chatId, recipient: recipient, content: content, type: type);
-  }
-
   static Future uploadStory({@required ImageFileBundle fileBundle}) async {
     final storyRef = shared._firestore.createStoryRef();
 
@@ -287,6 +279,18 @@ class Repo {
     final postRef = shared._firestore.userPostRef(post.owner.uid, post.id);
 
     postRef.setData(updatedPost, merge: true);
+  }
+
+  static Future<List<Doodle>> getDoodles({
+    @required String postId,
+  }) =>
+      shared._firestore.getDoodles(postId: postId);
+
+  static Future uploadDoodle(
+      {@required String postId, @required File file}) async {
+    final url = await shared._storage.uploadDoodle(postId: postId, file: file);
+
+    return shared._firestore.uploadDoodle(postId: postId, url: url);
   }
 
   ///Uploads a shout as a post
@@ -454,6 +458,9 @@ class Repo {
 
   static Future<UserProfile> getUserProfileFromUsername(String username) =>
       shared._firestore.getUserProfileFromUsername(username);
+
+  static Stream<DocumentSnapshot> userProfileStream(String uid) =>
+      shared._firestore.userProfileStream(uid);
 
   static Future<UserProfile> getUserProfile(String uid) =>
       shared._firestore.getUserProfile(uid);

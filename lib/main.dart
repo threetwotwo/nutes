@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:nutes/core/services/auth.dart';
 import 'package:nutes/ui/screens/profile_screen.dart';
 import 'package:nutes/core/services/local_cache.dart';
+import 'package:nutes/ui/shared/loading_indicator.dart';
 import 'package:nutes/ui/widgets/app_page_view.dart';
 import 'package:nutes/ui/screens/login_screen.dart';
 import 'package:nutes/core/services/repository.dart';
@@ -62,13 +63,15 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    SystemChrome.setEnabledSystemUIOverlays(SystemUiOverlay.values);
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.dark);
+
     return BotToastInit(
-        child: MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: MainBuilder(),
-      navigatorObservers: [BotToastNavigatorObserver()],
-    ));
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: MainBuilder(),
+        navigatorObservers: [BotToastNavigatorObserver()],
+      ),
+    );
   }
 }
 
@@ -82,6 +85,8 @@ class _MainBuilderState extends State<MainBuilder> {
   final _fcm = FirebaseMessaging();
   IosNotificationSettings iosSettings;
   String fcmToken;
+
+  UserProfile profile;
 
   @override
   void initState() {
@@ -146,16 +151,48 @@ class _MainBuilderState extends State<MainBuilder> {
     return StreamBuilder<FirebaseUser>(
       stream: FirebaseAuth.instance.onAuthStateChanged,
       builder: (context, snapshot) {
-        if (snapshot.hasData) {
-          if (iosSettings != null && fcmToken != null)
-            Repo.createFCMDeviceToken(uid: snapshot.data.uid, token: fcmToken);
-          return AppPageView(
-            uid: snapshot.data.uid,
-          );
-        } else {
-          return LoginScreen();
-        }
+        if (!snapshot.hasData) return LoginScreen();
+
+        if (iosSettings != null && fcmToken != null)
+          Repo.createFCMDeviceToken(uid: snapshot.data.uid, token: fcmToken);
+
+        if (snapshot.data != null && profile == null)
+          _getProfile(snapshot.data.uid);
+
+        return profile == null
+            ? Scaffold(
+                body: Container(
+                  color: Colors.white,
+                  child: Center(
+                    child: LoadingIndicator(),
+                  ),
+                ),
+              )
+            : AppPageView(
+                uid: snapshot.data.uid,
+              );
       },
     );
+  }
+
+  Future<void> _getProfile(String uid) async {
+    print('get profile of $uid');
+
+    final result = await Repo.getUserProfile(uid);
+
+    if (result == null)
+      await Repo.logout();
+    else {
+      Auth.instance.profile = result;
+
+      profile = result;
+
+      ///TODO: get rid of auth == null error
+//      await Future.delayed(Duration(milliseconds: 300));
+
+      setState(() {});
+    }
+
+    return;
   }
 }

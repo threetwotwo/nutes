@@ -5,7 +5,7 @@ import 'package:line_icons/line_icons.dart';
 import 'package:nutes/core/models/chat_message.dart';
 import 'package:nutes/core/models/user.dart';
 import 'package:nutes/core/services/auth.dart';
-import 'package:nutes/ui/screens/post_detail_page.dart';
+import 'package:nutes/ui/screens/post_detail_screen.dart';
 import 'package:nutes/ui/screens/profile_screen.dart';
 import 'package:nutes/ui/shared/avatar_image.dart';
 import 'package:intl/intl.dart';

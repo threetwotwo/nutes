@@ -47,121 +47,123 @@ class ProfileHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (profile == null) return SizedBox();
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Container(
-            height: 280,
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: Colors.grey[100].withOpacity(0.3)),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Flexible(
-                  flex: 5,
-                  child: Container(
-                    child: Align(
-                      alignment: Alignment.centerRight,
-                      child: AvatarImage(
-                        storyState: storyState,
-                        onTap: onAvatarPressed,
-                        addStory: isOwner && storyState == StoryState.none,
-                        addStoryIndicatorSize: 16,
-                        spacing: 4,
-                        padding: 8,
-                        ringWidth: 4,
-                        url: profile.user.urls.original ?? '',
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Container(
+          height: 280,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+//            color: Colors.red,
+
+            color: Colors.grey[100].withOpacity(0.3),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Flexible(
+                flex: 5,
+                child: Container(
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: AvatarImage(
+                      storyState: storyState,
+                      onTap: onAvatarPressed,
+                      addStory: isOwner && storyState == StoryState.none,
+                      addStoryIndicatorSize: 16,
+                      spacing: 4,
+                      padding: 8,
+                      ringWidth: 4,
+                      url: profile.user.urls.original ?? '',
+                    ),
+                  ),
+                ),
+              ),
+              Flexible(
+                flex: 3,
+                child: Container(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                      SizedBox(
+                        height: 40,
                       ),
-                    ),
+                      SizedBox(height: screenAwareSize(20, context)),
+                      Expanded(
+                          child: Container(
+                        child: profile.stats == null
+                            ? SizedBox()
+                            : UserStatsUI(
+                                stats: profile.stats,
+                                onFollowersPressed: onFollowersPressed,
+                                onFollowingsPressed: onFollowingsPressed,
+                              ),
+                      )),
+                      SizedBox(height: screenAwareSize(20, context)),
+                      isFollowing && !isOwner == null
+                          ? LoadingButton()
+                          : isOwner
+                              ? EditProfileButton(
+                                  onEditPressed: onEditPressed,
+                                )
+                              : ProfileFollowButton(
+                                  user: profile.user,
+                                  isFollowing: isFollowing,
+                                  onMessagePressed: onMessagePressed,
+                                  onRequest: onRequest,
+                                  onFollow: onFollow,
+                                )
+                    ],
                   ),
                 ),
-                Flexible(
-                  flex: 3,
-                  child: Container(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: <Widget>[
-                        SizedBox(
-                          height: 40,
-                        ),
-                        SizedBox(height: screenAwareSize(20, context)),
-                        Expanded(
-                            child: Container(
-                          child: profile.stats == null
-                              ? SizedBox()
-                              : UserStatsUI(
-                                  stats: profile.stats,
-                                  onFollowersPressed: onFollowersPressed,
-                                  onFollowingsPressed: onFollowingsPressed,
-                                ),
-                        )),
-                        SizedBox(height: screenAwareSize(20, context)),
-                        isFollowing && !isOwner == null
-                            ? LoadingButton()
-                            : isOwner
-                                ? EditProfileButton(
-                                    onEditPressed: onEditPressed,
-                                  )
-                                : ProfileFollowButton(
-                                    user: profile.user,
-                                    isFollowing: isFollowing,
-                                    onMessagePressed: onMessagePressed,
-                                    onRequest: onRequest,
-                                    onFollow: onFollow,
-                                  )
-                      ],
-                    ),
-                  ),
+              ),
+            ],
+          ),
+        ),
+
+        ///Display name
+        if (profile.user.displayName.isNotEmpty)
+          Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: <Widget>[
+                Text(
+                  profile.user.displayName ?? '',
+                  style: TextStyles.w600Text.copyWith(fontSize: 15),
                 ),
+//                IconButton(
+//                  onPressed: null,
+//                  icon: Icon(
+//                    MdiIcons.chevronDown,
+//                    color: Colors.white,
+//                    size: defaultSize(24, context, defaultTo: 20),
+//                  ),
+//                ),
               ],
             ),
           ),
 
-          ///Display name
-          if (profile.user.displayName.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: <Widget>[
-                  Text(
-                    profile.user.displayName ?? '',
-                    style: TextStyles.w600Text.copyWith(fontSize: 15),
-                  ),
-                  IconButton(
-                    onPressed: null,
-                    icon: Icon(
-                      MdiIcons.chevronDown,
-                      color: Colors.white,
-                      size: defaultSize(24, context, defaultTo: 20),
-                    ),
-                  ),
-                ],
+        ///Bio
+        if (profile.bio.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Container(
+              child: Text(
+                profile.bio ?? '',
+                textAlign: TextAlign.start,
+                maxLines: 10,
+                softWrap: true,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyles.defaultText
+                    .copyWith(fontSize: 14, fontWeight: FontWeight.normal),
               ),
             ),
-
-          ///Bio
-          if (profile.bio.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              child: Container(
-                child: Text(
-                  profile.bio ?? '',
-                  textAlign: TextAlign.start,
-                  maxLines: 10,
-                  softWrap: true,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyles.defaultText
-                      .copyWith(fontSize: 14, fontWeight: FontWeight.normal),
-                ),
-              ),
-            ),
-        ],
-      ),
+          ),
+      ],
     );
   }
 }

@@ -65,13 +65,13 @@ class TextStyles {
   );
   static final header = TextStyle(
     fontFamily: textFamily,
-    fontSize: 18,
+    fontSize: 17,
     color: Colors.black,
   );
 
   static final w300Display = defaultDisplay.copyWith(
     fontWeight: FontWeight.w300,
-    fontSize: 18,
+    fontSize: 17,
   );
 
   static final w300Text = defaultText.copyWith(

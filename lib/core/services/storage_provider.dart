@@ -66,7 +66,23 @@ class FIRStorage {
     return url;
   }
 
-  Future getDownloadUrl(String postId) {}
+  Future<String> uploadDoodle(
+      {@required String postId, @required File file}) async {
+    print('uploading doodle to storage');
+
+    final doodleRef = usersRef
+        .child(auth.profile.uid)
+        .child('posts')
+        .child(postId)
+        .child('doodles')
+        .child(auth.profile.uid);
+
+    final url = await _upload(ref: doodleRef, file: file);
+
+    print(url);
+
+    return url;
+  }
 
   ///Uploads a list of files to storage
   ///Returns a list of urls upon upload completion

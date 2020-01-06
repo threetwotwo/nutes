@@ -1,7 +1,6 @@
 import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:line_icons/line_icons.dart';
 import 'package:nutes/core/models/filter.dart';
 import 'package:nutes/core/services/local_cache.dart';
 import 'package:nutes/ui/shared/buttons.dart';
@@ -244,166 +243,131 @@ class _EditorPageState extends State<EditorPage>
     return Scaffold(
       body: Container(
         decoration: filter.variant.bgDecor,
-        child: SafeArea(
-          child: Stack(
-            children: <Widget>[
-              ///Main view
-              Container(
-                width: MediaQuery.of(context).size.width,
-                height: MediaQuery.of(context).size.height,
-                child: PageView.builder(
-                  onPageChanged: (value) {
-                    print('on page change $value filter type ${filter.type}');
-                    setState(() {
-                      currentPage = value;
-                      filterController.animateToPage(
-                        FilterType.values
-                            .indexOf(capturePages[currentPage].filter.type),
-                        duration: Duration(milliseconds: 200),
-                        curve: Curves.easeInOut,
-                      );
-                    });
-                  },
-                  itemCount: capturePages.length,
-                  controller: pageController,
-                  itemBuilder: (context, index) {
-                    return capturePages[index];
-                  },
-                ),
+        child: Stack(
+          children: <Widget>[
+            ///Main view
+            Container(
+              width: MediaQuery.of(context).size.width,
+              height: MediaQuery.of(context).size.height,
+              child: PageView.builder(
+                onPageChanged: (value) {
+                  print('on page change $value filter type ${filter.type}');
+                  setState(() {
+                    currentPage = value;
+                    filterController.animateToPage(
+                      FilterType.values
+                          .indexOf(capturePages[currentPage].filter.type),
+                      duration: Duration(milliseconds: 200),
+                      curve: Curves.easeInOut,
+                    );
+                  });
+                },
+                itemCount: capturePages.length,
+                controller: pageController,
+                itemBuilder: (context, index) {
+                  return capturePages[index];
+                },
               ),
-              Container(
-                height: MediaQuery.of(context).size.height,
-                child: Column(
-                  children: <Widget>[
-                    EditorDefaultTopButtons(
-                      currentPage: currentPage,
-                      pages: capturePages,
-                      onAddPressed: () => incrementPageCount(context),
-                      onBackPressed: widget.onBackPressed,
-                      isStory: widget.isStoryMode,
-                      controller: filterController,
-                      onFilterChanged: (filterIndex, filter) =>
-                          onFilter(filterIndex, filter),
-                      onVariantChange: (val) {
-                        return onVariant(val);
-                      },
-                    ),
-                    Expanded(
-                      child: capturePages.length < 2
-                          ? SizedBox()
-                          : Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: <Widget>[
-                                currentPage == 0
-                                    ? SizedBox()
-                                    : Container(
-                                        padding: const EdgeInsets.all(5.0),
-                                        margin: const EdgeInsets.symmetric(
-                                            horizontal: 8.0),
-                                        decoration: BoxDecoration(
-                                            color: Colors.black54,
-                                            borderRadius:
-                                                BorderRadius.circular(100)),
-                                        child: InkWell(
-                                          onTap: () => deletePage(context),
-                                          child: Icon(
-                                            Icons.delete,
-                                            color: Colors.white,
-                                            size: 20,
-                                          ),
+            ),
+            Container(
+              height: MediaQuery.of(context).size.height,
+              child: Column(
+                children: <Widget>[
+                  EditorDefaultTopButtons(
+                    currentPage: currentPage,
+                    pages: capturePages,
+                    onAddPressed: () => incrementPageCount(context),
+                    onBackPressed: widget.onBackPressed,
+                    isStory: widget.isStoryMode,
+                    controller: filterController,
+                    onFilterChanged: (filterIndex, filter) =>
+                        onFilter(filterIndex, filter),
+                    onVariantChange: (val) {
+                      return onVariant(val);
+                    },
+                  ),
+                  Expanded(
+                    child: capturePages.length < 2
+                        ? SizedBox()
+                        : Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: <Widget>[
+                              currentPage == 0
+                                  ? SizedBox()
+                                  : Container(
+                                      padding: const EdgeInsets.all(5.0),
+                                      margin: const EdgeInsets.symmetric(
+                                          horizontal: 8.0),
+                                      decoration: BoxDecoration(
+                                          color: Colors.black54,
+                                          borderRadius:
+                                              BorderRadius.circular(100)),
+                                      child: InkWell(
+                                        onTap: () => deletePage(context),
+                                        child: Icon(
+                                          Icons.delete,
+                                          color: Colors.white,
+                                          size: 20,
                                         ),
                                       ),
-                                Container(
-                                  padding: const EdgeInsets.all(5.0),
-                                  margin: const EdgeInsets.symmetric(
-                                      horizontal: 8.0),
-                                  decoration: BoxDecoration(
-                                      color: Colors.black54,
-                                      borderRadius: BorderRadius.circular(100)),
-                                  child: Text(
-                                    ' ${currentPage + 1}/${capturePages.length} ',
-                                    style: TextStyles.defaultText
-                                        .copyWith(color: Colors.white),
-                                  ),
+                                    ),
+                              Container(
+                                padding: const EdgeInsets.all(5.0),
+                                margin:
+                                    const EdgeInsets.symmetric(horizontal: 8.0),
+                                decoration: BoxDecoration(
+                                    color: Colors.black54,
+                                    borderRadius: BorderRadius.circular(100)),
+                                child: Text(
+                                  ' ${currentPage + 1}/${capturePages.length} ',
+                                  style: TextStyles.defaultText
+                                      .copyWith(color: Colors.white),
                                 ),
-                              ],
-                            ),
-                    ),
-                    EditorFooter(
-                        onColor: (val) {
-                          return changeTextColor(val);
-                        },
-                        pageController: _pageController,
+                              ),
+                            ],
+                          ),
+                  ),
+                  EditorFooter(
+                      onColor: (val) {
+                        return changeTextColor(val);
+                      },
+                      pageController: _pageController,
 //                            currentPage: currentPage,
-                        itemCount: capturePages.length,
-                        isLoading: isLoading,
-                        onSendPressed: () async {
-                          FocusScope.of(context).requestFocus(FocusNode());
+                      itemCount: capturePages.length,
+                      isLoading: isLoading,
+                      onSendPressed: () async {
+                        FocusScope.of(context).requestFocus(FocusNode());
 
-                          ///hacky way to ensure keyboard is fully dismissed
-                          await Future.delayed(Duration(milliseconds: 100));
+                        ///hacky way to ensure keyboard is fully dismissed
+                        await Future.delayed(Duration(milliseconds: 100));
 
-                          final bundles = await takeScreenshots();
+                        final bundles = await takeScreenshots();
 
-                          final result = await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (ctx) => ConfirmUploadPage(
-                                        fileBundles: bundles,
-                                        enableStory: bundles.length <= 1,
-                                      )));
+                        final result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (ctx) => ConfirmUploadPage(
+                                      fileBundles: bundles,
+                                      enableStory: bundles.length <= 1,
+                                    )));
 
-                          if (result is bool && result == true) {
-                            print('should go to home');
-                            await Navigator.popUntil(context, (r) => r.isFirst);
-                            await cache.animateTo(1);
-                            BotToast.showText(
-                              text: 'Shared story',
-                              align: Alignment(0, -0.75),
-                            );
-                          }
-                        }),
-                  ],
-                ),
+                        if (result is bool && result == true) {
+                          print('should go to home');
+                          Navigator.popUntil(context, (r) => r.isFirst);
+
+                          await cache.animateTo(1);
+                          BotToast.showText(
+                            text: 'Shared story',
+                            align: Alignment(0, -0.75),
+                          );
+                        }
+                      }),
+                ],
               ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class EditorStoryTopButtons extends StatelessWidget {
-  final Function onBackPressed;
-  const EditorStoryTopButtons({Key key, this.onBackPressed}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Colors.black.withOpacity(0.05),
-            Colors.black12,
+            ),
           ],
-          begin: FractionalOffset.topCenter,
-          end: FractionalOffset.bottomCenter,
         ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: <Widget>[
-          SettingsButton(
-            onPressed: () {
-              print('settings pressed');
-            },
-          ),
-          RightBackButton(
-            onPressed: onBackPressed,
-          ),
-        ],
       ),
     );
   }
@@ -450,10 +414,11 @@ class _EditorDefaultTopButtonsState extends State<EditorDefaultTopButtons> {
   @override
   Widget build(BuildContext context) {
     return Container(
+      padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            Colors.black.withOpacity(0.18),
+            Colors.black.withOpacity(0.22),
             Colors.transparent,
           ],
           begin: FractionalOffset.topCenter,
@@ -464,6 +429,7 @@ class _EditorDefaultTopButtonsState extends State<EditorDefaultTopButtons> {
         children: <Widget>[
           widget.isStory
               ? SettingsButton(
+                  color: Colors.transparent,
                   onPressed: () {
                     print('settings pressed');
                   },
@@ -504,19 +470,19 @@ class _EditorDefaultTopButtonsState extends State<EditorDefaultTopButtons> {
                   style: TextStyle(
                       color: Colors.white, fontWeight: FontWeight.w600),
                 ),
-                InkWell(
-//                  highlightColor: Colors.transparent,
-                  splashColor: Colors.red,
-                  onTap: () => print('tapped filter bookmark'),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                    child: Icon(
-                      Icons.bookmark_border,
-                      color: Colors.white,
-                      size: 22,
-                    ),
-                  ),
-                ),
+//                InkWell(
+////                  highlightColor: Colors.transparent,
+//                  splashColor: Colors.red,
+//                  onTap: () => print('tapped filter bookmark'),
+//                  child: Padding(
+//                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
+//                    child: Icon(
+//                      Icons.bookmark_border,
+//                      color: Colors.white,
+//                      size: 22,
+//                    ),
+//                  ),
+//                ),
               ],
             ),
           ),

@@ -15,10 +15,10 @@ import 'package:nutes/ui/shared/post_grid_view.dart';
 import 'package:nutes/ui/shared/refresh_list_view.dart';
 import 'package:nutes/ui/widgets/empty_view.dart';
 import 'package:nutes/ui/widgets/profile_header.dart';
-import 'package:nutes/ui/widgets/profile_screen_widgets.dart';
+import 'package:nutes/ui/widgets/profile_tab_controller.dart';
 import 'package:nutes/core/models/user.dart';
 import 'package:nutes/ui/shared/post_list.dart';
-import 'package:nutes/ui/screens/post_detail_page.dart';
+import 'package:nutes/ui/screens/post_detail_screen.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/shared/styles.dart';
 import 'package:nutes/ui/screens/edit_profile_page.dart';
@@ -327,7 +327,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                                   subtitle:
                                                       'When ${profile.user.username} posts, you will see their photos here',
                                                 )
-                                              : PostMasterView(
+                                              : ProfileTabController(
                                                   view: view,
                                                   postGridView: PostGridView(
                                                     posts: posts,

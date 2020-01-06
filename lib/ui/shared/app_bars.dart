@@ -83,7 +83,7 @@ class EditProfileAppBar extends StatelessWidget implements PreferredSizeWidget {
         child: FlatButton(
           child: Text(
             'Done',
-            style: TextStyles.w300Display.copyWith(color: Colors.blueAccent),
+            style: TextStyles.defaultText.copyWith(color: Colors.blueAccent),
           ),
           onPressed: onDonePressed,
         ),

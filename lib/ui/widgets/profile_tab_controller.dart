@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
-import 'package:nutes/core/models/user.dart';
 import 'package:nutes/ui/shared/post_grid_view.dart';
 import 'package:nutes/ui/shared/styles.dart';
 import 'package:nutes/utils/responsive.dart';
@@ -47,13 +46,13 @@ class ProfileTabBar extends StatelessWidget {
   }
 }
 
-class PostMasterView extends StatefulWidget {
+class ProfileTabController extends StatefulWidget {
   final ViewType view;
 
   final PostGridView postGridView;
   final Widget postListView;
 
-  PostMasterView(
+  ProfileTabController(
       {Key key,
       this.view,
       @required this.postGridView,
@@ -61,10 +60,10 @@ class PostMasterView extends StatefulWidget {
       : super(key: key);
 
   @override
-  _PostMasterViewState createState() => _PostMasterViewState();
+  _ProfileTabControllerState createState() => _ProfileTabControllerState();
 }
 
-class _PostMasterViewState extends State<PostMasterView> {
+class _ProfileTabControllerState extends State<ProfileTabController> {
   ViewType view;
 
   @override

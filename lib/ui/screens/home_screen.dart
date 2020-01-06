@@ -102,122 +102,141 @@ class _HomeScreenState extends State<HomeScreen>
 //    final model = Provider.of<HomeModel>(context);
     final cache = LocalCache.instance;
 
-    return Scaffold(
-      bottomNavigationBar: BottomNavigation(
-        currentTab: currentTab,
-        onSelectTab: (tab) {
-          ///Change scroll physics depending on current tab
+    return WillPopScope(
+      onWillPop: () async {
+        final currentNav = _navigatorKeys[currentTab];
+
+        final canPop = currentNav.currentState.canPop();
+
+        if (canPop) currentNav.currentState.pop();
+
+        return !canPop;
+      },
+      child: Scaffold(
+        bottomNavigationBar: BottomNavigation(
+          currentTab: currentTab,
+          onSelectTab: (tab) {
+            ///Change scroll physics depending on current tab
 //          model.changeScrollPhysics((tab == TabItem.home)
 //              ? ClampingScrollPhysics()
 //              : NeverScrollableScrollPhysics());
 
-          ///Scroll up
-          if (tab == currentTab) {
-            switch (tab) {
-              case TabItem.home:
-                if (cache.homeIsFirst) _animateToTop(tab);
+            ///Scroll up
+            if (tab == currentTab) {
+              switch (tab) {
+                case TabItem.home:
+                  if (cache.homeIsFirst) _animateToTop(tab);
 
-                break;
-              case TabItem.search:
-                cache.animateToTop(tab);
-                break;
-              case TabItem.create:
-                break;
-              case TabItem.activity:
-                break;
-              case TabItem.profile:
-                _animateToTop(tab);
+                  break;
+                case TabItem.search:
+                  cache.animateToTop(tab);
+                  break;
+                case TabItem.create:
+                  break;
+                case TabItem.activity:
+                  break;
+                case TabItem.profile:
+                  _animateToTop(tab);
 
-                break;
+                  break;
+              }
+
+              ///Pop until first
+              _navigatorKeys[tab]
+                  .currentState
+                  .popUntil((route) => route.isFirst);
             }
 
-            ///Pop until first
-            _navigatorKeys[tab].currentState.popUntil((route) => route.isFirst);
-          }
+            setState(() {
+              cache.physics = tab == TabItem.home
+                  ? ClampingScrollPhysics()
+                  : NeverScrollableScrollPhysics();
+              return currentTab = tab;
+            });
 
-          setState(() {
-            cache.physics = tab == TabItem.home
-                ? ClampingScrollPhysics()
-                : NeverScrollableScrollPhysics();
-            return currentTab = tab;
-          });
+            return widget.onTabTapped(tab.index);
+          },
+        ),
+        body: IndexedStack(
+          index: TabItem.values.indexOf(currentTab),
+          children: <Widget>[
+            ///Home
 
-          return widget.onTabTapped(tab.index);
-        },
-      ),
-      body: IndexedStack(
-        index: TabItem.values.indexOf(currentTab),
-        children: <Widget>[
-          ///Home
+            Navigator(
+              key: _navigatorKeys[TabItem.home],
+              initialRoute: '/',
+              observers: [],
+              onGenerateRoute: (routeSettings) {
+                return MaterialPageRoute(
+                  builder: (context) => FeedScreen(
+                    scrollController: homeScrollController,
+                    onCreatePressed: widget.onCreatePressed,
+                    onDM: widget.onDM,
+                    onDoodleStart: () {
+                      print('home on doodle');
+                      setState(() {
+                        cache.physics = NeverScrollableScrollPhysics();
+                      });
+                    },
+                  ),
+                );
+              },
+            ),
 
-          Navigator(
-            key: _navigatorKeys[TabItem.home],
-            initialRoute: '/',
-            observers: [],
-            onGenerateRoute: (routeSettings) {
-              return MaterialPageRoute(
-                builder: (context) => FeedScreen(
-                  scrollController: homeScrollController,
-                  onCreatePressed: widget.onCreatePressed,
-                  onDM: widget.onDM,
-                ),
-              );
-            },
-          ),
+            ///Search
+            Navigator(
+              key: _navigatorKeys[TabItem.search],
+              initialRoute: '/',
+              onGenerateRoute: (routeSettings) {
+                return MaterialPageRoute(
+                  builder: (context) => SearchScreen(
+                    onTab: (idx) {
+                      setState(() {
+                        searchTabIndex = idx;
+                      });
+                    },
+                  ),
+                );
+              },
+            ),
 
-          ///Search
-          Navigator(
-            key: _navigatorKeys[TabItem.search],
-            initialRoute: '/',
-            onGenerateRoute: (routeSettings) {
-              return MaterialPageRoute(
-                builder: (context) => SearchScreen(
-                  onTab: (idx) {
-                    setState(() {
-                      searchTabIndex = idx;
-                    });
-                  },
-                ),
-              );
-            },
-          ),
+            ///Create
+            Navigator(
+              key: _navigatorKeys[TabItem.create],
+              initialRoute: '/',
+              onGenerateRoute: (routeSettings) {
+                return MaterialPageRoute(
+                  builder: (context) => CreateScreen(),
+                );
+              },
+            ),
 
-          ///Create
-          Navigator(
-            key: _navigatorKeys[TabItem.create],
-            initialRoute: '/',
-            onGenerateRoute: (routeSettings) {
-              return MaterialPageRoute(
-                builder: (context) => CreateScreen(),
-              );
-            },
-          ),
+            ///Activity
+            Navigator(
+              key: _navigatorKeys[TabItem.activity],
+              initialRoute: '/',
+              onGenerateRoute: (routeSettings) {
+                return MaterialPageRoute(
+                  builder: (context) => ActivityScreen(),
+                );
+              },
+            ),
 
-          ///Activity
-          Navigator(
-            key: _navigatorKeys[TabItem.activity],
-            initialRoute: '/',
-            onGenerateRoute: (routeSettings) {
-              return MaterialPageRoute(
-                builder: (context) => ActivityScreen(),
-              );
-            },
-          ),
-
-          ///Profile
-          Navigator(
-            key: _navigatorKeys[TabItem.profile],
-            initialRoute: '/',
-            onGenerateRoute: (routeSettings) {
-              return MaterialPageRoute(
-                builder: (context) => MyProfileScreen(
-                  scrollController: profileScrollController,
-                  isRoot: true,
-                ),
-              );
-            },
-          ),
-        ],
+            ///Profile
+            Navigator(
+              key: _navigatorKeys[TabItem.profile],
+              initialRoute: '/',
+              onGenerateRoute: (routeSettings) {
+                return MaterialPageRoute(
+                  builder: (context) => MyProfileScreen(
+                    scrollController: profileScrollController,
+                    isRoot: true,
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }

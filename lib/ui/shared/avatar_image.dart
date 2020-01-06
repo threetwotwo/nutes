@@ -161,10 +161,17 @@ class PhotoImage extends StatelessWidget {
               child: Container(
 //                color: Colors.grey[200],
                 child: url.isEmpty
-                    ? Transform.scale(
-                        scale: 0.65,
+                    ?
+//                Center(
+//                        child: Icon(
+//                          Icons.person,
+//                          color: Colors.white,
+//                        ),
+//                      )
+                    Transform.scale(
+                        scale: 1,
                         child: Image.asset(
-                          'assets/images/avatar.png',
+                          'assets/images/profile.png',
                           fit: BoxFit.cover,
                         ))
                     : CachedNetworkImage(
@@ -174,7 +181,7 @@ class PhotoImage extends StatelessWidget {
                         errorWidget: (_, __, ___) => Transform.scale(
                             scale: 0.65,
                             child: Image.asset(
-                              'assets/images/avatar.png',
+                              'assets/images/profile.png',
                               fit: BoxFit.cover,
                             )),
                         imageUrl: url,

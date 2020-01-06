@@ -32,19 +32,24 @@ class PostGridView extends StatelessWidget {
           behavior: HitTestBehavior.opaque,
           onTap: () => onTap(index),
           child: post.type == PostType.shout
-              ? Center(
-                  child: Wrap(
-                    runSpacing: 5,
-                    children: <Widget>[
-                      GridShoutBubble(
-                        data: post.metadata,
-                        isChallenger: true,
-                      ),
-                      GridShoutBubble(
-                        data: post.metadata,
-                        isChallenger: false,
-                      ),
-                    ],
+              ? Padding(
+                  padding: const EdgeInsets.all(4.0),
+                  child: Center(
+                    child: Wrap(
+                      runSpacing: 8,
+                      children: <Widget>[
+                        GridShoutBubble(
+                          data: post.metadata,
+                          isChallenger: true,
+                          avatarSize: 30,
+                        ),
+                        GridShoutBubble(
+                          data: post.metadata,
+                          isChallenger: false,
+                          avatarSize: 30,
+                        ),
+                      ],
+                    ),
                   ),
                 )
               : CachedNetworkImage(

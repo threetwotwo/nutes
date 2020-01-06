@@ -10,7 +10,7 @@ import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/screens/edit_profile_page.dart';
 import 'package:nutes/ui/screens/editor_page.dart';
 import 'package:nutes/ui/screens/follower_list_screen.dart';
-import 'package:nutes/ui/screens/post_detail_page.dart';
+import 'package:nutes/ui/screens/post_detail_screen.dart';
 import 'package:nutes/ui/shared/app_bars.dart';
 import 'package:nutes/ui/shared/loading_indicator.dart';
 import 'package:nutes/ui/shared/post_grid_view.dart';
@@ -19,7 +19,7 @@ import 'package:nutes/ui/shared/refresh_list_view.dart';
 import 'package:nutes/ui/shared/styles.dart';
 import 'package:nutes/ui/widgets/my_empty_post_view.dart';
 import 'package:nutes/ui/widgets/profile_header.dart';
-import 'package:nutes/ui/widgets/profile_screen_widgets.dart';
+import 'package:nutes/ui/widgets/profile_tab_controller.dart';
 import 'package:nutes/ui/widgets/story_page_view.dart';
 
 import 'account_screen.dart';
@@ -222,7 +222,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
               ? LoadingIndicator()
               : posts.isEmpty
                   ? MyEmptyPostView()
-                  : PostMasterView(
+                  : ProfileTabController(
                       view: view,
                       postGridView: PostGridView(
                         posts: posts,

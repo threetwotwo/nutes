@@ -154,11 +154,11 @@ class _ChatTextFieldState extends State<ChatTextField> {
                       padding: const EdgeInsets.symmetric(
                           vertical: 4.0, horizontal: 8),
                       child: Material(
-                        color: Colors.white,
+                        color: Colors.transparent,
                         child: InkWell(
                           child: Icon(
                             LineIcons.volume_up,
-                            color: Colors.blueAccent,
+                            color: Colors.black,
                           ),
                           onTap: () {
                             showDialog(

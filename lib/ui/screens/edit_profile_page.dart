@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:nutes/core/services/auth.dart';
+import 'package:nutes/ui/screens/change_username_screen.dart';
 import 'package:nutes/ui/shared/app_bars.dart';
 import 'package:nutes/ui/shared/avatar_image.dart';
 import 'package:nutes/core/models/user.dart';
@@ -29,6 +30,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   final _usernameController = TextEditingController();
   final _displayNameController = TextEditingController();
   final _bioController = TextEditingController();
+  final _emailController = TextEditingController();
   bool isUpdating = false;
 
   final auth = Auth.instance;
@@ -42,12 +44,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _usernameController.text = auth.profile.user.username;
     _displayNameController.text = auth.profile.user.displayName;
     _bioController.text = auth.profile.bio;
+    _emailController.text = auth.profile.user.username;
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: EditProfileAppBar(
         onCancelPressed: () => Navigator.of(context).pop(),
         onDonePressed: () async {
@@ -72,7 +76,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
       body: SafeArea(
           child: SingleChildScrollView(
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
+            ///Avatar
             Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: <Widget>[
@@ -112,22 +118,42 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     )),
               ],
             ),
+
+            ///Public info
             EditListItem(
               title: 'Name',
-              child: TextField(
-                controller: _displayNameController,
-              ),
+              controller: _displayNameController,
+              hint: 'Enter a display name',
             ),
             EditListItem(
               title: 'Username',
-              child: TextField(
-                controller: _usernameController,
-              ),
+              readOnly: true,
+              controller: _usernameController,
+              onTap: () =>
+                  Navigator.push(context, ChangeUsernameScreen.route(profile)),
             ),
             EditListItem(
               title: 'Bio',
+              controller: _bioController,
+            ),
+
+            SizedBox(height: 8),
+
+            ///Private
+            ///TODO: figure out how to get email
+//            LargeHeader(title: 'Private information'),
+//            Padding(
+//              padding: const EdgeInsets.all(8.0),
+//              child: Text(
+//                'Private info',
+//                style: TextStyles.w600Display,
+//              ),
+//            ),
+            EditListItem(
+              title: 'Email',
               child: TextField(
-                controller: _bioController,
+                controller: _emailController,
+                decoration: InputDecoration.collapsed(hintText: 'Enter email'),
               ),
             ),
           ],
@@ -210,13 +236,27 @@ class _EditProfilePageState extends State<EditProfilePage> {
 class EditListItem extends StatelessWidget {
   final String title;
   final Widget child;
+  final TextEditingController controller;
 
-  const EditListItem({Key key, this.title, this.child}) : super(key: key);
+  final bool readOnly;
+  final String hint;
+
+  final VoidCallback onTap;
+
+  const EditListItem({
+    Key key,
+    this.title,
+    this.child,
+    this.controller,
+    this.readOnly = false,
+    this.hint = '',
+    this.onTap,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(8.0),
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: <Widget>[
@@ -224,11 +264,29 @@ class EditListItem extends StatelessWidget {
             flex: 1,
             child: Text(
               title,
-              style: TextStyles.defaultText,
+              style: TextStyles.defaultText.copyWith(color: Colors.grey),
             ),
           ),
-          SizedBox(width: 30),
-          Flexible(flex: 2, child: child),
+          SizedBox(width: 16),
+          Flexible(
+              flex: 2,
+              child: TextField(
+                readOnly: readOnly,
+                controller: controller,
+                onTap: onTap,
+                decoration: InputDecoration(
+                  hintText: hint,
+//                  filled: true,
+//                  fillColor: Colors.grey[200],
+//                  border: OutlineInputBorder(
+//                    borderRadius: BorderRadius.circular(16),
+//                    borderSide: BorderSide(
+//                      width: 0,
+//                      style: BorderStyle.none,
+//                    ),
+//                  ),
+                ),
+              )),
         ],
       ),
     );
