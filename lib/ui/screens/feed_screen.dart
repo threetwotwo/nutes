@@ -1,13 +1,15 @@
+import 'package:bot_toast/bot_toast.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:event_bus/event_bus.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:nutes/core/models/post.dart';
 import 'package:nutes/core/models/story.dart';
-import 'package:nutes/core/services/auth.dart';
+import 'package:nutes/core/models/user.dart';
+import 'package:nutes/core/models/user_logged_in_event.dart';
 import 'package:nutes/core/services/local_cache.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/shared/comment_overlay.dart';
-import 'package:nutes/ui/shared/dismiss_view.dart';
 import 'package:nutes/ui/shared/loading_indicator.dart';
 import 'package:nutes/ui/shared/refresh_list_view.dart';
 import 'package:nutes/ui/shared/story_avatar.dart';
@@ -16,6 +18,7 @@ import 'package:nutes/ui/widgets/feed_app_bar.dart';
 import 'package:nutes/ui/shared/post_list.dart';
 import 'package:nutes/ui/widgets/inline_stories.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:provider/provider.dart';
 
 class FeedScreen extends StatefulWidget {
   final VoidCallback onCreatePressed;
@@ -23,6 +26,7 @@ class FeedScreen extends StatefulWidget {
   final VoidCallback onDoodleStart;
   final VoidCallback onDoodleEnd;
   final ScrollController scrollController;
+  final UserProfile profile;
 
   FeedScreen({
     Key key,
@@ -31,6 +35,7 @@ class FeedScreen extends StatefulWidget {
     this.scrollController,
     this.onDoodleStart,
     this.onDoodleEnd,
+    @required this.profile,
 //      this.onAddStoryPressed,
   }) : super(key: key);
 
@@ -44,8 +49,11 @@ class _FeedScreenState extends State<FeedScreen>
 
   Stream<QuerySnapshot> myStoryStream;
 
-  final auth = Auth.instance;
   final cache = LocalCache.instance;
+
+//  UserProfile profile;
+
+  final eventBus = EventBus();
 
   List<Post> posts = [];
 
@@ -57,11 +65,7 @@ class _FeedScreenState extends State<FeedScreen>
   final commentController = TextEditingController();
   final commentFocusNode = FocusNode();
 
-  UserStory myStory = UserStory(
-    story: Story.empty(),
-    uploader: Auth.instance.profile.user,
-    lastTimestamp: null,
-  );
+  UserStory myStory;
 
   List<UserStory> followingsStories = [];
 
@@ -96,11 +100,23 @@ class _FeedScreenState extends State<FeedScreen>
 
   @override
   void initState() {
-//    debugPrintGestureArenaDiagnostics = true;
-
+    myStory = UserStory(
+      story: Story.empty(),
+      uploader: widget.profile.user,
+      lastTimestamp: null,
+    );
     _getInitialPosts();
     _getMyStory();
     _getStoriesOfFollowings();
+
+    eventBus.on().listen((event) {
+      print(event);
+    });
+
+    eventBus.on<UserFollowEvent>().listen((event) {
+      print('Bus Followed ${event.user.username}');
+      BotToast.showText(text: 'Followed ${event.user.username}');
+    });
     super.initState();
   }
 
@@ -112,9 +128,8 @@ class _FeedScreenState extends State<FeedScreen>
 
     final topPadding = MediaQuery.of(context).padding.top;
 
-//    return Container(
-//      color: Colors.red,
-//    );
+    final profile = Provider.of<UserProfile>(context);
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: FeedAppBar(
@@ -122,7 +137,7 @@ class _FeedScreenState extends State<FeedScreen>
         onLogoutPressed: () => Repo.logout(),
         onDM: widget.onDM,
       ),
-      body: Auth.instance.profile == null
+      body: profile == null
           ? LoadingIndicator()
           : CommentOverlay(
               onSend: (text) {
@@ -181,7 +196,7 @@ class _FeedScreenState extends State<FeedScreen>
 //                            user: User.empty(),
 
                                   ///TODO: fix this bug causing app to not load
-                                  user: auth.profile.user,
+                                  user: profile.user,
                                   isEmpty: true,
                                   onTap: widget.onCreatePressed,
                                   onLongPress: widget.onCreatePressed,

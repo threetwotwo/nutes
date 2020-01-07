@@ -31,7 +31,7 @@ class ConfirmUploadPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final aspectRatios = fileBundles.map((b) => b.aspectRatio).toList();
     final biggestAspectRatio = aspectRatios.reduce(min);
-    final auth = Auth.instance;
+    final auth = Repo.auth;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -94,7 +94,7 @@ class ConfirmUploadPage extends StatelessWidget {
                 Container(height: 1, color: Colors.grey[100]),
                 AvatarListItem(
                   avatar: AvatarImage(
-                    url: auth.profile.user.urls.small,
+                    url: auth.user.urls.small,
                     spacing: 0,
                     padding: 10,
                     addStoryIndicatorSize: null,
@@ -167,7 +167,7 @@ class ConfirmUploadPage extends StatelessWidget {
               ),
               AvatarListItem(
                 avatar: AvatarImage(
-                  url: auth.profile.user.urls.small,
+                  url: auth.user.urls.small,
                   spacing: 0,
                   padding: 10,
                   addStoryIndicatorSize: null,
@@ -182,7 +182,7 @@ class ConfirmUploadPage extends StatelessWidget {
                       Repo.uploadPost(
                         type: PostType.text,
                         fileBundles: fileBundles,
-                        isPrivate: auth.profile.user.isPrivate,
+                        isPrivate: auth.user.isPrivate,
                         caption: captionController.text,
                       );
 

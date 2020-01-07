@@ -37,7 +37,7 @@ class DMListItem extends StatefulWidget {
 }
 
 class _DMListItemState extends State<DMListItem> {
-  final auth = Auth.instance;
+  final auth = Repo.auth;
 
   @override
   Widget build(BuildContext context) {
@@ -98,7 +98,7 @@ class _DMListItemState extends State<DMListItem> {
           title: widget.user.username,
           subtitleStyle: !widget.hasUnreadMessages ? null : TextStyles.w600Text,
           subtitle: (type == Bubbles.post
-                  ? lastChecked['sender_id'] == auth.profile.uid
+                  ? lastChecked['sender_id'] == auth.uid
                       ? 'You shared a post'
                       : 'Shared you a post'
                   : lastChecked['content'] ?? '') +

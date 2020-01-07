@@ -3,6 +3,7 @@ import 'package:nutes/core/models/user.dart';
 import 'package:nutes/core/services/auth.dart';
 import 'package:nutes/ui/shared/styles.dart';
 import 'package:nutes/ui/widgets/profile_header.dart';
+import 'package:provider/provider.dart';
 
 import 'avatar_image.dart';
 
@@ -29,6 +30,8 @@ class StoryAvatar extends StatelessWidget {
   }) : super(key: key);
   @override
   Widget build(BuildContext context) {
+    final profile = Provider.of<UserProfile>(context);
+
     return GestureDetector(
       onTap: onTap,
       onLongPress: onLongPress,
@@ -45,9 +48,7 @@ class StoryAvatar extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 2.0),
                   child: AvatarImage(
                     addStoryIndicatorSize: 7,
-                    url: isOwner
-                        ? Auth.instance.profile.user.urls.small
-                        : user.urls.small,
+                    url: isOwner ? profile.user.urls.small : user.urls.small,
                     storyState: storyState,
                     addStory: isOwner && isEmpty ?? false,
                   ),

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:line_icons/line_icons.dart';
 import 'package:nutes/core/models/comment.dart';
-import 'package:nutes/core/services/auth.dart';
 import 'package:nutes/ui/shared/search_result_view.dart';
 import 'package:nutes/ui/widgets/emoji_picker.dart';
 
@@ -34,10 +33,9 @@ class CommentOverlay extends StatefulWidget {
 }
 
 class _CommentOverlayState extends State<CommentOverlay> {
-//  final commentController = TextEditingController();
   bool showSearchScreen = false;
 
-  final auth = Auth.instance;
+//  final auth = Repo.auth;
 
   ///currently replying to this comment
   Comment replyingTo;
@@ -63,6 +61,8 @@ class _CommentOverlayState extends State<CommentOverlay> {
 
   @override
   Widget build(BuildContext context) {
+//    final profile = Provider.of<UserProfile>(context);
+
     return Stack(
       children: <Widget>[
         NotificationListener(
@@ -73,11 +73,7 @@ class _CommentOverlayState extends State<CommentOverlay> {
             }
             return null;
           },
-          child: GestureDetector(
-            ///hide keyboard on tap
-            onTap: widget.onScroll,
-            child: widget.child,
-          ),
+          child: widget.child,
         ),
         if (showSearchScreen)
           Positioned.fill(
@@ -145,51 +141,10 @@ class _CommentOverlayState extends State<CommentOverlay> {
                   CommentTextField(
                     controller: widget.controller,
                     focusNode: widget.focusNode,
-                    hint: 'Add comment as ${auth.profile.user.username}...',
                     onSendPressed: (val) {
                       widget.controller.clear();
                       return widget.onSend(val);
                     },
-//                onSendPressed: (val) {
-//                  final text = commentController.text;
-//
-//                  final comment = Repo.newComment(
-//                      text: text,
-//                      postId: widget.postId,
-//                      parentComment: replyingTo);
-//
-////                    final comment = Comment(
-////                      parentId: replyingTo?.id ?? null,
-////                      timestamp: Timestamp.now(),
-////                      text: text,
-////                      owner: auth.profile.user,
-////                    );
-//
-//
-//                  int insertIndex;
-//
-//                  final itemHeight = 70.0;
-//
-//                  insertIndex = comment.parentId == null
-//                      ? 0
-//                      : comments.indexWhere((c) => c.id == comment.parentId) +
-//                          1;
-//
-//                  if (mounted) {
-//                    setState(() {
-//                      comments.insert(insertIndex, comment);
-//
-//                      replyingTo = null;
-//                    });
-//
-//                    listController.animateTo(insertIndex * itemHeight,
-//                        curve: Curves.easeInOut,
-//                        duration: Duration(milliseconds: 300));
-//                  }
-//                  commentController.clear();
-//
-////                    Navigator.pop(context);
-//                },
                   ),
                 ],
               ),

@@ -86,7 +86,7 @@ class CapturePageBody extends StatelessWidget {
   final CaptureController controller;
   final FocusNode focusNode;
 
-  final auth = Auth.instance;
+  final auth = Repo.auth;
 
   CapturePageBody({
     Key key,
@@ -131,8 +131,8 @@ class CapturePageBody extends StatelessWidget {
                 color: filter.variant.bgDecor.color,
                 titleStyle: TextStyles.w600Text
                     .copyWith(color: filter.variant.textStyle.color),
-                title: auth.profile.user.displayName,
-                subtitle: '@${auth.profile.user.username}',
+                title: auth.user.displayName,
+                subtitle: '@${auth.user.username}',
                 trailingWidget: Icon(
                   Icons.keyboard_arrow_down,
                   color: Colors.grey,

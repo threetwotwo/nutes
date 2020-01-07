@@ -5,6 +5,7 @@ import 'package:line_icons/line_icons.dart';
 import 'package:nutes/core/models/chat_message.dart';
 import 'package:nutes/core/models/user.dart';
 import 'package:nutes/core/services/auth.dart';
+import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/screens/post_detail_screen.dart';
 import 'package:nutes/ui/screens/profile_screen.dart';
 import 'package:nutes/ui/shared/avatar_image.dart';
@@ -59,7 +60,7 @@ class ChatPeerAvatar extends StatelessWidget {
 
 class ChatPlaceholderBubble extends StatelessWidget {
   final ChatItem message;
-  final auth = Auth.instance;
+  final auth = Repo.auth;
 
   ChatPlaceholderBubble(this.message);
 
@@ -381,7 +382,7 @@ class ChatShoutResponseBubble extends StatelessWidget {
   final VoidCallback onTapped;
   final bool isLast;
 
-  final auth = Auth.instance;
+  final auth = Repo.auth;
 
   ChatShoutResponseBubble(
       {Key key,
@@ -465,9 +466,7 @@ class ChatShoutResponseBubble extends StatelessWidget {
                               : CrossAxisAlignment.start,
                           children: <Widget>[
                             Text(
-                              isPeer
-                                  ? auth.profile.user.username
-                                  : peer.username,
+                              isPeer ? auth.user.username : peer.username,
                               maxLines: 1,
                               overflow: TextOverflow.fade,
                               style: isPeer ? kMyTextStyle : kPeerTextStyle,
@@ -499,9 +498,7 @@ class ChatShoutResponseBubble extends StatelessWidget {
                                 : CrossAxisAlignment.end,
                             children: <Widget>[
                               Text(
-                                isPeer
-                                    ? peer.username
-                                    : auth.profile.user.username,
+                                isPeer ? peer.username : auth.user.username,
                                 style: !isPeer ? kMyTextStyle : kPeerTextStyle,
                               ),
                               SizedBox(height: 8),
@@ -542,7 +539,7 @@ class ChatShoutBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final auth = Auth.instance;
+    final auth = Repo.auth;
 
     return GestureDetector(
       onTap: isPeer ? onTapped : null,
@@ -605,9 +602,7 @@ class ChatShoutBubble extends StatelessWidget {
                               mainAxisSize: MainAxisSize.min,
                               children: <Widget>[
                                 Text(
-                                  isPeer
-                                      ? peer.username
-                                      : auth.profile.user.username,
+                                  isPeer ? peer.username : auth.user.username,
                                   style:
                                       !isPeer ? kMyTextStyle : kPeerTextStyle,
                                 ),

@@ -33,7 +33,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   final _emailController = TextEditingController();
   bool isUpdating = false;
 
-  final auth = Auth.instance;
+  final auth = Repo.auth;
   UserProfile profile;
 
 //  UserProfile profile;
@@ -41,10 +41,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
   @override
   void initState() {
     profile = widget.profile;
-    _usernameController.text = auth.profile.user.username;
-    _displayNameController.text = auth.profile.user.displayName;
-    _bioController.text = auth.profile.bio;
-    _emailController.text = auth.profile.user.username;
+    _usernameController.text = auth.user.username;
+    _displayNameController.text = auth.user.displayName;
+    _bioController.text = auth.bio;
+    _emailController.text = auth.user.username;
     super.initState();
   }
 
@@ -67,8 +67,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
             bio: bio,
           );
 
-          final updatedProfile = auth.profile
-              .copyWith(username: username, displayName: displayName, bio: bio);
+          final updatedProfile = auth.copyWith(
+              username: username, displayName: displayName, bio: bio);
 
           return Navigator.of(context).pop(updatedProfile);
         },

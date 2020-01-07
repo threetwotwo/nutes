@@ -1,10 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:event_bus/event_bus.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:line_icons/line_icons.dart';
 import 'package:nutes/core/models/post.dart';
 import 'package:nutes/core/models/story.dart';
-import 'package:nutes/core/services/auth.dart';
+import 'package:nutes/core/models/user_logged_in_event.dart';
+import 'package:nutes/core/services/firestore_service.dart';
 import 'package:nutes/core/services/local_cache.dart';
 import 'package:nutes/ui/screens/chat_screen.dart';
 import 'package:nutes/ui/screens/follower_list_screen.dart';
@@ -23,7 +25,7 @@ import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/shared/styles.dart';
 import 'package:nutes/ui/screens/edit_profile_page.dart';
 import 'package:nutes/ui/widgets/story_page_view.dart';
-
+import 'package:provider/provider.dart';
 import 'my_profile_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -37,18 +39,23 @@ class ProfileScreen extends StatefulWidget {
 
   static Route<dynamic> routeUsername(String username) {
     return MaterialPageRoute(
-      builder: (BuildContext context) =>
-          username == Auth.instance.profile.user.username
-              ? MyProfileScreen()
-              : ProfileScreen(username: username),
+      builder: (BuildContext context) {
+        final profile = FirestoreService.ath;
+
+        return username == profile.user.username
+            ? MyProfileScreen()
+            : ProfileScreen(username: username);
+      },
     );
   }
 
   static Route<dynamic> route(String uid) {
     return MaterialPageRoute(
-      builder: (BuildContext context) => uid == Auth.instance.profile.uid
-          ? MyProfileScreen()
-          : ProfileScreen(uid: uid),
+      builder: (BuildContext context) {
+        final profile = FirestoreService.ath;
+
+        return uid == profile.uid ? MyProfileScreen() : ProfileScreen(uid: uid);
+      },
     );
   }
 
@@ -75,8 +82,6 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   List<Post> posts = [];
 
-  final auth = Auth.instance;
-
   final cache = LocalCache.instance;
 
   String uid;
@@ -87,6 +92,8 @@ class _ProfileScreenState extends State<ProfileScreen>
   UserStory userStory;
 
   DocumentSnapshot startAfter;
+
+  final eventBus = EventBus();
 
   _init() async {
     uid = widget.uid;
@@ -178,6 +185,8 @@ class _ProfileScreenState extends State<ProfileScreen>
 
     super.build(context);
 
+    final myProfile = FirestoreService.ath;
+
     return Scaffold(
         backgroundColor: Colors.white,
         appBar: BaseAppBar(
@@ -266,11 +275,15 @@ class _ProfileScreenState extends State<ProfileScreen>
                                                           EditProfilePage()));
                                             },
                                       onFollow: () {
+//                                        print('on follow');
+                                        eventBus.fire(
+                                            UserFollowEvent(profile.user));
                                         if (profile.user.isPrivate) {
                                           setState(() {
                                             profile = profile.copyWith(
                                                 hasRequestedFollow: true);
                                           });
+
                                           return Repo.requestFollow(
                                               profile.user,
                                               profile.user.isPrivate);
@@ -309,7 +322,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                               hasRequestedFollow: false);
                                         });
                                         Repo.redactFollowRequest(
-                                            auth.profile.uid, profile.uid);
+                                            myProfile.uid, profile.uid);
                                       },
                                     );
                                   }),

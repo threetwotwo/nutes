@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:nutes/core/models/user.dart';
 import 'package:nutes/ui/screens/activity_screen.dart';
 import 'package:nutes/ui/screens/feed_screen.dart';
 import 'package:nutes/ui/screens/my_profile_screen.dart';
@@ -9,6 +10,7 @@ import 'package:nutes/core/services/local_cache.dart';
 import 'package:nutes/ui/screens/create_screen.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/widgets/bottom_navigation.dart';
+import 'package:provider/provider.dart';
 
 class HomeScreen extends StatefulWidget {
   final void Function(int) onTabTapped;
@@ -99,7 +101,8 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-//    final model = Provider.of<HomeModel>(context);
+    final profile = Provider.of<UserProfile>(context);
+
     final cache = LocalCache.instance;
 
     return WillPopScope(
@@ -116,11 +119,6 @@ class _HomeScreenState extends State<HomeScreen>
         bottomNavigationBar: BottomNavigation(
           currentTab: currentTab,
           onSelectTab: (tab) {
-            ///Change scroll physics depending on current tab
-//          model.changeScrollPhysics((tab == TabItem.home)
-//              ? ClampingScrollPhysics()
-//              : NeverScrollableScrollPhysics());
-
             ///Scroll up
             if (tab == currentTab) {
               switch (tab) {
@@ -169,6 +167,7 @@ class _HomeScreenState extends State<HomeScreen>
               onGenerateRoute: (routeSettings) {
                 return MaterialPageRoute(
                   builder: (context) => FeedScreen(
+                    profile: profile,
                     scrollController: homeScrollController,
                     onCreatePressed: widget.onCreatePressed,
                     onDM: widget.onDM,
@@ -229,6 +228,7 @@ class _HomeScreenState extends State<HomeScreen>
               onGenerateRoute: (routeSettings) {
                 return MaterialPageRoute(
                   builder: (context) => MyProfileScreen(
+//                    profile: profile,
                     scrollController: profileScrollController,
                     isRoot: true,
                   ),

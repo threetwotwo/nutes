@@ -1,14 +1,15 @@
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:meta/meta.dart';
-import 'package:nutes/core/services/auth.dart';
+import 'package:nutes/core/services/firestore_service.dart';
+import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/utils/image_file_bundle.dart';
 
 class FIRStorage {
   static final storage = FirebaseStorage.instance.ref();
   final usersRef = storage.child('users');
   final chatsRef = storage.child('chats');
-  final auth = Auth.instance;
+  final auth = FirestoreService.auth;
 
   Future<String> uploadChatImage(
       {@required String chatId, @required File file}) async {
@@ -21,7 +22,7 @@ class FIRStorage {
   }
 
   Future removeCurrentPhoto() async {
-    final originalRef = usersRef.child(auth.profile.uid).child('photo.jpg');
+    final originalRef = usersRef.child(auth.uid).child('photo.jpg');
     return originalRef.delete();
   }
 
@@ -71,11 +72,11 @@ class FIRStorage {
     print('uploading doodle to storage');
 
     final doodleRef = usersRef
-        .child(auth.profile.uid)
+        .child(FirestoreService.ath.uid)
         .child('posts')
         .child(postId)
         .child('doodles')
-        .child(auth.profile.uid);
+        .child(FirestoreService.ath.uid);
 
     final url = await _upload(ref: doodleRef, file: file);
 
@@ -94,7 +95,7 @@ class FIRStorage {
     print('upload started');
 
     final postRef = usersRef
-        .child(auth.profile.uid)
+        .child(auth.uid)
         .child('posts')
         .child(postId)
         .child(index.toString());

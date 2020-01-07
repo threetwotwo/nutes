@@ -21,6 +21,7 @@ import 'package:nutes/core/services/storage_provider.dart';
 import 'package:nutes/core/models/post.dart';
 import 'package:nutes/core/models/user.dart';
 import 'package:nutes/utils/image_file_bundle.dart';
+import 'package:provider/provider.dart';
 
 const scrollDuration = Duration(milliseconds: 300);
 const scrollCurve = Curves.easeInOut;
@@ -33,7 +34,9 @@ class Repo {
   final _database = RTDBProvider();
   final _storage = FIRStorage();
 
-  static final auth = Auth.instance;
+  static String fcmToken;
+
+  static UserProfile auth;
 
   static final shared = Repo();
 //  static UserProfile currentProfile;
@@ -223,9 +226,7 @@ class Repo {
     final storyRef = shared._firestore.createStoryRef();
 
     final url = await shared._storage.uploadStoryFiles(
-        storyId: storyRef.documentID,
-        uid: Auth.instance.profile.uid,
-        fileBundle: fileBundle);
+        storyId: storyRef.documentID, uid: auth.uid, fileBundle: fileBundle);
     return await shared._firestore.uploadStory(storyRef: storyRef, url: url);
   }
 
@@ -244,8 +245,7 @@ class Repo {
     final shoutRef = shared._firestore.publicPostRef();
     final shoutId = shoutRef.documentID;
 
-    final selfRef =
-        shared._firestore.userPostRef(Auth.instance.profile.uid, shoutId);
+    final selfRef = shared._firestore.userPostRef(auth.uid, shoutId);
 
     final peerRef = shared._firestore.userPostRef(peer.uid, shoutId);
 
@@ -253,7 +253,7 @@ class Repo {
 
     final payload = {
       'type': 'shout',
-      'uploader': auth.profile.toMap(),
+      'uploader': auth.toMap(),
       'timestamp': timestamp,
       'data': data,
     };
@@ -290,7 +290,9 @@ class Repo {
       {@required String postId, @required File file}) async {
     final url = await shared._storage.uploadDoodle(postId: postId, file: file);
 
-    return shared._firestore.uploadDoodle(postId: postId, url: url);
+    await shared._firestore.uploadDoodle(postId: postId, url: url);
+
+    return;
   }
 
   ///Uploads a shout as a post
@@ -322,7 +324,7 @@ class Repo {
     print('new post: $postId');
 
     batch.setData(publicRef, {
-      'owner_id': Auth.instance.profile.uid,
+      'owner_id': auth.uid,
       'published': timestamp,
       'is_private': isPrivate,
     });
@@ -355,7 +357,7 @@ class Repo {
           {};
     }
 
-    final uploader = Auth.instance.profile.user.toMap();
+    final uploader = auth.user.toMap();
 
     print('post uploader: $uploader');
 
@@ -385,7 +387,7 @@ class Repo {
 
   ///current user's story stream
   static Stream<QuerySnapshot> myStoryStream() {
-    return shared._firestore.myStoryStream(auth.profile.uid);
+    return shared._firestore.myStoryStream(auth.uid);
   }
 
   static Future<Map<String, dynamic>> getSeenStories() =>
@@ -426,10 +428,9 @@ class Repo {
   }
 
   static authorizeFollowRequest(User follower) {
-    shared._firestore.deleteFollowRequest(
-        follower: follower.uid, following: auth.profile.uid);
-    return shared._firestore
-        .follow(follower: follower, following: auth.profile.user);
+    shared._firestore
+        .deleteFollowRequest(follower: follower.uid, following: auth.uid);
+    return shared._firestore.follow(follower: follower, following: auth.user);
   }
 
   static Map followingsArray = {};
@@ -442,8 +443,7 @@ class Repo {
   static requestFollow(User user, bool isPrivate) {
     isPrivate
         ? shared._firestore.requestFollow(user.uid)
-        : shared._firestore
-            .follow(follower: auth.profile.user, following: user);
+        : shared._firestore.follow(follower: auth.user, following: user);
   }
 
   /// unfollow a user
@@ -490,9 +490,10 @@ class Repo {
     final user = await shared._firestore
         .signInWithUsernameAndPassword(username: username, password: password);
 
-    auth.reset();
+//    auth.reset();
+    auth = user;
 
-    auth.profile = user;
+//    auth = user;
 
     return user;
   }
@@ -597,7 +598,7 @@ class Repo {
   }
 
   static DocumentReference myRef() {
-    return shared._firestore.userRef(auth.profile.uid);
+    return shared._firestore.userRef(auth.uid);
   }
 
   static Stream<DocumentSnapshot> myPostLikeStream(Post post) =>

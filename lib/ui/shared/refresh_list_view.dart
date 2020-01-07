@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:nutes/ui/shared/loading_indicator.dart';
@@ -27,6 +29,8 @@ class _RefreshListViewState extends State<RefreshListView> {
   ScrollController _controller;
 
   _loadMore() async {
+    if (widget.onLoadMore == null) return;
+
     if (mounted)
       setState(() {
         isLoadingMore = true;
@@ -68,7 +72,9 @@ class _RefreshListViewState extends State<RefreshListView> {
   Widget build(BuildContext context) {
     return CustomScrollView(
       controller: _controller,
-      physics: widget.physics ?? BouncingScrollPhysics(),
+      physics: widget.physics ?? Platform.isAndroid
+          ? BouncingScrollPhysics()
+          : AlwaysScrollableScrollPhysics(),
       slivers: <Widget>[
         CupertinoSliverRefreshControl(
           refreshIndicatorExtent: 80,

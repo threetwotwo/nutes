@@ -48,7 +48,7 @@ class StoryPageView extends StatefulWidget {
 
 class _StoryPageViewState extends State<StoryPageView> {
   PageController controller;
-  final auth = Auth.instance;
+  final auth = Repo.auth;
   List<UserStory> userStories;
   Map<String, Timestamp> momentsSeen = {};
 
@@ -164,7 +164,7 @@ class _StoryPageViewState extends State<StoryPageView> {
                 topPadding: widget.topPadding,
                 onAvatarTapped: (user) =>
                     Navigator.of(context).push(MaterialPageRoute(
-                        builder: (context) => user.uid == auth.profile.uid
+                        builder: (context) => user.uid == auth.uid
                             ? MyProfileScreen(isRoot: false)
                             : ProfileScreen(
                                 uid: user.uid,

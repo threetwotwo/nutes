@@ -29,7 +29,7 @@ class _CommentScreenState extends State<CommentScreen> {
   List<Comment> comments = [];
   bool loading = false;
 
-  final auth = Auth.instance;
+  final auth = Repo.auth;
 
   ///currently replying to a comment
   Comment replyingTo;

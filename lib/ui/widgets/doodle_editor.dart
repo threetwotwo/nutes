@@ -4,11 +4,14 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:nutes/ui/shared/toast_message.dart';
 import 'package:nutes/utils/doodler.dart';
+import 'package:path_provider/path_provider.dart';
 
 class DoodleEditor extends StatefulWidget {
   final bool isDoodling;
 
   final PainterController controller;
+
+//  final VoidCallback onCancel;
 
   final void Function(File file) onFinish;
 
@@ -122,17 +125,19 @@ class _DoodleEditorState extends State<DoodleEditor> {
                   painterController: widget.controller,
                   onFinish: () async {
                     print('on finished');
+                    if (widget.controller.pathHistory.paths.isEmpty) {
+                      print('no doodle paths');
+                      return widget.onFinish(null);
+                    }
+
                     final png = await widget.controller.finish().toPNG();
 
-                    final Directory systemTempDir = Directory.systemTemp;
+                    final systemTempDir = await getTemporaryDirectory();
 
                     String fileName = DateTime.now().toIso8601String();
 
-                    final file =
-                        await File('${systemTempDir.path}/$fileName.png')
-                            .create();
-
-                    await file.writeAsBytes(png);
+                    final file = File('${systemTempDir.path}/$fileName.png')
+                      ..writeAsBytes(png);
 
                     return widget.onFinish(file);
                   },

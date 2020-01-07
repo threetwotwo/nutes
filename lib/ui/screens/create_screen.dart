@@ -18,7 +18,7 @@ class CreateScreen extends StatefulWidget {
 
 class _CreateScreenState extends State<CreateScreen> {
   List<User> followings = [];
-  final auth = Auth.instance;
+  final auth = Repo.auth;
 
   Future<void> _getFollowings() async {
     final result = await Repo.getMyUserFollowings();
@@ -69,7 +69,7 @@ class _CreateScreenState extends State<CreateScreen> {
                                     final peer =
                                         User.fromMap(doc['user'] ?? {});
 
-                                    final uid = auth.profile.uid;
+                                    final uid = auth.uid;
 
                                     final chatId =
                                         (uid.hashCode <= peer.uid.hashCode)

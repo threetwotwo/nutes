@@ -10,16 +10,22 @@ import 'package:nutes/core/models/story.dart';
 import 'package:nutes/core/models/user.dart';
 import 'package:nutes/core/services/auth.dart';
 import 'package:nutes/core/services/local_cache.dart';
+import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/utils/image_file_bundle.dart';
 
 ///The service that handles all reads and writes to firestore
 class FirestoreService {
   static final Firestore shared = Firestore.instance;
 
-  final auth = Auth.instance;
+  static UserProfile auth;
+
+  static UserProfile get ath => FirestoreService.auth;
+
   final cache = LocalCache.instance;
 
   static User currentUser;
+
+  String fcmToken;
 
   Future<Map<String, dynamic>> runTransaction(
       TransactionHandler transactionHandler) async {
@@ -38,7 +44,7 @@ class FirestoreService {
   DocumentReference postRef(String postId) =>
       shared.collection('posts').document(postId);
 
-  DocumentReference get myProfileRef => userRef(auth.profile.uid);
+  DocumentReference get myProfileRef => userRef(auth.uid);
 
   CollectionReference get myFollowingsActivityColRef =>
       myProfileRef.collection('followings_activity');
@@ -54,7 +60,7 @@ class FirestoreService {
   }
 
   CollectionReference myActivityRef() {
-    return activityRef(auth.profile.uid);
+    return activityRef(auth.uid);
   }
 
   DocumentReference userPostRef(String uid, String docId) {
@@ -69,7 +75,7 @@ class FirestoreService {
   }
 
   DocumentReference _myChatRefWithUser(String uid) {
-    return userRef(auth.profile.uid).collection('chats').document(uid);
+    return userRef(auth.uid).collection('chats').document(uid);
   }
 
   CollectionReference _messagesRef(String chatId) {
@@ -104,9 +110,7 @@ class FirestoreService {
   }
 
   DocumentReference _mySnapshotStoriesRef() {
-    return userRef(auth.profile.uid)
-        .collection('snapshots')
-        .document('stories');
+    return userRef(auth.uid).collection('snapshots').document('stories');
   }
 
   CollectionReference _storiesRef(String uid) {
@@ -218,16 +222,16 @@ class FirestoreService {
   }
 
   Future updateAccountPrivacy(bool isPrivate) async {
-    final ref = shared.collection('users').document(auth.profile.uid);
+    final ref = shared.collection('users').document(auth.uid);
 
-    auth.profile = auth.profile.copyWith(isPrivate: isPrivate);
+    auth = auth.copyWith(isPrivate: isPrivate);
 
     return ref.updateData({'is_private': isPrivate});
   }
 
   ///Updates the [end_at] field for the chat doc ref
   Future deleteChatWithUser(User user) async {
-    final selfId = auth.profile.uid;
+    final selfId = auth.uid;
 
     final selfRef = userRef(selfId).collection('chats').document(user.uid);
 
@@ -255,9 +259,8 @@ class FirestoreService {
     final myRef = myProfileRef.collection('chats').document(message.senderId);
 
     ///Update to peer ref
-    final peerRef = userRef(message.senderId)
-        .collection('chats')
-        .document(auth.profile.uid);
+    final peerRef =
+        userRef(message.senderId).collection('chats').document(auth.uid);
 
     batch.setData(myRef, {'last_seen_timestamp': message.timestamp},
         merge: true);
@@ -349,7 +352,7 @@ class FirestoreService {
     ///24 hours ago since now
 //    final cutOff = Timestamp(todayInSeconds - 2628000000, todayInNanoSeconds);
 
-    return userRef(auth.profile.uid)
+    return userRef(auth.uid)
         .collection('chats')
         .where('is_persisted', isEqualTo: true)
 //        .where('last_checked_timestamp', isGreaterThanOrEqualTo: cutOff)
@@ -371,7 +374,7 @@ class FirestoreService {
   Stream<QuerySnapshot> chatStream() {
     return shared
         .collection('chats')
-        .where('persist_${auth.profile.uid}', isEqualTo: true)
+        .where('persist_${auth.uid}', isEqualTo: true)
         .orderBy('timestamp', descending: true)
         .snapshots(includeMetadataChanges: true);
   }
@@ -381,13 +384,13 @@ class FirestoreService {
   Stream<List<String>> getChatRecipientIds() {
     final qsStream = shared
         .collection('chats')
-        .where('participants', arrayContains: auth.profile.uid)
+        .where('participants', arrayContains: auth.uid)
         .orderBy('timestamp', descending: true)
         .snapshots();
 
     final x = qsStream.map((qs) => qs.documents.map((ds) {
           return (ds.data['participants'] as List<String>)
-              .firstWhere((p) => p != auth.profile.uid);
+              .firstWhere((p) => p != auth.uid);
         }));
 
     return x;
@@ -397,11 +400,11 @@ class FirestoreService {
   ///Dont do anything if there are no messages
   Future resolveParticipants(
       String chatId, Timestamp timestamp, User recipient) async {
-    final senderId = auth.profile.uid;
+    final senderId = auth.uid;
     final recipientId = recipient.uid;
 
     Map senderMap = {'timestamp': timestamp};
-    senderMap.addAll(auth.profile.toMap());
+    senderMap.addAll(auth.toMap());
 
     Map recipientMap = {'timestamp': timestamp};
     recipientMap.addAll(recipient.toMap());
@@ -430,7 +433,7 @@ class FirestoreService {
     _chatRef(chatId).updateData({
       'timestamp': Timestamp.now(),
       'last_checked': data,
-      'persist_${auth.profile.uid}': true,
+      'persist_${auth.uid}': true,
     });
   }
 
@@ -453,19 +456,17 @@ class FirestoreService {
     final messageRef =
         _chatRef(chatId).collection('messages').document(messageId);
 
-    final selfRef =
-        userRef(auth.profile.uid).collection('chats').document(peer.uid);
+    final selfRef = userRef(auth.uid).collection('chats').document(peer.uid);
 
-    final peerRef =
-        userRef(peer.uid).collection('chats').document(auth.profile.uid);
+    final peerRef = userRef(peer.uid).collection('chats').document(auth.uid);
 
-    final selfMap = auth.profile.toMap();
+    final selfMap = auth.toMap();
 
     ///Auto updates the peer info
     final peerMap = peer.toMap();
 
     final payload = {
-      'sender_id': auth.profile.uid,
+      'sender_id': auth.uid,
       'timestamp': timestamp,
       'content': response,
       'type': BubbleHelper.stringValue(Bubbles.shout_complete),
@@ -486,7 +487,7 @@ class FirestoreService {
     });
 
     ///Delete shout challenge from my ref
-    batch.delete(_shoutChallengeRef(auth.profile.uid, messageId));
+    batch.delete(_shoutChallengeRef(auth.uid, messageId));
 
     ///Peer ref
     batch.setData(peerRef, {
@@ -510,12 +511,12 @@ class FirestoreService {
     return docs.documents.map((doc) => Doodle.fromDoc(doc)).toList();
   }
 
-  Future<void> uploadDoodle({@required String postId, @required String url}) {
-    final ref =
-        postRef(postId).collection('doodles').document(auth.profile.uid);
+  Future<void> uploadDoodle(
+      {@required String postId, @required String url}) async {
+    final ref = postRef(postId).collection('doodles').document(auth.uid);
 
     return ref.setData({
-      'owner': auth.profile.user.toMap(),
+      'owner': auth.user.toMap(),
       'url': url,
       'timestamp': Timestamp.now(),
     });
@@ -540,19 +541,17 @@ class FirestoreService {
   }) async {
     final timestamp = Timestamp.now();
 
-    final selfRef =
-        userRef(auth.profile.uid).collection('chats').document(peer.uid);
+    final selfRef = userRef(auth.uid).collection('chats').document(peer.uid);
 
-    final peerRef =
-        userRef(peer.uid).collection('chats').document(auth.profile.uid);
+    final peerRef = userRef(peer.uid).collection('chats').document(auth.uid);
 
-    final selfMap = auth.profile.user.toMap();
+    final selfMap = auth.user.toMap();
 
     ///Auto updates the peer info
     final peerMap = peer.toMap();
 
     final payload = {
-      'sender_id': auth.profile.uid,
+      'sender_id': auth.uid,
       'timestamp': timestamp,
       'content': content,
       'type': BubbleHelper.stringValue(type),
@@ -600,7 +599,7 @@ class FirestoreService {
     String bio,
     ImageUrlBundle urls,
   }) {
-    shared.collection('users').document(auth.profile.uid).updateData({
+    shared.collection('users').document(auth.uid).updateData({
       if (username != null) 'username': username,
       if (displayName != null) 'display_name': displayName,
       if (bio != null) 'bio': bio,
@@ -609,7 +608,7 @@ class FirestoreService {
       if (urls != null) 'photo_url_small': urls.small,
     });
 
-    final profile = auth.profile.copyWith(
+    final profile = auth.copyWith(
         username: username, displayName: displayName, bio: bio, bundle: urls);
 
     return profile;
@@ -624,13 +623,13 @@ class FirestoreService {
   ///Writes a follow request doc on a given user's follow request collection
   Future requestFollow(String uid) {
     final batch = shared.batch();
-    final ref = _followRequestsRef(uid).document(auth.profile.uid);
+    final ref = _followRequestsRef(uid).document(auth.uid);
     final ref2 = myFollowRequestsRef();
 
     batch.setData(
       ref,
       {
-        'user': auth.profile.toMap(),
+        'user': auth.toMap(),
         'timestamp': Timestamp.now(),
       },
       merge: true,
@@ -797,7 +796,7 @@ class FirestoreService {
 
   unfollow(String uid) async {
     ///Follower user Ref
-    final followerRef = shared.collection('users').document(auth.profile.uid);
+    final followerRef = shared.collection('users').document(auth.uid);
 
     ///Followed user ref
     final followedRef = shared.collection('users').document(uid);
@@ -844,7 +843,7 @@ class FirestoreService {
 
     //3. Delete doc in following's followers collection
     final followingFollowerRef =
-        followedRef.collection('followers').document(auth.profile.uid);
+        followedRef.collection('followers').document(auth.uid);
 
     batch.delete(followingFollowerRef);
 
@@ -856,7 +855,7 @@ class FirestoreService {
     batch.commit();
 
     ///2a. Delete recent posts from follower feed
-    return deleteRecentPostsToFollowerFeed(auth.profile.uid, uid);
+    return deleteRecentPostsToFollowerFeed(auth.uid, uid);
   }
 
   Stream<QuerySnapshot> myStoryStream(String uid) {
@@ -876,7 +875,7 @@ class FirestoreService {
   DocumentReference myFollowingListRef() {
     return shared
         .collection('users')
-        .document(auth.profile.uid)
+        .document(auth.uid)
         .collection('followings_list')
         .document('list');
   }
@@ -889,7 +888,7 @@ class FirestoreService {
   ///contains username and photo_url
   Future<List<User>> getAbridgedUserFromUids(List<String> uids) async {
     ///get followings array
-    final ref = shared.collection('users').document(auth.profile.uid);
+    final ref = shared.collection('users').document(auth.uid);
 
     final doc = await ref.get();
 
@@ -1016,7 +1015,7 @@ class FirestoreService {
       id: ref.documentID,
       text: text,
       timestamp: Timestamp.now(),
-      owner: auth.profile.user,
+      owner: auth.user,
       parentId: parentComment?.id ?? null,
       parentOwner: parentComment?.owner ?? null,
     );
@@ -1079,14 +1078,14 @@ class FirestoreService {
     return await storyRef.setData({
       'timestamp': Timestamp.now(),
       'url': url,
-      'uploader': auth.profile.user.toMap(),
+      'uploader': auth.user.toMap(),
     });
   }
 
   DocumentReference createStoryRef() {
     final ref = shared
         .collection('users')
-        .document(auth.profile.uid)
+        .document(auth.uid)
         .collection('stories')
         .document();
     return ref;
@@ -1095,7 +1094,7 @@ class FirestoreService {
   DocumentReference myPostRef(String id) {
     final ref = shared
         .collection('users')
-        .document(auth.profile.uid)
+        .document(auth.uid)
         .collection('posts')
         .document(id);
     return ref;
@@ -1104,7 +1103,7 @@ class FirestoreService {
   DocumentReference createUserPostRef() {
     final ref = shared
         .collection('users')
-        .document(auth.profile.uid)
+        .document(auth.uid)
         .collection('posts')
         .document();
     return ref;
@@ -1134,15 +1133,14 @@ class FirestoreService {
     final collectionName =
         isChallenger ? 'shout_left_likes' : 'shout_right_likes';
 
-    final ref =
-        postRef(post.id).collection(collectionName).document(auth.profile.uid);
+    final ref = postRef(post.id).collection(collectionName).document(auth.uid);
 
     final timestamp = Timestamp.now();
 
     return ref.setData(
       {
         'timestamp': timestamp,
-        'liker_id': auth.profile.uid,
+        'liker_id': auth.uid,
       }..addAll(post.toMap()),
     );
   }
@@ -1151,8 +1149,7 @@ class FirestoreService {
     final collectionName =
         isChallenger ? 'shout_left_likes' : 'shout_right_likes';
 
-    final ref =
-        postRef(post.id).collection(collectionName).document(auth.profile.uid);
+    final ref = postRef(post.id).collection(collectionName).document(auth.uid);
 
     return ref.delete();
   }
@@ -1163,7 +1160,7 @@ class FirestoreService {
     final String challengerId = data['challenger']['uid'];
     final String challengedId = data['challenged']['uid'];
 
-    final uid = auth.profile.uid;
+    final uid = auth.uid;
 
     final challengerRef =
         _challengerLikesRef(uid: challengerId, postId: post.id).document(uid);
@@ -1213,13 +1210,13 @@ class FirestoreService {
     final batch = shared.batch();
 
     ///1. write to post's likes collection
-    final likeDocRef = postRef.collection('likes').document(auth.profile.uid);
+    final likeDocRef = postRef.collection('likes').document(auth.uid);
 
     batch.setData(
       likeDocRef,
       {
         'timestamp': timestamp,
-        'liker': auth.profile.user.toMap(),
+        'liker': auth.user.toMap(),
       }..addAll(post.toMap()),
     );
 
@@ -1267,8 +1264,7 @@ class FirestoreService {
   }
 
   Future unlikePost(Post post) async {
-    final likeRef =
-        postRef(post.id).collection('likes').document(auth.profile.uid);
+    final likeRef = postRef(post.id).collection('likes').document(auth.uid);
 
     final batch = shared.batch();
 
@@ -1305,7 +1301,7 @@ class FirestoreService {
 
   ///TODO: how to get didlikes and stats?
   Stream<QuerySnapshot> myPostStream() {
-    final ref = userRef(auth.profile.uid)
+    final ref = userRef(auth.uid)
         .collection('posts')
         .orderBy('timestamp', descending: true)
         .limit(1);
@@ -1449,11 +1445,11 @@ class FirestoreService {
   /// min reads = 5 (text) 7 (shout), max = 8 (text), 10(shout)
   Future<PostCursor> getFeed({DocumentSnapshot startAfter}) async {
     final query = startAfter == null
-        ? userRef(auth.profile.uid)
+        ? userRef(auth.uid)
             .collection('feed')
             .orderBy('timestamp', descending: true)
             .limit(8)
-        : userRef(auth.profile.uid)
+        : userRef(auth.uid)
             .collection('feed')
             .orderBy('timestamp', descending: true)
             .limit(10)
@@ -1661,13 +1657,13 @@ class FirestoreService {
 
   Future<void> logout() async {
     ///Remove FCM token from user ref
-    if (auth.profile.uid != null && auth.fcmToken != null)
-      deleteFCMToken(uid: auth.profile.uid, token: auth.fcmToken);
+    if (auth.uid != null && fcmToken != null)
+      deleteFCMToken(uid: auth.uid, token: fcmToken);
 
     ///Sign out via FIRAuth
     await FirebaseAuth.instance.signOut();
 
-    auth.reset();
+//    auth.reset();
   }
 
   Future<UserProfile> signInWithUsernameAndPassword(
@@ -1739,7 +1735,7 @@ class FirestoreService {
   ///Check if current user has liked a post
   ///Returns a stream, such that didLike = snapshot.data.exists
   Stream<DocumentSnapshot> myPostLikeStream(Post post) {
-    final ref = postRef(post.id).collection('likes').document(auth.profile.uid);
+    final ref = postRef(post.id).collection('likes').document(auth.uid);
 
     return ref.snapshots();
   }
@@ -1747,9 +1743,8 @@ class FirestoreService {
   ///Check if current user has liked the left part of a shout
   ///Returns a stream, such that didLike = snapshot.data.exists
   Stream<DocumentSnapshot> myShoutLeftLikeStream(Post post) {
-    final ref = postRef(post.id)
-        .collection('shout_left_likes')
-        .document(auth.profile.uid);
+    final ref =
+        postRef(post.id).collection('shout_left_likes').document(auth.uid);
 
     return ref.snapshots();
   }
@@ -1757,9 +1752,8 @@ class FirestoreService {
   ///Check if current user has liked the right part of a shout
   ///Returns a stream, such that didLike = snapshot.data.exists
   Stream<DocumentSnapshot> myShoutRightLikeStream(Post post) {
-    final ref = postRef(post.id)
-        .collection('shout_right_likes')
-        .document(auth.profile.uid);
+    final ref =
+        postRef(post.id).collection('shout_right_likes').document(auth.uid);
 
     return ref.snapshots();
   }

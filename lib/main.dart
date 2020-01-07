@@ -1,4 +1,5 @@
 import 'package:bot_toast/bot_toast.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
@@ -11,8 +12,9 @@ import 'package:nutes/ui/shared/loading_indicator.dart';
 import 'package:nutes/ui/widgets/app_page_view.dart';
 import 'package:nutes/ui/screens/login_screen.dart';
 import 'package:nutes/core/services/repository.dart';
-
+import 'package:provider/provider.dart';
 import 'core/models/user.dart';
+import 'core/services/firestore_service.dart';
 
 final auth = Auth.instance;
 
@@ -21,7 +23,7 @@ void main() async {
 
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
-  await initCurrentUser();
+//  await initCurrentUser();
 
   runApp(MyApp());
 }
@@ -36,7 +38,9 @@ Future initCurrentUser() async {
   if (authUser != null) {
     user = await Repo.getUserProfile(authUser.uid);
 
-    auth.profile = user;
+    Repo.auth = user;
+    FirestoreService.auth = user;
+
     Repo.myStory = null;
 
     if (user == null) FirebaseAuth.instance.signOut();
@@ -81,7 +85,7 @@ class MainBuilder extends StatefulWidget {
 }
 
 class _MainBuilderState extends State<MainBuilder> {
-  final auth = Auth.instance;
+  final auth = Repo.auth;
   final _fcm = FirebaseMessaging();
   IosNotificationSettings iosSettings;
   String fcmToken;
@@ -102,7 +106,7 @@ class _MainBuilderState extends State<MainBuilder> {
     _fcm.getToken().then((String token) {
       assert(token != null);
       fcmToken = token;
-      auth.fcmToken = fcmToken;
+      Repo.fcmToken = fcmToken;
       print('FCM token: $token');
     });
 
@@ -156,28 +160,49 @@ class _MainBuilderState extends State<MainBuilder> {
         if (iosSettings != null && fcmToken != null)
           Repo.createFCMDeviceToken(uid: snapshot.data.uid, token: fcmToken);
 
-        if (snapshot.data != null && profile == null)
-          _getProfile(snapshot.data.uid);
+//        if (snapshot.data != null) _getProfile(snapshot.data.uid);
 
-        return profile == null
-            ? Scaffold(
-                body: Container(
+        return StreamBuilder<DocumentSnapshot>(
+            stream: Repo.userProfileStream(snapshot.data.uid),
+            builder: (context, snap) {
+              if (!snap.hasData)
+                return Scaffold(
+                    body: Container(
                   color: Colors.white,
                   child: Center(
                     child: LoadingIndicator(),
                   ),
-                ),
-              )
-            : AppPageView(
-                uid: snapshot.data.uid,
-              );
+                ));
+              final profile = UserProfile.fromDoc(snap.data);
+
+              if (profile == null) Repo.logout();
+
+              Repo.auth = profile;
+              FirestoreService.auth = profile;
+
+              print('@@@@@@ #### stream profile: ${profile.uid}');
+              return profile == null
+                  ? Scaffold(
+                      body: Container(
+                        color: Colors.white,
+                        child: Center(
+                          child: LoadingIndicator(),
+                        ),
+                      ),
+                    )
+                  : Provider<UserProfile>(
+                      create: (BuildContext context) => profile,
+                      child: AppPageView(
+                        uid: snapshot.data.uid,
+                      ),
+                    );
+            });
       },
     );
   }
 
   Future<void> _getProfile(String uid) async {
-    print('get profile of $uid');
-
+    print('#### Get Profile for $uid');
     final result = await Repo.getUserProfile(uid);
 
     if (result == null)
@@ -188,7 +213,6 @@ class _MainBuilderState extends State<MainBuilder> {
       profile = result;
 
       ///TODO: get rid of auth == null error
-//      await Future.delayed(Duration(milliseconds: 300));
 
       setState(() {});
     }

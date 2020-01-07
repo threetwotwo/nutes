@@ -5,8 +5,9 @@ class Doodle {
   final User owner;
   final Timestamp timestamp;
   final String url;
+  final bool isLoaded;
 
-  Doodle({this.owner, this.timestamp, this.url});
+  Doodle({this.owner, this.timestamp, this.url, this.isLoaded = false});
 
   factory Doodle.fromDoc(DocumentSnapshot doc) {
     final owner = User.fromMap(doc['owner']);
@@ -16,6 +17,15 @@ class Doodle {
       owner: owner,
       timestamp: timestamp,
       url: doc['url'] ?? '',
+    );
+  }
+
+  Doodle copyWith({bool isLoaded}) {
+    return Doodle(
+      owner: this.owner,
+      timestamp: this.timestamp,
+      url: this.url,
+      isLoaded: isLoaded ?? this.isLoaded,
     );
   }
 }

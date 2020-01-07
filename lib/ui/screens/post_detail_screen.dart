@@ -6,6 +6,8 @@ import 'package:nutes/ui/shared/dismiss_view.dart';
 import 'package:nutes/ui/shared/loading_indicator.dart';
 import 'package:nutes/ui/shared/post_list.dart';
 import 'package:nutes/core/models/post.dart';
+import 'package:nutes/ui/shared/refresh_list_view.dart';
+import 'package:nutes/ui/shared/styles.dart';
 
 class PostDetailScreen extends StatefulWidget {
   final String postId;
@@ -70,7 +72,20 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: BaseAppBar(),
+      appBar: BaseAppBar(
+        title: Column(
+          children: <Widget>[
+            Text(
+              widget.post.owner.username.toUpperCase(),
+              style: TextStyles.defaultText.copyWith(color: Colors.grey),
+            ),
+            Text(
+              'Post',
+              style: TextStyles.header,
+            ),
+          ],
+        ),
+      ),
       body: SafeArea(
           child: DismissView(
         enabled: !isDoodling,
@@ -86,24 +101,28 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                     showCommentTextField = false;
                   });
                 },
-                child: PostListView(
-                  posts: [post],
-                  onAddComment: (postId) {
-                    setState(() {
-                      showCommentTextField = true;
-                    });
-                    FocusScope.of(context).requestFocus(commentFocusNode);
-                  },
-                  onDoodleStart: () {
-                    setState(() {
-                      isDoodling = true;
-                    });
-                  },
-                  onDoodleEnd: () {
-                    setState(() {
-                      isDoodling = false;
-                    });
-                  },
+                child: RefreshListView(
+                  children: <Widget>[
+                    PostListView(
+                      posts: [post],
+                      onAddComment: (postId) {
+                        setState(() {
+                          showCommentTextField = true;
+                        });
+                        FocusScope.of(context).requestFocus(commentFocusNode);
+                      },
+                      onDoodleStart: () {
+                        setState(() {
+                          isDoodling = true;
+                        });
+                      },
+                      onDoodleEnd: () {
+                        setState(() {
+                          isDoodling = false;
+                        });
+                      },
+                    ),
+                  ],
                 ),
               ),
       )),

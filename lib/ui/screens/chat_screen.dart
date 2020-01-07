@@ -45,7 +45,7 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  final auth = Auth.instance;
+  final auth = Repo.auth;
 
   String uid = Auth.instance.profile.uid;
 
@@ -272,9 +272,8 @@ class _ChatScreenState extends State<ChatScreen> {
       initialMessagedFinishedLoading = true;
     });
 
-    final myLastMessage = initialMessages.firstWhere(
-        (msg) => msg.senderId == auth.profile.uid,
-        orElse: () => null);
+    final myLastMessage = initialMessages
+        .firstWhere((msg) => msg.senderId == auth.uid, orElse: () => null);
     final lastMessagePeer = initialMessages.firstWhere(
         (msg) => msg.senderId == widget.peer.uid,
         orElse: () => null);
@@ -336,16 +335,14 @@ class _ChatScreenState extends State<ChatScreen> {
                             itemBuilder: (context, index) {
                               final message = messages[index];
 
-                              final isPeer =
-                                  message.senderId != auth.profile.uid;
+                              final isPeer = message.senderId != auth.uid;
 
                               ///Remember: list view is reversed
                               final isLast = index < 1;
                               final lastMessageIsMine = isLast && !isPeer;
 
                               final nextBubbleIsMine = (!isLast &&
-                                  messages[index - 1].senderId ==
-                                      auth.profile.uid);
+                                  messages[index - 1].senderId == auth.uid);
 
                               final showPeerAvatar = (isLast &&
                                       message.senderId == widget.peer.uid) ||
@@ -400,9 +397,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                   return ChatShoutBubble(
                                     isPeer: isPeer,
                                     message: message,
-                                    peer: isPeer
-                                        ? widget.peer
-                                        : auth.profile.user,
+                                    peer: isPeer ? widget.peer : auth.user,
                                     onTapped: isPeer
                                         ? () => Navigator.of(context).push(
                                             MaterialPageRoute(
@@ -486,7 +481,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final placeholder = ChatItem(
         type: Bubbles.text_temp,
         id: ref.documentID,
-        senderId: auth.profile.uid,
+        senderId: auth.uid,
         content: text,
         timestamp: Timestamp.now());
 

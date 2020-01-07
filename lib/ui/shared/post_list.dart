@@ -141,7 +141,7 @@ class _PostListItemState extends State<PostListItem>
   final commentController = TextEditingController();
   final commentNode = FocusNode();
 
-  final auth = Auth.instance;
+  final auth = Repo.auth;
 
   double biggestAspectRatio;
 
@@ -149,10 +149,10 @@ class _PostListItemState extends State<PostListItem>
   AnimationController _heartAnimationController;
 
   _initPainter() {
-    _painterController = PainterController();
-    _painterController.drawColor = Colors.black;
-    _painterController.backgroundColor = Colors.transparent;
-    _painterController.thickness = 4.0;
+    _painterController = PainterController()
+      ..drawColor = Colors.black
+      ..backgroundColor = Colors.transparent
+      ..thickness = 4.0;
   }
 
   _initHeartAnimation() {
@@ -187,12 +187,16 @@ class _PostListItemState extends State<PostListItem>
     });
   }
 
+  void _endDoodles() {
+    setState(() {
+      _showDoodle = false;
+    });
+
+    return;
+  }
+
   Future<void> _getDoodles() async {
     if (_showDoodle) {
-      setState(() {
-        _showDoodle = false;
-      });
-
       return;
     }
 
@@ -203,12 +207,6 @@ class _PostListItemState extends State<PostListItem>
     setState(() {
       _doodles = result;
     });
-
-//    await Future.delayed(Duration(seconds: 3));
-//
-//    setState(() {
-//      _showDoodle = false;
-//    });
   }
 
   _getPostComplete() async {
@@ -323,7 +321,7 @@ class _PostListItemState extends State<PostListItem>
                       onMorePressed: () => showCupertinoModalPopup(
                           context: context,
                           builder: (context) {
-                            final isOwner = post.owner.uid == auth.profile.uid;
+                            final isOwner = post.owner.uid == auth.uid;
                             return CupertinoActionSheet(
                               actions: <Widget>[
                                 if (isOwner)
@@ -386,7 +384,14 @@ class _PostListItemState extends State<PostListItem>
 
               ///Content
               GestureDetector(
-                onLongPress: () {
+//                onLongPress: () {
+//                  _endDoodles();
+//                },
+                onTap: () {
+                  setState(() {
+                    _doodleUploadIsInProgress = false;
+                    _doodleUploadIsFinished = false;
+                  });
                   _getDoodles();
                 },
                 onDoubleTap: () async {
@@ -567,8 +572,8 @@ class _PostListItemState extends State<PostListItem>
                         child: Center(
                             child: ToastMessage(
                           title: _doodleUploadIsInProgress
-                              ? 'Uploading doodle'
-                              : 'Doodle sent',
+                              ? 'Sending'
+                              : 'Tap to see',
                         )),
                       ),
 
@@ -580,6 +585,12 @@ class _PostListItemState extends State<PostListItem>
                         isDoodling: _isDoodling,
                         controller: _painterController,
                         onFinish: (file) async {
+                          if (file == null)
+                            return setState(() {
+                              _isDoodling = false;
+                            });
+                          ;
+
                           _showDoodleUploadInProgress(true);
 
                           setState(() {
@@ -664,6 +675,14 @@ class _PostListItemState extends State<PostListItem>
                             onDoodle: () async {
                               _painterController.clear();
 
+                              if (_showDoodle) {
+                                setState(() {
+                                  _showDoodle = false;
+                                });
+
+                                return;
+                              }
+
                               if (_isDoodling) {
                                 setState(() {
                                   _isDoodling = false;
@@ -672,6 +691,10 @@ class _PostListItemState extends State<PostListItem>
                               } else {
                                 setState(() {
                                   _isDoodling = true;
+                                  _painterController = PainterController()
+                                    ..drawColor = Colors.black
+                                    ..backgroundColor = Colors.transparent
+                                    ..thickness = 4.0;
                                 });
                                 widget.onDoodleStart();
                               }

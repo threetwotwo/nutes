@@ -48,7 +48,7 @@ class _AppPageViewState extends State<AppPageView> {
   @override
   void initState() {
 //
-//    if (auth.profile == null)
+//    if (auth == null)
     _getProfile();
 //
 //    _editorStoryScreen = FocusScope(

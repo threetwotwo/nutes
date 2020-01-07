@@ -5,6 +5,7 @@ import 'package:nutes/core/models/post.dart';
 import 'package:nutes/core/models/story.dart';
 import 'package:nutes/core/models/user.dart';
 import 'package:nutes/core/services/auth.dart';
+import 'package:nutes/core/services/firestore_service.dart';
 import 'package:nutes/core/services/local_cache.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/screens/edit_profile_page.dart';
@@ -21,17 +22,20 @@ import 'package:nutes/ui/widgets/my_empty_post_view.dart';
 import 'package:nutes/ui/widgets/profile_header.dart';
 import 'package:nutes/ui/widgets/profile_tab_controller.dart';
 import 'package:nutes/ui/widgets/story_page_view.dart';
+import 'package:provider/provider.dart';
 
 import 'account_screen.dart';
 
 class MyProfileScreen extends StatefulWidget {
   final bool isRoot;
   final ScrollController scrollController;
+//  final UserProfile profile;
 
   MyProfileScreen({
     Key key,
     this.isRoot = false,
     this.scrollController,
+//    this.profile,
   }) : super(key: key);
 
   @override
@@ -40,7 +44,6 @@ class MyProfileScreen extends StatefulWidget {
 
 class _MyProfileScreenState extends State<MyProfileScreen> {
   final profileStream = Repo.myRef().snapshots();
-  final auth = Auth.instance;
 
   final postStream = Repo.myPostStream();
 
@@ -55,12 +58,14 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
 
   List<Post> posts = [];
 
+  final profile = FirestoreService.ath;
+
   Future<void> _getInitialPosts() async {
     setState(() {
       isLoadingPosts = true;
     });
     final result = await Repo.getPostsForUser(
-      uid: auth.profile.uid,
+      uid: profile.uid,
       limit: 10,
       startAfter: startAfter,
     );
@@ -74,8 +79,10 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
   }
 
   Future<void> _loadMore() async {
+//    final auth = Provider.of<UserProfile>(context);
+
     final result = await Repo.getPostsForUser(
-      uid: auth.profile.uid,
+      uid: profile.uid,
       limit: 10,
       startAfter: startAfter,
     );
@@ -113,13 +120,14 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final topPadding = MediaQuery.of(context).padding.top;
+//    final auth = Provider.of<UserProfile>(context);
 
     return Scaffold(
       appBar: ProfileAppBar(
-        profile: auth.profile,
+        profile: profile,
         isRoot: widget.isRoot,
         onTrailingPressed: () =>
-            Navigator.push(context, AccountScreen.route(auth.profile)),
+            Navigator.push(context, AccountScreen.route(profile)),
       ),
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -150,7 +158,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
 
                       final userStory = UserStory(
                         story: story,
-                        uploader: auth.profile.user,
+                        uploader: profile.user,
                         lastTimestamp: moments.isEmpty
                             ? null
                             : moments[moments.length - 1].timestamp,
@@ -182,14 +190,10 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                                       onPageChange: (val) {})
                                   : Navigator.of(context, rootNavigator: true)
                                       .push(EditorPage.route()),
-                              onFollowersPressed: () => Navigator.push(
-                                  context,
-                                  FollowerListScreen.route(
-                                      auth.profile.user, 0)),
-                              onFollowingsPressed: () => Navigator.push(
-                                  context,
-                                  FollowerListScreen.route(
-                                      auth.profile.user, 1)),
+                              onFollowersPressed: () => Navigator.push(context,
+                                  FollowerListScreen.route(profile.user, 0)),
+                              onFollowingsPressed: () => Navigator.push(context,
+                                  FollowerListScreen.route(profile.user, 1)),
                               storyState: storyState,
                               profile: prof,
                               isOwner: true,
@@ -208,7 +212,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
 
                                   ///Dont trigger if user cancel edit profile
                                   setState(() {
-                                    auth.profile = updatedProfile;
+//                                    globals.profile = updatedProfile;
 //                                    model.updateProfile(updatedProfile);
 //                                    profile = updatedProfile;
                                   });

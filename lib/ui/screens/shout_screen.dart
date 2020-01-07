@@ -50,7 +50,7 @@ class _ShoutScreenState extends State<ShoutScreen> {
 
   bool finishedEditing = false;
 
-  final auth = Auth.instance;
+  final auth = Repo.auth;
 
   @override
   Widget build(BuildContext context) {
@@ -160,7 +160,7 @@ class _ShoutScreenState extends State<ShoutScreen> {
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: <Widget>[
                               Text(
-                                auth.profile.user.username,
+                                auth.user.username,
                                 style: TextStyles.w600Text
                                     .copyWith(color: Colors.white),
                                 maxLines: 1,
@@ -248,7 +248,7 @@ class _ShoutScreenState extends State<ShoutScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 4.0),
                         width: 48,
                         child: AvatarImage(
-                          url: auth.profile.user.urls.small,
+                          url: auth.user.urls.small,
                           spacing: 0,
                           padding: 0,
                         )),
@@ -296,7 +296,7 @@ class _ShoutScreenState extends State<ShoutScreen> {
   Future _completeShoutChallenge() async {
     final metadata = {
       'challenger': widget.peer.toMap(),
-      'challenged': auth.profile.toMap(),
+      'challenged': auth.toMap(),
       'challenger_text': widget.content,
       'challenged_text': controller.text,
     };

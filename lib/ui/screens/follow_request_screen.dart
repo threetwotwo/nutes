@@ -10,7 +10,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class FollowRequestScreen extends StatelessWidget {
   final Stream<QuerySnapshot> stream;
 
-  final auth = Auth.instance;
+  final auth = Repo.auth;
 
   FollowRequestScreen({Key key, this.stream}) : super(key: key);
   @override
@@ -28,7 +28,7 @@ class FollowRequestScreen extends StatelessWidget {
           child: StreamBuilder<QuerySnapshot>(
               stream: Firestore.instance
                   .collection('users')
-                  .document(auth.profile.uid)
+                  .document(auth.uid)
                   .collection('follow_requests')
                   .snapshots(),
               builder: (context, snapshot) {
@@ -65,7 +65,7 @@ class FollowRequestScreen extends StatelessWidget {
                                 onDelete: (uid) {
                                   print(uid);
                                   return Repo.redactFollowRequest(
-                                      auth.profile.uid, uid);
+                                      auth.uid, uid);
                                 },
                               ),
                             );

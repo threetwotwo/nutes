@@ -26,7 +26,7 @@ class DirectScreen extends StatefulWidget {
 }
 
 class _DirectScreenState extends State<DirectScreen> {
-  final auth = Auth.instance;
+  final auth = Repo.auth;
 
   Stream<QuerySnapshot> _stream = Repo.DMStream();
 
@@ -43,7 +43,7 @@ class _DirectScreenState extends State<DirectScreen> {
         onLeadingPressed: widget.onLeadingPressed,
         onTrailingPressed: widget.onTrailingPressed,
         title: Text(
-          auth.profile.user.username,
+          auth.user.username,
           style: TextStyles.header,
         ),
 //        trailing: Icon(
@@ -127,11 +127,10 @@ class _DirectScreenState extends State<DirectScreen> {
                                     endAt: endAt,
                                     hasUnreadMessages: (lastSeenTimestamp ==
                                             null)
-                                        ? lastCheckedSender != auth.profile.uid
+                                        ? lastCheckedSender != auth.uid
                                         : (lastSeenTimestamp.seconds <
                                                 lastCheckedTimestamp.seconds &&
-                                            lastCheckedSender !=
-                                                auth.profile.uid),
+                                            lastCheckedSender != auth.uid),
                                   );
                                 },
                                 itemCount: snapshot.data.documents.length,

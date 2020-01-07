@@ -18,7 +18,7 @@ class AvatarListExtended extends StatefulWidget {
 }
 
 class _AvatarListExtendedState extends State<AvatarListExtended> {
-  final auth = Auth.instance;
+  final auth = Repo.auth;
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +35,7 @@ class _AvatarListExtendedState extends State<AvatarListExtended> {
               itemBuilder: (context, index) {
                 final user = widget.users[index];
                 final isFollowing = followingIds.contains(user.uid);
-                final isMe = user.uid == auth.profile.uid;
+                final isMe = user.uid == auth.uid;
 
                 return AvatarListItem(
                   avatar: AvatarImage(

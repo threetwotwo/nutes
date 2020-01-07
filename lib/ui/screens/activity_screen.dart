@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:nutes/core/models/activity.dart';
 import 'package:nutes/core/models/follow_request.dart';
 import 'package:nutes/core/models/post_type.dart';
-import 'package:nutes/core/services/auth.dart';
+import 'package:nutes/core/models/user.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/screens/follow_request_screen.dart';
 import 'package:nutes/ui/screens/post_detail_screen.dart';
@@ -14,14 +14,17 @@ import 'package:nutes/ui/shared/empty_indicator.dart';
 import 'package:nutes/ui/shared/loading_indicator.dart';
 import 'package:nutes/ui/shared/refresh_list_view.dart';
 import 'package:nutes/ui/shared/shout_grid_item.dart';
-import 'package:nutes/ui/shared/shout_post.dart';
 import 'package:nutes/ui/shared/styles.dart';
 import 'package:nutes/utils/timeAgo.dart';
+import 'package:provider/provider.dart';
 
 class ActivityScreen extends StatelessWidget {
   final List<FollowRequest> followRequests;
 
-  const ActivityScreen({Key key, this.followRequests}) : super(key: key);
+  const ActivityScreen({
+    Key key,
+    this.followRequests,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -72,7 +75,7 @@ class _FollowingsActivityScreenState extends State<FollowingsActivityScreen> {
   List<Activity> activities = [];
   List<ActivityBundle> bundles = [];
 
-  final auth = Auth.instance;
+//  final auth = Repo.auth;
 
   bool isLoading = false;
 
@@ -135,27 +138,18 @@ class SelfActivityView extends StatefulWidget {
 }
 
 class _SelfActivityViewState extends State<SelfActivityView> {
-  final auth = Auth.instance;
-
-  Stream<QuerySnapshot> stream;
-
-  @override
-  void initState() {
-    stream = Firestore.instance
-        .collection('users')
-        .document(auth.profile.uid)
-        .collection('follow_requests')
-        .snapshots();
-
-    super.initState();
-  }
-
   @override
   Widget build(BuildContext context) {
+    final profile = Provider.of<UserProfile>(context);
+
     return ListView(
       children: <Widget>[
         StreamBuilder<QuerySnapshot>(
-            stream: stream,
+            stream: Firestore.instance
+                .collection('users')
+                .document(profile.uid)
+                .collection('follow_requests')
+                .snapshots(),
             builder: (context, snapshot) {
               if (!snapshot.hasData)
                 return ListTile(
@@ -170,7 +164,7 @@ class _SelfActivityViewState extends State<SelfActivityView> {
                       ),
                       child: AvatarListItem(
                         avatar: AvatarImage(
-                          url: auth.profile.user.urls.small,
+                          url: profile.user.urls.small,
                           spacing: 0,
                         ),
                         title: 'Follow Requests',
