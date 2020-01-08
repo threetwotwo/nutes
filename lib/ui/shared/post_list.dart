@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:math';
 import 'dart:ui';
 
@@ -10,7 +9,6 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:line_icons/line_icons.dart';
 import 'package:nutes/core/models/doodle.dart';
-import 'package:nutes/core/services/auth.dart';
 import 'package:nutes/core/services/local_cache.dart';
 import 'package:nutes/ui/screens/edit_post_screen.dart';
 import 'package:nutes/ui/screens/send_post_screen.dart';
@@ -21,7 +19,8 @@ import 'package:nutes/ui/widgets/doodle_editor.dart';
 import 'package:nutes/ui/widgets/doodle_view.dart';
 import 'package:nutes/ui/widgets/like_count_bar.dart';
 import 'package:nutes/ui/widgets/post_action_bar.dart';
-import 'package:nutes/utils/doodler.dart';
+import 'package:nutes/utils/icon_shadow.dart';
+import 'package:nutes/utils/painter.dart';
 import 'package:nutes/utils/timeAgo.dart';
 import 'package:preload_page_view/preload_page_view.dart';
 import 'package:nutes/core/models/post_type.dart';
@@ -158,7 +157,7 @@ class _PostListItemState extends State<PostListItem>
   _initHeartAnimation() {
     _heartAnimationController =
         AnimationController(vsync: this, duration: Duration(milliseconds: 800));
-    _heartAnimation = Tween(begin: 16.0, end: 96.0).animate(
+    _heartAnimation = Tween(begin: 16.0, end: 80.0).animate(
       CurvedAnimation(
           curve: Curves.elasticInOut, parent: _heartAnimationController),
     );
@@ -497,7 +496,7 @@ class _PostListItemState extends State<PostListItem>
                         ),
                       ),
 
-                    ///Heart
+                    ///Heart Double Tap
                     Positioned.fill(
                       child: AnimatedBuilder(
                           animation: _heartAnimationController,
@@ -506,36 +505,15 @@ class _PostListItemState extends State<PostListItem>
                               opacity: _heartOpacity,
                               duration: Duration(milliseconds: 200),
                               curve: Curves.bounceInOut,
-                              child:
-//                                FloatingActionButton(
-//                                  onPressed: () {},
-//                                  foregroundColor: Colors.white,
-//                                  backgroundColor: Colors.white,
-//                                  elevation: 24,
-//                                  child: Icon(
-//                                    LineIcons.heart,
-//                                    color: Colors.red,
-//                                    size: _heartAnimation.value,
-//                                  ),
-//                                ),
-                                  Center(
-                                child: Icon(
-                                  LineIcons.heart,
-                                  color: Colors.red,
-                                  size: _heartAnimation.value,
+                              child: Center(
+                                child: IconShadow(
+                                  Icon(
+                                    LineIcons.heart,
+                                    color: Colors.white,
+                                    size: _heartAnimation.value,
+                                  ),
+                                  shadowColor: Colors.black87,
                                 ),
-//                                Container(
-//                                  padding: const EdgeInsets.all(16),
-//                                  decoration: BoxDecoration(
-//                                    color: Colors.grey[400],
-//                                    shape: BoxShape.circle,
-//                                  ),
-//                                  child: Icon(
-//                                    LineIcons.heart,
-//                                    color: Colors.white,
-//                                    size: _heartAnimation.value,
-//                                  ),
-//                                ),
                               ),
                             );
                           }),
@@ -553,7 +531,7 @@ class _PostListItemState extends State<PostListItem>
                             onError: () {
                               setState(() {
                                 _showDoodle = false;
-                                _doodles = null;
+                                _doodles = [];
                               });
                             },
                             onFinish: () {

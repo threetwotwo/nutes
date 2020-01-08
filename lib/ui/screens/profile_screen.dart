@@ -1,11 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:event_bus/event_bus.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:line_icons/line_icons.dart';
 import 'package:nutes/core/models/post.dart';
 import 'package:nutes/core/models/story.dart';
-import 'package:nutes/core/models/user_logged_in_event.dart';
+import 'package:nutes/core/services/events.dart';
 import 'package:nutes/core/services/firestore_service.dart';
 import 'package:nutes/core/services/local_cache.dart';
 import 'package:nutes/ui/screens/chat_screen.dart';
@@ -92,8 +91,6 @@ class _ProfileScreenState extends State<ProfileScreen>
   UserStory userStory;
 
   DocumentSnapshot startAfter;
-
-  final eventBus = EventBus();
 
   _init() async {
     uid = widget.uid;

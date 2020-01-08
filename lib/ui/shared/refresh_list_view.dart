@@ -50,6 +50,7 @@ class _RefreshListViewState extends State<RefreshListView> {
   void initState() {
     _controller = widget.controller ?? ScrollController();
     _controller.addListener(() {
+      if (widget.onLoadMore == null) return;
       if (!isLoadingMore &&
           _controller.position.pixels >= _controller.position.maxScrollExtent) {
         print('load more');

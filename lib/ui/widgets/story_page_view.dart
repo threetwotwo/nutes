@@ -160,6 +160,7 @@ class _StoryPageViewState extends State<StoryPageView> {
               }
 
               return StoryView(
+                isOwner: auth.uid == userStory.uploader.uid,
                 seenStories: seenStories,
                 topPadding: widget.topPadding,
                 onAvatarTapped: (user) =>

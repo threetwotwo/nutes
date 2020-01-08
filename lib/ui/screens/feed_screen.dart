@@ -1,12 +1,11 @@
 import 'package:bot_toast/bot_toast.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:event_bus/event_bus.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:nutes/core/models/post.dart';
 import 'package:nutes/core/models/story.dart';
 import 'package:nutes/core/models/user.dart';
-import 'package:nutes/core/models/user_logged_in_event.dart';
+import 'package:nutes/core/services/events.dart';
+import 'package:nutes/core/services/firestore_service.dart';
 import 'package:nutes/core/services/local_cache.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/shared/comment_overlay.dart';
@@ -26,7 +25,7 @@ class FeedScreen extends StatefulWidget {
   final VoidCallback onDoodleStart;
   final VoidCallback onDoodleEnd;
   final ScrollController scrollController;
-  final UserProfile profile;
+//  final UserProfile profile;
 
   FeedScreen({
     Key key,
@@ -35,7 +34,7 @@ class FeedScreen extends StatefulWidget {
     this.scrollController,
     this.onDoodleStart,
     this.onDoodleEnd,
-    @required this.profile,
+//    @required this.profile,
 //      this.onAddStoryPressed,
   }) : super(key: key);
 
@@ -53,8 +52,6 @@ class _FeedScreenState extends State<FeedScreen>
 
 //  UserProfile profile;
 
-  final eventBus = EventBus();
-
   List<Post> posts = [];
 
   bool isFetchingPosts = false;
@@ -70,6 +67,8 @@ class _FeedScreenState extends State<FeedScreen>
   List<UserStory> followingsStories = [];
 
   DocumentSnapshot startAfter;
+
+  User auth = FirestoreService.ath.user;
 
   @override
   void didChangeDependencies() {
@@ -102,7 +101,7 @@ class _FeedScreenState extends State<FeedScreen>
   void initState() {
     myStory = UserStory(
       story: Story.empty(),
-      uploader: widget.profile.user,
+      uploader: auth,
       lastTimestamp: null,
     );
     _getInitialPosts();
@@ -111,6 +110,14 @@ class _FeedScreenState extends State<FeedScreen>
 
     eventBus.on().listen((event) {
       print(event);
+    });
+
+    eventBus.on<UserProfileChangedEvent>().listen((event) {
+      print(event.profile.user.urls.small);
+      BotToast.showText(text: 'profile change ${event.profile.user.username}');
+      setState(() {
+        auth = event.profile.user;
+      });
     });
 
     eventBus.on<UserFollowEvent>().listen((event) {

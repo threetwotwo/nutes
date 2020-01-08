@@ -173,6 +173,7 @@ class EmailTextField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BaseTextField(
+      keyboardType: TextInputType.emailAddress,
       controller: controller,
       textSize: 15,
       message: emailIsValid ? '' : 'Enter a valid email',

@@ -167,7 +167,7 @@ class _HomeScreenState extends State<HomeScreen>
               onGenerateRoute: (routeSettings) {
                 return MaterialPageRoute(
                   builder: (context) => FeedScreen(
-                    profile: profile,
+//                    profile: profile,
                     scrollController: homeScrollController,
                     onCreatePressed: widget.onCreatePressed,
                     onDM: widget.onDM,

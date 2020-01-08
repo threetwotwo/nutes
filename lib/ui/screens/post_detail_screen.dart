@@ -73,18 +73,20 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: BaseAppBar(
-        title: Column(
-          children: <Widget>[
-            Text(
-              widget.post.owner.username.toUpperCase(),
-              style: TextStyles.defaultText.copyWith(color: Colors.grey),
-            ),
-            Text(
-              'Post',
-              style: TextStyles.header,
-            ),
-          ],
-        ),
+        title: post == null
+            ? SizedBox()
+            : Column(
+                children: <Widget>[
+                  Text(
+                    post.owner.username.toUpperCase(),
+                    style: TextStyles.defaultText.copyWith(color: Colors.grey),
+                  ),
+                  Text(
+                    'Post',
+                    style: TextStyles.header,
+                  ),
+                ],
+              ),
       ),
       body: SafeArea(
           child: DismissView(

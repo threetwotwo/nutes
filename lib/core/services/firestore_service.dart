@@ -10,7 +10,6 @@ import 'package:nutes/core/models/story.dart';
 import 'package:nutes/core/models/user.dart';
 import 'package:nutes/core/services/auth.dart';
 import 'package:nutes/core/services/local_cache.dart';
-import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/utils/image_file_bundle.dart';
 
 ///The service that handles all reads and writes to firestore
@@ -884,53 +883,6 @@ class FirestoreService {
     return myFollowingListRef().snapshots();
   }
 
-  ///Abridged user contains the minimum info to display a user avatar
-  ///contains username and photo_url
-  Future<List<User>> getAbridgedUserFromUids(List<String> uids) async {
-    ///get followings array
-    final ref = shared.collection('users').document(auth.uid);
-
-    final doc = await ref.get();
-
-    final Map followings = doc['followings'] ?? {};
-
-    List<User> users = [];
-
-    List<String> missingUids = [];
-
-    List<Future<User>> futureUsers = [];
-
-    uids.forEach((uid) {
-      User user;
-
-      if (followings[uid] == null) {
-        ///Get uids that are not in the followings array
-        missingUids.add(uid);
-      } else {
-        final Map userMap = followings[uid] ?? {};
-        user = User.fromMap(userMap);
-        users.add(user);
-      }
-    });
-
-    ///get user info for each missing uid
-    if (missingUids.isNotEmpty) {
-      missingUids.forEach((uid) {
-//        final futureUser = getUser(uid);
-//        futureUsers.add(futureUser);
-      });
-
-      final missingUsers = await Future.wait(futureUsers);
-
-      users.addAll(missingUsers);
-
-      ///Update all missing followings
-//      await updateFollowingsArray(missingUsers);
-    }
-
-    return users;
-  }
-
   Future<Map<String, dynamic>> getSeenStories() async {
     final ref = myProfileRef.collection('seen_stories').document('list');
 
@@ -963,6 +915,30 @@ class FirestoreService {
     stories.addAll(data);
 
     return ref.setData(stories);
+  }
+
+  Future<List<User>> getMomentSeenBy(String ownerId, String momentId) async {
+    final query = momentRef(ownerId, momentId).collection('seen_by');
+
+    final snap = await query.getDocuments();
+
+    print('moment $momentId seen by ${snap.documents.length}');
+    return snap.documents
+        .map((doc) => User.fromMap(doc['owner'] ?? {}))
+        .toList();
+  }
+
+  Future<void> setMomentAsSeen(String ownerId, String momentId) async {
+    print('set moment $momentId as seen by ${auth.uid}');
+    final ref =
+        momentRef(ownerId, momentId).collection('seen_by').document(auth.uid);
+
+    print(ref.path);
+    final payload = {
+      'timestamp': Timestamp.now(),
+      'owner': auth.user.toMap(),
+    };
+    return ref.setData(payload, merge: true);
   }
 
   Future<List<UserStory>> getStoriesOfFollowings() async {
@@ -1080,6 +1056,15 @@ class FirestoreService {
       'url': url,
       'uploader': auth.user.toMap(),
     });
+  }
+
+  DocumentReference momentRef(String ownerId, String momentId) {
+    final ref = shared
+        .collection('users')
+        .document(ownerId)
+        .collection('stories')
+        .document(momentId);
+    return ref;
   }
 
   DocumentReference createStoryRef() {
@@ -1212,18 +1197,28 @@ class FirestoreService {
     ///1. write to post's likes collection
     final likeDocRef = postRef.collection('likes').document(auth.uid);
 
+    final payload = {
+      'timestamp': timestamp,
+      'liker': auth.user.toMap(),
+    }..addAll(post.toMap());
+
     batch.setData(
       likeDocRef,
-      {
-        'timestamp': timestamp,
-        'liker': auth.user.toMap(),
-      }..addAll(post.toMap()),
+      payload,
     );
+
+    ///Write to owner's activity ref
+    final ownerActivityRef =
+        activityRef(post.owner.uid).document('${auth.uid}-${post.id}');
+
+    batch.setData(
+        ownerActivityRef, payload..addAll({'activity_type': 'post_like'}));
 
     ///Due to potential scalability issues ,
     ///might need to write this to my_likes col ref instead
     ///that way, you can easily query for your like plus your following likes
     /// for the post
+    ///
     /// Idea for Reactive UI : use a custom stream in repo where every like
     /// event gets broadcasted and UI that is connected to the stream reacts
     /// accordingly
@@ -1235,25 +1230,6 @@ class FirestoreService {
     ///2. write to my likes doc (for didlike stream)
     ///
     ///Write left and right like here as well to reduce read counts!!!
-    ///TODO: evaluate this
-//    final myPostLikesColRef =
-//        myProfileRef.collection('my_post_likes').document(post.id);
-//
-//    batch.setData(
-//        myPostLikesColRef,
-//        {
-//          'likes': FieldValue.arrayUnion(['post'])
-//        },
-//        merge: true);
-//    final myLikesDocRef =
-//        myProfileRef.collection('activity').document('post_likes');
-//
-//    batch.setData(
-//        myLikesDocRef,
-//        {
-//          'likes': FieldValue.arrayUnion([post.id])
-//        },
-//        merge: true);
 
     ///3. (Cloud function) update post like count
     ///4. (Cloud function) write to my followers' followings' likes feed
@@ -1294,7 +1270,13 @@ class FirestoreService {
         },
         merge: true);
 
+    final ownerActivityRef =
+        activityRef(post.owner.uid).document('${auth.uid}-${post.id}');
+
     batch.delete(likeRef);
+
+    ///delete from owner's activity ref
+    batch.delete(ownerActivityRef);
 
     return batch.commit();
   }
@@ -1467,6 +1449,18 @@ class FirestoreService {
     return docs.documents.isNotEmpty
         ? PostCursor(result, docs.documents.last)
         : PostCursor(result, startAfter);
+  }
+
+  Future<List<Activity>> getMyActivity() async {
+    final query = activityRef(auth.uid)
+//        .where('activity_type', isEqualTo: 'post_like')
+        .orderBy('timestamp', descending: true)
+        .limit(30);
+
+    final docs = await query.getDocuments();
+
+    return docs.documents.map((doc) => Activity.fromDoc(doc)).toList()
+      ..removeWhere((ac) => ac.activityType == null);
   }
 
   Future<List<Activity>> getMyFollowingsActivity() async {

@@ -51,10 +51,11 @@ class FollowRequestScreen extends StatelessWidget {
                             final Map user = data['user'] ?? {};
 
                             return AvatarListItem(
-                              trailingFlexFactor: 5,
+                              trailingFlexFactor: 6,
                               avatar: AvatarImage(
                                 url: user['photo_url'],
                                 spacing: 0,
+                                padding: 12,
                               ),
                               title: user['username'],
                               subtitle: user['display_name'],
@@ -107,14 +108,14 @@ class FollowRequestActionButtons extends StatelessWidget {
         Expanded(
           child: FlatButton(
             onPressed: () => onConfirm(this.uid),
-            color: Colors.blue,
+            color: Colors.blueAccent,
             child: Text(
               'Confirm',
               style: TextStyle(color: Colors.white),
             ),
           ),
         ),
-        SizedBox(width: 10),
+        SizedBox(width: 4),
         Expanded(
           child: OutlineButton(
             onPressed: () => onDelete(this.uid),

@@ -1,13 +1,11 @@
 import 'dart:async';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:nutes/core/models/doodle.dart';
 import 'package:nutes/ui/screens/profile_screen.dart';
 import 'package:nutes/ui/shared/avatar_image.dart';
 import 'package:nutes/ui/shared/loading_indicator.dart';
 import 'package:nutes/ui/shared/styles.dart';
-import 'package:transparent_image/transparent_image.dart';
 
 class DoodleView extends StatefulWidget {
   final List<Doodle> doodles;
@@ -63,7 +61,7 @@ class _DoodleViewState extends State<DoodleView> {
       }, onError: (_, __) {
         print('error loading doodle');
 
-        return widget.onError;
+        return widget.onError();
       });
 
   void _nextDoodle() async {

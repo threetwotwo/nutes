@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:nutes/core/models/user.dart';
 import 'package:nutes/core/services/auth.dart';
+import 'package:nutes/core/services/firestore_service.dart';
 import 'package:nutes/ui/shared/styles.dart';
 import 'package:nutes/ui/widgets/profile_header.dart';
 import 'package:provider/provider.dart';
@@ -30,7 +31,7 @@ class StoryAvatar extends StatelessWidget {
   }) : super(key: key);
   @override
   Widget build(BuildContext context) {
-    final profile = Provider.of<UserProfile>(context);
+    final profile = FirestoreService.ath;
 
     return GestureDetector(
       onTap: onTap,

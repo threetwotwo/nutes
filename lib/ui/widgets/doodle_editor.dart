@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:nutes/ui/shared/toast_message.dart';
-import 'package:nutes/utils/doodler.dart';
+import 'package:nutes/utils/painter.dart';
 import 'package:path_provider/path_provider.dart';
 
 class DoodleEditor extends StatefulWidget {
@@ -28,7 +28,7 @@ class DoodleEditor extends StatefulWidget {
 class _DoodleEditorState extends State<DoodleEditor> {
   Timer timer;
 
-  bool _showMessage = false;
+  bool showMessage = false;
 
   Color pickedColor;
 
@@ -49,12 +49,12 @@ class _DoodleEditorState extends State<DoodleEditor> {
   @override
   void initState() {
     setState(() {
-      _showMessage = true;
+      showMessage = true;
     });
 
     timer = Timer(Duration(milliseconds: 500), () {
       setState(() {
-        _showMessage = false;
+        showMessage = false;
       });
     });
     super.initState();
@@ -136,8 +136,10 @@ class _DoodleEditorState extends State<DoodleEditor> {
 
                     String fileName = DateTime.now().toIso8601String();
 
-                    final file = File('${systemTempDir.path}/$fileName.png')
-                      ..writeAsBytes(png);
+                    final file =
+                        await File('${systemTempDir.path}/$fileName.png')
+                            .create()
+                          ..writeAsBytesSync(png);
 
                     return widget.onFinish(file);
                   },

@@ -122,9 +122,9 @@ class _FollowingsActivityScreenState extends State<FollowingsActivityScreen> {
                       itemCount: bundles.length,
                       itemBuilder: (context, index) {
                         final activity = activities[index];
-                        final user = activity.postOwner;
-                        final postUrl = activity.postUrl;
-                        final date = activity.timestamp;
+//                        final user = activity.postOwner;
+//                        final postUrl = activity.postUrl;
+//                        final date = activity.timestamp;
                         return ActivityListItem(bundle: bundles[index]);
                       }),
                 ],
@@ -138,11 +138,20 @@ class SelfActivityView extends StatefulWidget {
 }
 
 class _SelfActivityViewState extends State<SelfActivityView> {
+  List<Activity> _activities = [];
+
+  @override
+  void initState() {
+    _getActivities();
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     final profile = Provider.of<UserProfile>(context);
 
-    return ListView(
+    return RefreshListView(
+      onRefresh: _getActivities,
       children: <Widget>[
         StreamBuilder<QuerySnapshot>(
             stream: Firestore.instance
@@ -163,21 +172,58 @@ class _SelfActivityViewState extends State<SelfActivityView> {
                             builder: (context) => FollowRequestScreen()),
                       ),
                       child: AvatarListItem(
+                        trailingFlexFactor: 1,
                         avatar: AvatarImage(
                           url: profile.user.urls.small,
-                          spacing: 0,
+//                          spacing: 0,
+                          padding: 8,
                         ),
                         title: 'Follow Requests',
                         subtitle: 'Accept or ignore requests',
                         trailingWidget: Icon(Icons.chevron_right),
                       ),
                     )
-                  : ListTile(
-                      title: Text('no follow requests'),
-                    );
+                  : profile.user.isPrivate
+                      ? EmptyIndicator('No follow requests')
+                      : SizedBox();
+            }),
+        ListView.builder(
+            shrinkWrap: true,
+            itemCount: _activities.length,
+            itemBuilder: (context, index) {
+              final act = _activities[index];
+
+              final title = act.liker.username +
+                  ' ' +
+                  'liked your post ${TimeAgo.formatShort(act.timestamp.toDate())}';
+              return AvatarListItem(
+                trailingFlexFactor: 2,
+                avatar: AvatarImage(
+                  url: act.liker.urls.small,
+                ),
+                title: title,
+                trailingWidget: Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey[200])),
+                  child: CachedNetworkImage(
+                    fit: BoxFit.cover,
+                    imageUrl: act.postUrl,
+                  ),
+                ),
+              );
             }),
       ],
     );
+  }
+
+  Future<void> _getActivities() async {
+    final result = await Repo.getMyActivity();
+
+    setState(() {
+      _activities = result;
+    });
   }
 }
 
@@ -202,12 +248,10 @@ class ActivityListItem extends StatelessWidget {
               TextSpan(
                   text:
                       ' liked ${length > 1 ? length : 'a'} post${length > 1 ? 's' : ''}. ',
-                  style: TextStyles.defaultText
-                      .copyWith(fontWeight: FontWeight.w300)),
+                  style: TextStyles.w300Text),
               TextSpan(
                   text: TimeAgo.formatShort(bundle.timestamp.toDate()),
-                  style: TextStyles.defaultText.copyWith(
-                      fontWeight: FontWeight.w500, color: Colors.grey)),
+                  style: TextStyles.w300Text.copyWith(color: Colors.grey)),
             ])
 //      title: '${activity.owner.username} liked a post',
             ),

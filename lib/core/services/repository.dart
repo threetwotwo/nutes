@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/widgets.dart';
 import 'package:nutes/core/models/doodle.dart';
+import 'package:nutes/core/services/events.dart';
 //import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart' as path_provider;
 import 'package:image/image.dart' as img;
@@ -61,12 +62,21 @@ class Repo {
   static Future<List<User>> getMyUserFollowings() =>
       shared._firestore.getMyUserFollowings();
 
+  static Future<List<Activity>> getMyActivity() =>
+      shared._firestore.getMyActivity();
+
   static Future<List<Activity>> getMyFollowingsActivity() =>
       shared._firestore.getMyFollowingsActivity();
 
   static void refreshStream() {
     return storiesStreamController.add(snapshot);
   }
+
+  static Future<List<User>> getMomentSeenBy(String ownerId, String momentId) =>
+      shared._firestore.getMomentSeenBy(ownerId, momentId);
+
+  static Future<void> setMomentAsSeen(String ownerId, String momentId) =>
+      shared._firestore.setMomentAsSeen(ownerId, momentId);
 
   static Stream<StorySnapshot> stream() {
     storiesStreamController =
@@ -75,17 +85,6 @@ class Repo {
       storiesStreamController.add(snapshot);
     });
     return storiesStreamController.stream;
-  }
-
-  static void updateStoryIndex(int index) {
-    final newSnap = snapshot.copyWith(storyIndex: index);
-    snapshot = newSnap;
-    return storiesStreamController.add(snapshot);
-  }
-
-  static void updateUserStories(List<UserStory> us) {
-    snapshot = snapshot.copyWith(userStories: us);
-    return Repo.refreshStream();
   }
 
   static void updateStory(int index, Story story) {
@@ -594,7 +593,11 @@ class Repo {
 
     print('bundle uploaded: $bundle');
 
-    return shared._firestore.updateProfile(urls: bundle);
+    final profile = await shared._firestore.updateProfile(urls: bundle);
+
+    eventBus.fire(UserProfileChangedEvent(profile));
+
+    return profile;
   }
 
   static DocumentReference myRef() {

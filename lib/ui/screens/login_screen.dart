@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/core/models/user.dart';
+import 'package:nutes/ui/screens/account_recovery_screen.dart';
 import 'package:nutes/ui/widgets/login_textfield.dart';
 import 'package:nutes/ui/shared/styles.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
@@ -170,34 +171,28 @@ class _LoginScreenState extends State<LoginScreen> {
           height: MediaQuery.of(context).size.height,
           child: SingleChildScrollView(
             child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: <Widget>[
                   Container(
-                    child: Stack(
-                      children: <Widget>[
-                        Container(
-                          padding: EdgeInsets.fromLTRB(
-                              sized(60.0), sized(110.0), 0.0, 0.0),
-                          child: Text(
-                            'nutes',
-                            style: TextStyle(
-                                fontSize: sized(80.0),
-                                fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                      padding: EdgeInsets.only(
-                          top: sized(36.0),
-                          left: sized(60.0),
-                          right: sized(60.0)),
+                      padding: EdgeInsets.all(
+                        54.0,
+                      ),
                       decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(16)),
                       child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
+                          Container(
+//                          padding: const EdgeInsets.all(16.0),
+//                          padding: EdgeInsets.fromLTRB(
+//                              sized(60.0), sized(110.0), 0.0, 0.0),
+                            child: Text(
+                              'nutes',
+                              style: TextStyles.large600Display
+                                  .copyWith(fontSize: 72),
+                            ),
+                          ),
                           UsernameTextField(
                             usernameExists: usernameExists,
                             controller: _usernameController,
@@ -225,7 +220,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               onChanged: (text) => checkIfEmailIsValid(text),
                             ),
                           Padding(
-                            padding: const EdgeInsets.all(20.0),
+                            padding: const EdgeInsets.all(16.0),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: <Widget>[
@@ -254,11 +249,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ),
                                   ],
                                 ),
-                                SizedBox(height: sized(20.0)),
+                                SizedBox(height: sized(16.0)),
                               ],
                             ),
                           ),
-                          SizedBox(height: 20.0),
                         ],
                       )),
                   Row(
@@ -269,9 +263,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ? 'New to nutes?'
                             : 'Already have'
                                 ' an account?',
-                        style: TextStyle(
-                          fontFamily: 'Montserrat',
-                        ),
+                        style: TextStyles.w600Text,
                       ),
                       SizedBox(width: 5.0),
                       InkWell(
@@ -283,16 +275,29 @@ class _LoginScreenState extends State<LoginScreen> {
                         },
                         child: Text(
                           isSigningIn ? 'Register' : 'Sign In',
-                          style: TextStyle(
+                          style: TextStyles.w600Text.copyWith(
                             color: Colors.green,
-                            fontFamily: 'Montserrat',
-                            fontWeight: FontWeight.bold,
                             decoration: TextDecoration.underline,
                           ),
                         ),
                       )
                     ],
                   ),
+                  if (isSigningIn)
+                    FlatButton(
+                      onPressed: () {
+                        print('forgot pass');
+                        return Navigator.of(context, rootNavigator: true)
+                            .push(AccountRecoveryScreen.route());
+                      },
+                      child: Text(
+                        'Forgot Password',
+                        style: TextStyles.w600Text.copyWith(
+                          color: Colors.grey,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
                   SizedBox(height: 20.0),
                 ]),
           ),

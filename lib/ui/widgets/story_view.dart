@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:flutter/gestures.dart';
 import 'package:nutes/core/models/story.dart';
 import 'package:nutes/core/models/user.dart';
+import 'package:nutes/core/services/firestore_service.dart';
 import 'package:nutes/core/services/repository.dart';
 
 import 'package:flutter/services.dart';
@@ -13,6 +14,8 @@ import 'package:flutter/widgets.dart';
 import 'package:nutes/ui/screens/profile_screen.dart';
 import 'package:nutes/ui/shared/avatar_image.dart';
 import 'package:nutes/ui/shared/buttons.dart';
+import 'package:nutes/ui/shared/styles.dart';
+import 'package:nutes/ui/widgets/moment_view.dart';
 import 'package:nutes/utils/timeAgo.dart';
 
 ///
@@ -41,6 +44,7 @@ class StoryView extends StatefulWidget {
     this.onAvatarTapped,
     this.topPadding,
     this.seenStories,
+    this.isOwner = false,
   })  :
 //        assert(startAt != null),
 //        assert(startAt >= 0),
@@ -49,6 +53,7 @@ class StoryView extends StatefulWidget {
         assert(onFlashBack != null),
         super(key: key);
 
+  final bool isOwner;
   final Map seenStories;
 
   final User uploader;
@@ -135,6 +140,8 @@ class _StoryViewState extends State<StoryView>
 
   Map<String, dynamic> _seenStories = {};
 
+  PageController _momentPageController;
+
   @override
   void didUpdateWidget(StoryView oldWidget) {
     _play();
@@ -143,21 +150,12 @@ class _StoryViewState extends State<StoryView>
 
   @override
   void initState() {
-//    Navigator.of(context).userGestureInProgressNotifier.addListener(() {
-//      final val = Navigator.of(context).userGestureInProgress;
-//      print('user gesture in progress: $val');
-//    });
     _init();
 
     super.initState();
   }
 
   Future<void> _init() async {
-//    final result = await Repo.getSeenStories();
-//    setState(() {
-//      _seenStories = result;
-//    });
-
     if (widget.story == null) {
       print('story is null, get story');
       _getStory();
@@ -177,6 +175,8 @@ class _StoryViewState extends State<StoryView>
                 (widget.seenStories[widget.uploader.uid] as Timestamp).seconds,
             orElse: () => story.moments.first));
     momentIndex = startAt;
+
+    _momentPageController = PageController(initialPage: momentIndex);
 
     controller = AnimationController(
       vsync: this,
@@ -212,6 +212,7 @@ class _StoryViewState extends State<StoryView>
       controller.reset();
       setState(() {
         momentIndex += 1;
+        _momentPageController.jumpToPage(momentIndex);
       });
       controller.duration = story.moments[momentIndex].duration;
       _play();
@@ -227,6 +228,7 @@ class _StoryViewState extends State<StoryView>
       controller.reset();
       setState(() {
         momentIndex -= 1;
+        _momentPageController.jumpToPage(momentIndex);
       });
       controller.duration = story.moments[momentIndex].duration;
       _play();
@@ -276,6 +278,8 @@ class _StoryViewState extends State<StoryView>
   @override
   void dispose() {
 //    SystemChrome.setEnabledSystemUIOverlays(SystemUiOverlay.values);
+    print('dispose moment ${widget.story.moments[momentIndex].id}');
+
     controller.dispose();
     super.dispose();
   }
@@ -289,34 +293,54 @@ class _StoryViewState extends State<StoryView>
           : Stack(
               alignment: Alignment.center,
               children: <Widget>[
+                ///Moment Image
                 Positioned.fill(
-                  child: Image.network(
-                    story.moments[momentIndex].url ?? '',
-                    fit: BoxFit.cover,
-                    loadingBuilder: (context, child, progress) {
-                      if (progress == null) {
-                        return child;
-                      }
-                      if (progress.cumulativeBytesLoaded ==
-                              progress.expectedTotalBytes &&
-                          mounted) {
-                        print('image load complete');
-                        story.moments[momentIndex].isLoaded = true;
-                        _play();
-                      }
-                      return Center(
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation(Colors.white),
-//                          value: progress.expectedTotalBytes != null
-//                              ? progress.cumulativeBytesLoaded /
-//                                  progress.expectedTotalBytes
-//                              : null,
-                        ),
+                  child: PageView.builder(
+                    controller: _momentPageController,
+                    itemBuilder: (context, index) {
+                      final moment = story.moments[index];
+
+                      return MomentView(
+                        isFooterVisible: !isInFullscreenMode,
+                        moment: moment,
+                        uploader: widget.uploader,
+//                    url: moment.url,
+                        onLoad: () {
+                          moment.isLoaded = true;
+                          _play();
+                        },
                       );
                     },
                   ),
+//                  child: Image.network(
+//                    story.moments[momentIndex].url ?? '',
+//                    fit: BoxFit.cover,
+//                    loadingBuilder: (context, child, progress) {
+//                      if (progress == null) {
+//                        return child;
+//                      }
+//                      if (progress.cumulativeBytesLoaded ==
+//                              progress.expectedTotalBytes &&
+//                          mounted) {
+//                        print('image load complete');
+//                        story.moments[momentIndex].isLoaded = true;
+//                        _play();
+//                      }
+//                      return Center(
+//                        child: CircularProgressIndicator(
+//                          strokeWidth: 2,
+//                          valueColor: AlwaysStoppedAnimation(Colors.white),
+////                          value: progress.expectedTotalBytes != null
+////                              ? progress.cumulativeBytesLoaded /
+////                                  progress.expectedTotalBytes
+////                              : null,
+//                        ),
+//                      );
+//                    },
+//                  ),
                 ),
+
+                ///header
                 Align(
                   alignment: Alignment.topCenter,
                   child: AnimatedOpacity(
@@ -339,6 +363,8 @@ class _StoryViewState extends State<StoryView>
                     ),
                   ),
                 ),
+
+                ///progress bar
                 Positioned(
                   top: (widget.topPadding ?? 24.0),
                   left: 8.0 - widget.progressSegmentGap / 2,
@@ -404,10 +430,9 @@ class _StoryViewState extends State<StoryView>
                                       text: TextSpan(children: [
                                         TextSpan(
                                           text: widget.uploader.username,
-                                          style: TextStyle(
+                                          style: TextStyles.w500Text.copyWith(
                                             color: Colors.white,
                                             fontSize: 15,
-                                            fontWeight: FontWeight.w500,
                                             shadows: [
                                               Shadow(
                                                 blurRadius: 4.0,
@@ -456,6 +481,7 @@ class _StoryViewState extends State<StoryView>
                     ),
                   ),
                 ),
+
                 Positioned(
                   top: 120,
                   left: 0,
@@ -473,20 +499,4 @@ class _StoryViewState extends State<StoryView>
             ),
     );
   }
-}
-
-/// This is a representation of a story item (or page).
-class StoryItem {
-  /// Specifies how long the page should be displayed. It should be a reasonable
-  /// amount of time greater than 0 milliseconds.
-  final Duration duration;
-
-  /// The page content
-  final Widget view;
-
-  StoryItem(
-    this.view, {
-    this.duration = const Duration(seconds: 3),
-//    this.shown = false,
-  }) : assert(duration != null, "[duration] should not be null");
 }
