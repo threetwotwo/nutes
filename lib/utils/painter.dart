@@ -85,6 +85,8 @@ class _PainterState extends State<Painter> {
   bool _onPanStart(Offset start) {
     Offset pos = (context.findRenderObject() as RenderBox).globalToLocal(start);
     widget.painterController.pathHistory.add(pos);
+    widget.painterController.pathHistory.updateCurrent(pos);
+
     widget.painterController._notifyListeners();
 
     return start != null;
@@ -93,9 +95,8 @@ class _PainterState extends State<Painter> {
   void _onPanUpdate(PointerEvent update) {
     Offset pos = (context.findRenderObject() as RenderBox)
         .globalToLocal(update.position);
-    final pressure = update.pressure;
 
-    widget.painterController.pathHistory.updateCurrent(pos, pressure);
+    widget.painterController.pathHistory.updateCurrent(pos);
     widget.painterController._notifyListeners();
 
     if (_debounce?.isActive ?? false) _debounce.cancel();
@@ -165,7 +166,7 @@ class PathHistory {
     }
   }
 
-  void updateCurrent(Offset nextPoint, double pressure) {
+  void updateCurrent(Offset nextPoint) {
     if (_inDrag) {
       Path path = paths.last.key;
 

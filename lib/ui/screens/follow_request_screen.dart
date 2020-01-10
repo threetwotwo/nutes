@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:nutes/core/services/auth.dart';
+import 'package:nutes/core/models/user.dart';
+import 'package:nutes/core/services/firestore_service.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/shared/app_bars.dart';
 import 'package:nutes/ui/shared/avatar_image.dart';
@@ -10,7 +11,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class FollowRequestScreen extends StatelessWidget {
   final Stream<QuerySnapshot> stream;
 
-  final auth = Repo.auth;
+  final auth = FirestoreService.ath;
 
   FollowRequestScreen({Key key, this.stream}) : super(key: key);
   @override
@@ -38,36 +39,33 @@ class FollowRequestScreen extends StatelessWidget {
                           valueColor:
                               AlwaysStoppedAnimation<Color>(Colors.grey)));
                 } else {
-                  final requests = snapshot.data.documents;
-                  return requests.isEmpty
+                  final docs = snapshot.data.documents;
+                  return docs.isEmpty
                       ? ListTile(
                           title: Text('No Follow '
                               'Requests'),
                         )
                       : ListView.builder(
-                          itemCount: requests.length,
+                          itemCount: docs.length,
                           itemBuilder: (context, index) {
-                            final data = requests[index].data;
-                            final Map user = data['user'] ?? {};
+                            final doc = docs[index];
+                            final user = User.fromMap(doc['user'] ?? {});
 
                             return AvatarListItem(
                               trailingFlexFactor: 6,
                               avatar: AvatarImage(
-                                url: user['photo_url'],
+                                url: user.urls.small,
                                 spacing: 0,
                                 padding: 12,
                               ),
-                              title: user['username'],
-                              subtitle: user['display_name'],
+                              title: user.username,
+                              subtitle: user.displayName,
                               trailingWidget: FollowRequestActionButtons(
-                                uid: requests[index].documentID,
-//                                onConfirm: (uid) =>
-//                                    Repo.authorizeFollowRequest(uid),
-                                onDelete: (uid) {
-                                  print(uid);
-                                  return Repo.redactFollowRequest(
-                                      auth.uid, uid);
-                                },
+                                user: user,
+                                onConfirm: (user) =>
+                                    Repo.authorizeFollowRequest(user),
+                                onDelete: (uid) =>
+                                    Repo.redactFollowRequest(auth.uid, uid),
                               ),
                             );
                           },
@@ -94,20 +92,23 @@ class FollowRequestScreen extends StatelessWidget {
 }
 
 class FollowRequestActionButtons extends StatelessWidget {
-  final Function(String) onConfirm;
+  final Function(User) onConfirm;
   final Function(String) onDelete;
-  final String uid;
+  final User user;
 
-  const FollowRequestActionButtons(
-      {Key key, this.onConfirm, this.onDelete, this.uid})
-      : super(key: key);
+  const FollowRequestActionButtons({
+    Key key,
+    this.onConfirm,
+    this.onDelete,
+    this.user,
+  }) : super(key: key);
   @override
   Widget build(BuildContext context) {
     return Row(
       children: <Widget>[
         Expanded(
           child: FlatButton(
-            onPressed: () => onConfirm(this.uid),
+            onPressed: () => onConfirm(this.user),
             color: Colors.blueAccent,
             child: Text(
               'Confirm',
@@ -118,7 +119,7 @@ class FollowRequestActionButtons extends StatelessWidget {
         SizedBox(width: 4),
         Expanded(
           child: OutlineButton(
-            onPressed: () => onDelete(this.uid),
+            onPressed: () => onDelete(this.user.uid),
             child: Text('Delete'),
           ),
         ),

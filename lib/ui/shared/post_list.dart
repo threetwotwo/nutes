@@ -16,7 +16,7 @@ import 'package:nutes/ui/shared/comment_post_list_item.dart';
 import 'package:nutes/ui/shared/loading_indicator.dart';
 import 'package:nutes/ui/shared/toast_message.dart';
 import 'package:nutes/ui/widgets/doodle_editor.dart';
-import 'package:nutes/ui/widgets/doodle_view.dart';
+import 'package:nutes/ui/widgets/doodle_page_view.dart';
 import 'package:nutes/ui/widgets/like_count_bar.dart';
 import 'package:nutes/ui/widgets/post_action_bar.dart';
 import 'package:nutes/utils/icon_shadow.dart';
@@ -168,6 +168,8 @@ class _PostListItemState extends State<PostListItem>
 
   Future<void> _showDoodleUploadFinished() async {
     _showDoodleUploadInProgress(false);
+
+    await Future.delayed(Duration(milliseconds: 100));
 
     setState(() {
       _doodleUploadIsFinished = true;
@@ -525,7 +527,7 @@ class _PostListItemState extends State<PostListItem>
                         child: AnimatedOpacity(
                           opacity: _doodles.isNotEmpty ? 1 : 0,
                           duration: Duration(milliseconds: 400),
-                          child: DoodleView(
+                          child: DoodlePageView(
                             doodles: _doodles,
                             isVisible: _showDoodle,
                             onError: () {
@@ -621,20 +623,22 @@ class _PostListItemState extends State<PostListItem>
               ),
 
               ///Action Buttons
+
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+//                padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: StreamBuilder<DocumentSnapshot>(
                     stream: Repo.myPostLikeStream(widget.post),
                     builder: (context, snapshot) {
                       if (!snapshot.hasData) return SizedBox();
+
                       final liked = snapshot.data.exists;
+
                       if (!postLikeIsInitiated) {
                         likedPost = liked;
                         postLikeIsInitiated = true;
                       }
 
                       return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
                           PostActionBar(
                             didLike: liked,
@@ -682,89 +686,100 @@ class _PostListItemState extends State<PostListItem>
                                 ? 1
                                 : post.urlBundles.length,
                           ),
-                          Visibility(
-                            visible: post.stats.likeCount +
-                                    (likedPost ? 0 : 1) +
-                                    (liked ? 0 : -1) >
-                                0,
-                            child: LikeCountBar(
-                              post: post,
-                              likeCount: post.stats.likeCount +
-                                  (likedPost ? 0 : 1) +
-                                  (liked ? 0 : -1),
-                            ),
-                          ),
-
-                          ///Caption
-                          if (post.caption.isNotEmpty)
-                            CommentPostListItem(
-                              uploader: post.owner,
-                              text: post.caption,
-                            ),
-
                           Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 4.0),
-                            child: Row(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: <Widget>[
-                                ///View more comments button
-                                if (post.stats.commentCount > 0) ...[
-                                  Material(
-                                    color: Colors.white,
-                                    child: InkWell(
-                                      onTap: () => Navigator.push(
-                                        context,
-                                        CommentScreen.route(post),
-                                      ),
-                                      child: Text(
-                                        'View all ${post.stats.commentCount} comments',
-                                        style: TextStyles.defaultText
-                                            .copyWith(color: Colors.grey),
-                                      ),
-                                    ),
+                                Visibility(
+                                  visible: post.stats.likeCount +
+                                          (likedPost ? 0 : 1) +
+                                          (liked ? 0 : -1) >
+                                      0,
+                                  child: LikeCountBar(
+                                    post: post,
+                                    likeCount: post.stats.likeCount +
+                                        (likedPost ? 0 : 1) +
+                                        (liked ? 0 : -1),
                                   ),
-                                  Center(
-                                    child: Text(
-                                      ' · ',
-                                      style: TextStyles.defaultText
-                                          .copyWith(color: Colors.grey),
-                                    ),
-                                  ),
-                                ],
+                                ),
 
-                                ///Add Comment Button
-                                Material(
-                                  color: Colors.white,
-                                  child: InkWell(
-                                    splashColor: Colors.white,
-                                    highlightColor: Colors.grey[100],
-                                    onTap: () =>
-                                        widget.onAddComment(widget.post.id),
-                                    child: Text(
-                                      '${post.stats.commentCount > 0 ? 'A' : 'A'}dd comment',
-                                      style: TextStyles.defaultText.copyWith(
-                                        color: Colors.grey,
+                                ///Caption
+                                if (post.caption.isNotEmpty)
+                                  CommentPostListItem(
+                                    uploader: post.owner,
+                                    text: post.caption,
+                                  ),
+
+                                Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 4.0),
+                                  child: Row(
+                                    children: <Widget>[
+                                      ///View more comments button
+                                      if (post.stats.commentCount > 0) ...[
+                                        Material(
+                                          color: Colors.white,
+                                          child: InkWell(
+                                            onTap: () => Navigator.push(
+                                              context,
+                                              CommentScreen.route(post),
+                                            ),
+                                            child: Text(
+                                              'View all ${post.stats.commentCount} comments',
+                                              style: TextStyles.defaultText
+                                                  .copyWith(color: Colors.grey),
+                                            ),
+                                          ),
+                                        ),
+                                        Center(
+                                          child: Text(
+                                            ' · ',
+                                            style: TextStyles.defaultText
+                                                .copyWith(color: Colors.grey),
+                                          ),
+                                        ),
+                                      ],
+
+                                      ///Add Comment Button
+                                      Material(
+                                        color: Colors.white,
+                                        child: InkWell(
+                                          splashColor: Colors.white,
+                                          highlightColor: Colors.grey[100],
+                                          onTap: () => widget
+                                              .onAddComment(widget.post.id),
+                                          child: Text(
+                                            '${post.stats.commentCount > 0 ? 'A' : 'A'}dd comment',
+                                            style:
+                                                TextStyles.defaultText.copyWith(
+                                              color: Colors.grey,
+                                            ),
+                                          ),
+                                        ),
                                       ),
-                                    ),
+                                    ],
+                                  ),
+                                ),
+
+                                if (post.topComments != null &&
+                                    post.topComments.isNotEmpty)
+                                  for (final c in post.topComments)
+                                    CommentPostListItem(
+                                        uploader: c.owner, text: c.text),
+
+                                ///Timestamp
+                                Padding(
+                                  padding: const EdgeInsets.only(
+                                      top: 4.0, bottom: 8.0),
+                                  child: Text(
+                                    TimeAgo.formatLong(post.timestamp.toDate()),
+                                    style: TextStyles.defaultText.copyWith(
+                                        fontSize: 13, color: Colors.grey),
                                   ),
                                 ),
                               ],
-                            ),
-                          ),
-
-                          if (post.topComments != null &&
-                              post.topComments.isNotEmpty)
-                            for (final c in post.topComments)
-                              CommentPostListItem(
-                                  uploader: c.owner, text: c.text),
-
-                          ///Timestamp
-                          Padding(
-                            padding:
-                                const EdgeInsets.only(top: 4.0, bottom: 8.0),
-                            child: Text(
-                              TimeAgo.formatLong(post.timestamp.toDate()),
-                              style: TextStyles.defaultText
-                                  .copyWith(fontSize: 13, color: Colors.grey),
                             ),
                           ),
                         ],

@@ -296,7 +296,7 @@ class _ShoutScreenState extends State<ShoutScreen> {
   Future _completeShoutChallenge() async {
     final metadata = {
       'challenger': widget.peer.toMap(),
-      'challenged': auth.toMap(),
+      'challenged': auth.user.toMap(),
       'challenger_text': widget.content,
       'challenged_text': controller.text,
     };

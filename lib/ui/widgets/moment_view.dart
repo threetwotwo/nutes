@@ -39,24 +39,15 @@ class _MomentViewState extends State<MomentView> {
 
   ImageStreamListener imageStreamListener() =>
       ImageStreamListener((info, call) async {
-        print(info);
-        print(call);
         if (info != null && mounted) {
           print('moment loaded');
-//          setState(() {
-//            doodles[currentPage] =
-//                doodles[currentPage].copyWith(isLoaded: true);
-//          });
 
-//          if (_debounce?.isActive ?? false) _debounce.cancel();
-//
-//          _debounce =
-//              Timer(const Duration(milliseconds: 3500), () => _nextDoodle());
           widget.onLoad();
         }
       }, onError: (_, __) {
         print('error loading moment');
 
+        setState(() {});
         return widget.onError();
       });
 
@@ -78,7 +69,7 @@ class _MomentViewState extends State<MomentView> {
     _image = Image.network(
       widget.moment.url,
       fit: BoxFit.cover,
-      cacheWidth: 640,
+//      cacheWidth: 640,
       loadingBuilder: (context, child, progress) {
         if (progress == null) {
           Repo.setMomentAsSeen(widget.uploader.uid, widget.moment.id);

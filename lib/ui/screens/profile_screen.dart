@@ -199,13 +199,16 @@ class _ProfileScreenState extends State<ProfileScreen>
                 : profile == null
                     ? SizedBox()
                     : StreamBuilder<DocumentSnapshot>(
-                        stream: Repo.myFollowingListStream(),
+//                        stream: Repo.myFollowingListStream(),
+                        stream: Repo.amIFollowingUserStream(uid),
                         builder: (context, snapshot) {
                           if (!snapshot.hasData || userStory == null)
                             return Container();
-                          final List uids = snapshot.data.data == null
-                              ? []
-                              : snapshot.data.data['uids'];
+                          final imFollowingUser = snapshot.data.exists;
+//                          final List uids = snapshot.data.data == null
+//                              ? []
+//                              : snapshot.data['uids'];
+//                          print('is following user ${uid}: $imFollowingUser');
                           return RefreshListView(
                             onLoadMore: _loadMore,
                             children: <Widget>[
@@ -239,8 +242,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                               topPadding: topPadding,
                                               userStories: [userStory],
                                               onPageChange: (val) {}),
-                                      isFollowing:
-                                          isFollowing ?? uids.contains(uid),
+                                      isFollowing: imFollowingUser,
                                       isOwner: false,
                                       profile: profile,
                                       onFollowersPressed: () => Navigator.push(
@@ -286,7 +288,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                               profile.user.isPrivate);
                                         }
 
-                                        if (isFollowing ?? uids.contains(uid)) {
+                                        if (isFollowing ?? imFollowingUser) {
                                           print('unfollow');
 
                                           Repo.unfollowUser(profile.uid);
@@ -300,7 +302,6 @@ class _ProfileScreenState extends State<ProfileScreen>
                                                       1);
                                             });
                                         } else {
-                                          print('follow');
                                           Repo.requestFollow(profile.user,
                                               profile.user.isPrivate);
                                           if (mounted)
@@ -326,8 +327,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                               Divider(height: 0, thickness: 1),
                               profile.user.isPrivate == null
                                   ? SizedBox()
-                                  : profile.user.isPrivate &&
-                                          !(uids.contains(profile.uid))
+                                  : profile.user.isPrivate && !(imFollowingUser)
                                       ? PrivateAccount()
                                       : isLoadingPosts
                                           ? LoadingIndicator()

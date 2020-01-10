@@ -122,27 +122,26 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
     final topPadding = MediaQuery.of(context).padding.top;
 //    final auth = Provider.of<UserProfile>(context);
 
-    return Scaffold(
-      appBar: ProfileAppBar(
-        profile: profile,
-        isRoot: widget.isRoot,
-        onTrailingPressed: () =>
-            Navigator.push(context, AccountScreen.route(profile)),
-      ),
-      backgroundColor: Colors.white,
-      body: SafeArea(
-          child: RefreshListView(
-        onLoadMore: _loadMore,
-        controller: widget.isRoot ? widget.scrollController : null,
-        children: <Widget>[
-          StreamBuilder<DocumentSnapshot>(
-              stream: profileStream,
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) return LoadingIndicator();
+    return StreamBuilder<DocumentSnapshot>(
+        stream: profileStream,
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) return LoadingIndicator();
 
-                final prof = UserProfile.fromDoc(snapshot.data);
-
-                return StreamBuilder<QuerySnapshot>(
+          final prof = UserProfile.fromDoc(snapshot.data);
+          return Scaffold(
+            appBar: ProfileAppBar(
+              profile: prof,
+              isRoot: widget.isRoot,
+              onTrailingPressed: () =>
+                  Navigator.push(context, AccountScreen.route(profile)),
+            ),
+            backgroundColor: Colors.white,
+            body: SafeArea(
+                child: RefreshListView(
+              onLoadMore: _loadMore,
+              controller: widget.isRoot ? widget.scrollController : null,
+              children: <Widget>[
+                StreamBuilder<QuerySnapshot>(
                     stream: Repo.myStoryStream(),
                     builder: (context, storySnap) {
                       if (!storySnap.hasData) return LoadingIndicator();
@@ -191,9 +190,9 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                                   : Navigator.of(context, rootNavigator: true)
                                       .push(EditorPage.route()),
                               onFollowersPressed: () => Navigator.push(context,
-                                  FollowerListScreen.route(profile.user, 0)),
+                                  FollowerListScreen.route(prof.user, 0)),
                               onFollowingsPressed: () => Navigator.push(context,
-                                  FollowerListScreen.route(profile.user, 1)),
+                                  FollowerListScreen.route(prof.user, 1)),
                               storyState: storyState,
                               profile: prof,
                               isOwner: true,
@@ -219,33 +218,33 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                               },
                             );
                           });
-                    });
-              }),
-          Divider(height: 0, thickness: 1),
-          isLoadingPosts
-              ? LoadingIndicator()
-              : posts.isEmpty
-                  ? MyEmptyPostView()
-                  : ProfileTabController(
-                      view: view,
-                      postGridView: PostGridView(
-                        posts: posts,
-                        onTap: (index) =>
-                            Navigator.of(context).push(MaterialPageRoute(
-                                builder: (context) => PostDetailScreen(
-                                      post: posts[index],
-                                    ))),
-                      ),
-                      postListView: ListView.builder(
-                        shrinkWrap: true,
-                        physics: NeverScrollableScrollPhysics(),
-                        itemCount: posts.length,
-                        itemBuilder: (context, index) => PostListItem(
-                          post: posts[index],
-                        ),
-                      )),
-        ],
-      )),
-    );
+                    }),
+                Divider(height: 0, thickness: 1),
+                isLoadingPosts
+                    ? LoadingIndicator()
+                    : posts.isEmpty
+                        ? MyEmptyPostView()
+                        : ProfileTabController(
+                            view: view,
+                            postGridView: PostGridView(
+                              posts: posts,
+                              onTap: (index) =>
+                                  Navigator.of(context).push(MaterialPageRoute(
+                                      builder: (context) => PostDetailScreen(
+                                            post: posts[index],
+                                          ))),
+                            ),
+                            postListView: ListView.builder(
+                              shrinkWrap: true,
+                              physics: NeverScrollableScrollPhysics(),
+                              itemCount: posts.length,
+                              itemBuilder: (context, index) => PostListItem(
+                                post: posts[index],
+                              ),
+                            )),
+              ],
+            )),
+          );
+        });
   }
 }

@@ -106,7 +106,7 @@ class _FollowerTabViewState extends State<FollowerTabView> {
     super.initState();
   }
 
-  void _initUsers() async {
+  Future<void> _initUsers() async {
     final results = widget.isFollowers
         ? await Repo.getFollowersOfUser(widget.uid)
         : await Repo.getFollowingsOfUser(widget.uid);
@@ -119,8 +119,8 @@ class _FollowerTabViewState extends State<FollowerTabView> {
   @override
   Widget build(BuildContext context) {
     return RefreshListView(
-      onRefresh: () {},
-      onLoadMore: () {},
+      onRefresh: _initUsers,
+//      onLoadMore: () {},
       children: <Widget>[
         users == null
             ? EmptyIndicator('Loading...')

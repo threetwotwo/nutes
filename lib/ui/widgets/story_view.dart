@@ -309,6 +309,7 @@ class _StoryViewState extends State<StoryView>
                           moment.isLoaded = true;
                           _play();
                         },
+                        onError: () {},
                       );
                     },
                   ),

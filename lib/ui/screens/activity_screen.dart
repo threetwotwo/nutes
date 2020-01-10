@@ -1,21 +1,17 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:nutes/core/models/activity.dart';
 import 'package:nutes/core/models/follow_request.dart';
-import 'package:nutes/core/models/post_type.dart';
 import 'package:nutes/core/models/user.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/screens/follow_request_screen.dart';
-import 'package:nutes/ui/screens/post_detail_screen.dart';
 import 'package:nutes/ui/shared/avatar_image.dart';
 import 'package:nutes/ui/shared/avatar_list_item.dart';
 import 'package:nutes/ui/shared/empty_indicator.dart';
 import 'package:nutes/ui/shared/loading_indicator.dart';
 import 'package:nutes/ui/shared/refresh_list_view.dart';
-import 'package:nutes/ui/shared/shout_grid_item.dart';
 import 'package:nutes/ui/shared/styles.dart';
-import 'package:nutes/utils/timeAgo.dart';
+import 'package:nutes/ui/widgets/activity_list_item.dart';
 import 'package:provider/provider.dart';
 
 class ActivityScreen extends StatelessWidget {
@@ -81,30 +77,19 @@ class _FollowingsActivityScreenState extends State<FollowingsActivityScreen> {
 
   @override
   void initState() {
-    _getActivity();
+    _getActivities();
     super.initState();
   }
 
-  _getActivity() async {
+  _getActivities() async {
     setState(() {
       isLoading = true;
     });
     var result = await Repo.getMyFollowingsActivity();
-//    result.removeWhere((r) => r.activityType == null);
     setState(() {
       isLoading = false;
       activities = result;
     });
-
-    final postLikes = result
-        .where((ac) => ac.activityType == ActivityType.post_like)
-        .toList();
-
-    if (postLikes.isEmpty) return;
-
-    final likesBundle = ActivityBundle.from(postLikes, ActivityType.post_like);
-
-    bundles.add(likesBundle);
   }
 
   @override
@@ -112,20 +97,23 @@ class _FollowingsActivityScreenState extends State<FollowingsActivityScreen> {
     return isLoading
         ? LoadingIndicator()
         : activities.isEmpty
-            ? EmptyIndicator('No followings activity')
+            ? EmptyIndicator('No recent activity')
             : RefreshListView(
-                onRefresh: () => _getActivity(),
+                onRefresh: () => _getActivities(),
                 children: <Widget>[
                   ListView.builder(
                       shrinkWrap: true,
                       physics: NeverScrollableScrollPhysics(),
-                      itemCount: bundles.length,
+                      itemCount: activities.length,
                       itemBuilder: (context, index) {
                         final activity = activities[index];
+
 //                        final user = activity.postOwner;
 //                        final postUrl = activity.postUrl;
 //                        final date = activity.timestamp;
-                        return ActivityListItem(bundle: bundles[index]);
+                        return ActivityListItem(
+                          activity: activity,
+                        );
                       }),
                 ],
               );
@@ -183,37 +171,20 @@ class _SelfActivityViewState extends State<SelfActivityView> {
                         trailingWidget: Icon(Icons.chevron_right),
                       ),
                     )
-                  : profile.user.isPrivate
-                      ? EmptyIndicator('No follow requests')
-                      : SizedBox();
+                  : SizedBox();
             }),
-        ListView.builder(
-            shrinkWrap: true,
-            itemCount: _activities.length,
-            itemBuilder: (context, index) {
-              final act = _activities[index];
+        _activities.isEmpty
+            ? EmptyIndicator('No recent activity')
+            : ListView.builder(
+                shrinkWrap: true,
+                itemCount: _activities.length,
+                itemBuilder: (context, index) {
+                  final act = _activities[index];
 
-              final title = act.liker.username +
-                  ' ' +
-                  'liked your post ${TimeAgo.formatShort(act.timestamp.toDate())}';
-              return AvatarListItem(
-                trailingFlexFactor: 2,
-                avatar: AvatarImage(
-                  url: act.liker.urls.small,
-                ),
-                title: title,
-                trailingWidget: Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey[200])),
-                  child: CachedNetworkImage(
-                    fit: BoxFit.cover,
-                    imageUrl: act.postUrl,
-                  ),
-                ),
-              );
-            }),
+                  return ActivityListItem(
+                    activity: act,
+                  );
+                }),
       ],
     );
   }
@@ -227,82 +198,82 @@ class _SelfActivityViewState extends State<SelfActivityView> {
   }
 }
 
-class ActivityListItem extends StatelessWidget {
-  final ActivityBundle bundle;
-
-  const ActivityListItem({Key key, this.bundle}) : super(key: key);
-  @override
-  Widget build(BuildContext context) {
-    final length = bundle.activities.length;
-    return Column(
-      children: <Widget>[
-        AvatarListItem(
-            avatar: AvatarImage(
-              url: bundle.owner.urls.small,
-            ),
-            richTitle: TextSpan(children: [
-              TextSpan(
-                  text: bundle.owner.username,
-                  style: TextStyles.defaultText
-                      .copyWith(fontWeight: FontWeight.w500)),
-              TextSpan(
-                  text:
-                      ' liked ${length > 1 ? length : 'a'} post${length > 1 ? 's' : ''}. ',
-                  style: TextStyles.w300Text),
-              TextSpan(
-                  text: TimeAgo.formatShort(bundle.timestamp.toDate()),
-                  style: TextStyles.w300Text.copyWith(color: Colors.grey)),
-            ])
-//      title: '${activity.owner.username} liked a post',
-            ),
-        Container(
-          height: 110,
-          child: ListView.builder(
-//              shrinkWrap: true,
-              itemCount: bundle.activities.length,
-              scrollDirection: Axis.horizontal,
-              itemBuilder: (context, idx) {
-                final activity = bundle.activities[idx];
-
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: <Widget>[
-                      GestureDetector(
-                        onTap: () {
-                          return Navigator.push(
-                            context,
-                            PostDetailScreen.route(null,
-                                postId: activity.postId,
-                                ownerId: activity.postOwner.uid),
-                          );
-                        },
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.grey[100],
-                            border: Border.all(color: Colors.grey[200]),
-                          ),
-                          height: 110,
-                          width: 110,
-                          child: activity.postType == PostType.text
-                              ? CachedNetworkImage(
-                                  imageUrl: activity.postUrl,
-                                  fit: BoxFit.cover,
-                                )
-                              : ShoutGridItem(
-                                  metadata: activity.metadata,
-                                  avatarSize: 24,
-                                  fontSize: 10,
-                                ),
-                        ),
-                      )
-                    ],
-                  ),
-                );
-              }),
-        )
-      ],
-    );
-  }
-}
+//class ActivityBundleListItem extends StatelessWidget {
+//  final ActivityBundle bundle;
+//
+//  const ActivityBundleListItem({Key key, this.bundle}) : super(key: key);
+//  @override
+//  Widget build(BuildContext context) {
+//    final length = bundle.activities.length;
+//    return Column(
+//      children: <Widget>[
+//        AvatarListItem(
+//            avatar: AvatarImage(
+//              url: bundle.owner.urls.small,
+//            ),
+//            richTitle: TextSpan(children: [
+//              TextSpan(
+//                  text: bundle.owner.username,
+//                  style: TextStyles.defaultText
+//                      .copyWith(fontWeight: FontWeight.w500)),
+//              TextSpan(
+//                  text:
+//                      ' liked ${length > 1 ? length : 'a'} post${length > 1 ? 's' : ''}. ',
+//                  style: TextStyles.w300Text),
+//              TextSpan(
+//                  text: TimeAgo.formatShort(bundle.timestamp.toDate()),
+//                  style: TextStyles.w300Text.copyWith(color: Colors.grey)),
+//            ])
+////      title: '${activity.owner.username} liked a post',
+//            ),
+//        Container(
+//          height: 110,
+//          child: ListView.builder(
+////              shrinkWrap: true,
+//              itemCount: bundle.activities.length,
+//              scrollDirection: Axis.horizontal,
+//              itemBuilder: (context, idx) {
+//                final activity = bundle.activities[idx];
+//
+//                return Padding(
+//                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+//                  child: Row(
+//                    mainAxisAlignment: MainAxisAlignment.end,
+//                    children: <Widget>[
+//                      GestureDetector(
+//                        onTap: () {
+//                          return Navigator.push(
+//                            context,
+//                            PostDetailScreen.route(null,
+//                                postId: activity.postId,
+//                                ownerId: activity.postOwner.uid),
+//                          );
+//                        },
+//                        child: Container(
+//                          decoration: BoxDecoration(
+//                            color: Colors.grey[100],
+//                            border: Border.all(color: Colors.grey[200]),
+//                          ),
+//                          height: 110,
+//                          width: 110,
+//                          child: activity.post.type == PostType.text
+//                              ? CachedNetworkImage(
+//                                  imageUrl: activity.postUrl,
+//                                  fit: BoxFit.cover,
+//                                )
+//                              : ShoutGridItem(
+//                                  metadata: activity.metadata,
+//                                  avatarSize: 24,
+//                                  fontSize: 10,
+//                                ),
+//                        ),
+//                      )
+//                    ],
+//                  ),
+//                );
+//              }),
+//        )
+//      ],
+//    );
+//  }
+//}

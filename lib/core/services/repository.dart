@@ -6,10 +6,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/widgets.dart';
 import 'package:nutes/core/models/doodle.dart';
 import 'package:nutes/core/services/events.dart';
-//import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart' as path_provider;
 import 'package:image/image.dart' as img;
-import 'package:meta/meta.dart';
 import 'package:nutes/core/models/activity.dart';
 import 'package:nutes/core/models/chat_message.dart';
 import 'package:nutes/core/models/comment.dart';
@@ -438,6 +436,10 @@ class Repo {
     return shared._firestore.myFollowingListStream();
   }
 
+  static Stream<DocumentSnapshot> amIFollowingUserStream(String uid) {
+    return shared._firestore.amIFollowingUserStream(uid);
+  }
+
   /// follow a user
   static requestFollow(User user, bool isPrivate) {
     isPrivate
@@ -571,6 +573,20 @@ class Repo {
     shared._storage.removeCurrentPhoto();
     return shared._firestore.updateProfile(urls: ImageUrlBundle.empty());
 //    final updatedUser = Auth.instance.profile.copyWith(photoUrl: '');
+  }
+
+  static Future<UserProfile> updateProfile({
+    String username,
+    String displayName,
+    String bio,
+    ImageUrlBundle urls,
+  }) async {
+    final profile = shared._firestore.updateProfile(
+        username: username, displayName: displayName, bio: bio, urls: urls);
+
+    FirestoreService.auth = profile;
+
+    return profile;
   }
 
   static Future<UserProfile> updatePhotoUrl({String uid, File original}) async {

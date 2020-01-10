@@ -41,10 +41,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
   @override
   void initState() {
     profile = widget.profile;
-    _usernameController.text = auth.user.username;
-    _displayNameController.text = auth.user.displayName;
-    _bioController.text = auth.bio;
-    _emailController.text = auth.user.username;
+    _usernameController.text = profile.user.username;
+    _displayNameController.text = profile.user.displayName;
+    _bioController.text = profile.bio;
+    _emailController.text = profile.user.username;
     super.initState();
   }
 
@@ -128,9 +128,17 @@ class _EditProfilePageState extends State<EditProfilePage> {
             EditListItem(
               title: 'Username',
               readOnly: true,
-              controller: _usernameController,
-              onTap: () =>
-                  Navigator.push(context, ChangeUsernameScreen.route(profile)),
+              controller: _usernameController..text = profile.user.username,
+              onTap: () async {
+                final result = await Navigator.push(
+                    context, ChangeUsernameScreen.route(profile));
+
+                if (result is UserProfile) {
+                  setState(() {
+                    profile = result;
+                  });
+                }
+              },
             ),
             EditListItem(
               title: 'Bio',

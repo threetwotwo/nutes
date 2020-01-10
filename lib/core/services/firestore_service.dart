@@ -622,21 +622,24 @@ class FirestoreService {
   ///Writes a follow request doc on a given user's follow request collection
   Future requestFollow(String uid) {
     final batch = shared.batch();
-    final ref = _followRequestsRef(uid).document(auth.uid);
-    final ref2 = myFollowRequestsRef();
+    final followRequestRef = _followRequestsRef(uid).document(auth.uid);
+    final myRequestListRef = myFollowRequestsRef();
 
     batch.setData(
-      ref,
+      followRequestRef,
       {
-        'user': auth.toMap(),
+        'user': auth.user.toMap(),
         'timestamp': Timestamp.now(),
       },
-      merge: true,
+//      merge: true,
     );
 
-    batch.setData(ref2, {
-      'requests': FieldValue.arrayUnion([uid]),
-    });
+    batch.setData(
+      myRequestListRef,
+      {
+        'requests': FieldValue.arrayUnion([uid]),
+      },
+    );
     return batch.commit();
   }
 
@@ -662,6 +665,7 @@ class FirestoreService {
   Future<void> follow(
       {@required User follower, @required User following}) async {
     final followerRef = shared.collection('users').document(follower.uid);
+
     final followingRef = shared.collection('users').document(following.uid);
 
     ///Current timestamp
@@ -676,37 +680,41 @@ class FirestoreService {
     final followerFollowings =
         await followerRef.collection('followings_list').document('list').get();
 
-    final followerFollowingsDetailed = await followerRef
-        .collection('followings_list')
-        .where('is_full', isEqualTo: false)
-        .limit(1)
-        .getDocuments();
+//    final followerFollowingsDetailed = await followerRef
+////        .collection('followings_list')
+////        .where('is_full', isEqualTo: false)
+////        .limit(1)
+////        .getDocuments();
 
     ///TODO: how to detect if doc is full
 
-    Map followings = followerFollowingsDetailed.documents.isEmpty
-        ? {}
-        : followerFollowingsDetailed.documents.first.data['users'] ?? {};
+//    Map followings = followerFollowingsDetailed.documents.isEmpty
+//        ? {}
+//        : followerFollowingsDetailed.documents.first.data['users'] ?? {};
+//
+//    followings[following.uid] = following.toMap();
+//
+//    final followingsDetailedRef = followerFollowingsDetailed.documents.isEmpty
+//        ? followerRef.collection('followings_list').document()
+//        : followerFollowingsDetailed.documents.first.reference;
 
-    followings[following.uid] = following.toMap();
-
-    final followingsDetailedRef = followerFollowingsDetailed.documents.isEmpty
-        ? followerRef.collection('followings_list').document()
-        : followerFollowingsDetailed.documents.first.reference;
-
-    batch.setData(
-        followingsDetailedRef,
-        {
-          'type': 'users',
-          'users': followings,
-          'is_full': followings.length > 999
-        },
-        merge: true);
+//    batch.setData(
+//        followingsDetailedRef,
+//        {
+//          'type': 'users',
+//          'users': followings,
+//          'is_full': followings.length > 999
+//        },
+//        merge: true);
 
     final List uids =
         !followerFollowings.exists ? [] : followerFollowings.data['uids'] ?? [];
 
     if (uids.length > 7500) print('full followings');
+
+    final isFull = uids.length > 7500;
+
+    if (isFull) return;
 
     batch.setData(
       followerFollowings.reference,
@@ -737,7 +745,8 @@ class FirestoreService {
       followingFollowerRef,
       {
         'follower_id': follower.uid,
-        'username': follower.username,
+        'follower': follower.toMap(),
+        'following': following.toMap(),
         'timestamp': timestamp,
       },
       merge: true,
@@ -881,6 +890,10 @@ class FirestoreService {
 
   Stream<DocumentSnapshot> myFollowingListStream() {
     return myFollowingListRef().snapshots();
+  }
+
+  Stream<DocumentSnapshot> amIFollowingUserStream(String uid) {
+    return userRef(uid).collection('followers').document(auth.uid).snapshots();
   }
 
   Future<Map<String, dynamic>> getSeenStories() async {
@@ -1211,8 +1224,10 @@ class FirestoreService {
     final ownerActivityRef =
         activityRef(post.owner.uid).document('${auth.uid}-${post.id}');
 
-    batch.setData(
-        ownerActivityRef, payload..addAll({'activity_type': 'post_like'}));
+    ///if liker is not yourself
+    if (auth.uid != post.owner.uid)
+      batch.setData(
+          ownerActivityRef, payload..addAll({'activity_type': 'post_like'}));
 
     ///Due to potential scalability issues ,
     ///might need to write this to my_likes col ref instead
@@ -1276,7 +1291,7 @@ class FirestoreService {
     batch.delete(likeRef);
 
     ///delete from owner's activity ref
-    batch.delete(ownerActivityRef);
+    if (auth.uid != post.owner.uid) batch.delete(ownerActivityRef);
 
     return batch.commit();
   }
@@ -1452,27 +1467,24 @@ class FirestoreService {
   }
 
   Future<List<Activity>> getMyActivity() async {
-    final query = activityRef(auth.uid)
-//        .where('activity_type', isEqualTo: 'post_like')
-        .orderBy('timestamp', descending: true)
-        .limit(30);
+    final query =
+        activityRef(auth.uid).orderBy('timestamp', descending: true).limit(30);
 
     final docs = await query.getDocuments();
 
     return docs.documents.map((doc) => Activity.fromDoc(doc)).toList()
-      ..removeWhere((ac) => ac.activityType == null);
+      ..removeWhere((ac) => ac == null);
   }
 
   Future<List<Activity>> getMyFollowingsActivity() async {
     final query = myFollowingsActivityColRef
-//        .where('activity_type', isEqualTo: 'post_like')
         .orderBy('timestamp', descending: true)
         .limit(30);
 
     final docs = await query.getDocuments();
 
     return docs.documents.map((doc) => Activity.fromDoc(doc)).toList()
-      ..removeWhere((ac) => ac.activityType == null);
+      ..removeWhere((ac) => (ac == null));
   }
 
 //  Future<List<Activity>> getFollowingsActivity(List<User> followings) async {
@@ -1489,13 +1501,18 @@ class FirestoreService {
 //  }
 
   Future<List<User>> getFollowersOfUser(String uid) async {
-    final docs =
+    final snap =
         await userRef(uid).collection('followers').limit(20).getDocuments();
 
-    final futures =
-        docs.documents.map((doc) => getUser(doc.documentID)).toList();
+//    final futures =
+//        docs.documents.map((doc) => getUser(doc.documentID)).toList();
 
-    return Future.wait(futures);
+//    return Future.wait(futures);
+
+    return List.from(snap.documents
+        .map((doc) => User.fromMap(doc['follower'] ?? {}))
+        .toList())
+      ..removeWhere((u) => (u.username == null || u.username.isEmpty));
   }
 
   Future<List<User>> getFollowingsOfUser(String uid) async {

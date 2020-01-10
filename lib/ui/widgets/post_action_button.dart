@@ -17,20 +17,24 @@ class PostActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-        onTap: onTap,
-        child: icon != null
-            ? Icon(
-                icon,
-                color: this.color,
-                size: iconSize,
-              )
-            : Container(
-                height: 24,
-                child: Image.asset(
-                  'assets/images/spiral.png',
-                  fit: BoxFit.contain,
-                ),
-              ));
+    return Container(
+//      color: Colors.pink[100],
+      padding: const EdgeInsets.all(8),
+      child: GestureDetector(
+          onTap: onTap,
+          child: icon != null
+              ? Icon(
+                  icon,
+                  color: this.color,
+                  size: iconSize,
+                )
+              : Container(
+                  height: 24,
+                  child: Image.asset(
+                    'assets/images/spiral.png',
+                    fit: BoxFit.contain,
+                  ),
+                )),
+    );
   }
 }

@@ -21,9 +21,9 @@ class DotsIndicator extends StatelessWidget {
         color: color.withOpacity(0.5),
         activeColor: Colors.black.withOpacity(0.9),
         layout: PageIndicatorLayout.WARM,
-        size: 8.0,
+        size: 6.0,
         preloadController: preloadController,
-        space: 5.0,
+        space: 4.0,
         count: length,
       ),
     );

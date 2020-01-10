@@ -25,11 +25,12 @@ class PostActionBar extends StatelessWidget {
   }) : super(key: key);
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 50,
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
       child: Row(
         children: <Widget>[
           Expanded(
+            flex: 3,
             child: didLike == null
                 ? SizedBox()
                 : Row(
@@ -43,12 +44,12 @@ class PostActionBar extends StatelessWidget {
                         color: didLike ? Colors.red : Colors.black,
                         icon: didLike ? FontAwesome.heart : FontAwesome.heart_o,
                       ),
-                      SizedBox(width: 15),
+//                      SizedBox(width: 15),
                       PostActionButton(
                         onTap: onCommentTapped,
                         icon: FontAwesome.comment_o,
                       ),
-                      SizedBox(width: 15),
+//                      SizedBox(width: 15),
                       PostActionButton(
                         onTap: onSendTapped,
                         icon: SimpleLineIcons.paper_plane,
@@ -66,14 +67,17 @@ class PostActionBar extends StatelessWidget {
 //                  ),
           ),
           Expanded(
+            flex: 2,
             child: Center(
               child: DotsIndicator(
                   preloadController: controller, length: itemCount),
             ),
           ),
           Expanded(
-            child: Align(
+            flex: 3,
+            child: Container(
               alignment: Alignment.centerRight,
+//              color: Colors.green[100],
               child: PostActionButton(
                 onTap: onDoodle,
                 icon: null,

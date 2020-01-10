@@ -118,6 +118,42 @@ class Post {
     };
   }
 
+  factory Post.fromMap(Map map) {
+    final List urlBundle = map['urls'] ?? [];
+
+    if (urlBundle.isEmpty && map['data'] == null && map['metadata'] == null)
+      return null;
+
+    final urlBundles = urlBundle
+        .map((e) => ImageUrlBundle.fromMap(urlBundle.indexOf(e), e))
+        .toList();
+
+    final uploader = User.fromMap(map['uploader'] ?? {});
+
+    final caption = map['caption'] ?? '';
+
+    PostType type;
+
+    final docType = map['type'];
+
+    if (docType is int) {
+      type = docType == 0 ? PostType.text : PostType.shout;
+    } else
+      type = PostHelper.postType(map['type'].toString());
+
+    if (type == null) return null;
+
+    final post = Post(
+      id: map['post_id'],
+      type: type,
+      owner: uploader,
+      urlBundles: urlBundles,
+      timestamp: map['timestamp'] ?? Timestamp.now(),
+      metadata: map['metadata'] ?? {},
+      caption: caption,
+    );
+    return post.id == null ? null : post;
+  }
   factory Post.fromDoc(DocumentSnapshot doc) {
     final List urlBundle = doc['urls'] ?? [];
 
@@ -126,8 +162,8 @@ class Post {
     final urlBundles = urlBundle
         .map((e) => ImageUrlBundle.fromMap(urlBundle.indexOf(e), e))
         .toList();
-    final uploaderData = doc['uploader'] ?? {};
-    final uploader = User.fromMap(uploaderData);
+
+    final uploader = User.fromMap(doc['uploader'] ?? {});
 
     final caption = doc['caption'] ?? '';
 

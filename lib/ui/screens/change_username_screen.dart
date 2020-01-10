@@ -122,5 +122,23 @@ class _ChangeUsernameScreenState extends State<ChangeUsernameScreen> {
       isCheckingUsername = false;
       hasError = exists;
     });
+
+    if (hasError) return;
+
+    setState(() {
+      isCheckingUsername = true;
+    });
+
+    UserProfile profile;
+    if (!hasError) {
+      profile = await Repo.updateProfile(username: controller.text);
+    }
+
+    setState(() {
+      isCheckingUsername = false;
+      hasError = exists;
+    });
+
+    return Navigator.pop(context, profile);
   }
 }
