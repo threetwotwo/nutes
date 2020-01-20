@@ -8,9 +8,14 @@ class FeedAppBar extends StatelessWidget implements PreferredSizeWidget {
   final Function onCreatePressed;
   final Function onLogoutPressed;
   final Function onDM;
+  final bool hasUnread;
 
   const FeedAppBar(
-      {Key key, this.onCreatePressed, this.onLogoutPressed, this.onDM})
+      {Key key,
+      this.onCreatePressed,
+      this.onLogoutPressed,
+      this.onDM,
+      this.hasUnread})
       : super(key: key);
   @override
   Widget build(BuildContext context) {
@@ -27,12 +32,30 @@ class FeedAppBar extends StatelessWidget implements PreferredSizeWidget {
           onPressed: onLogoutPressed,
           color: Colors.black,
         ),
-        IconButton(
-          icon: Icon(
-            SimpleLineIcons.paper_plane,
-          ),
-          onPressed: onDM,
-          color: Colors.black,
+        Stack(
+          children: <Widget>[
+            Center(
+              child: IconButton(
+                icon: Icon(
+                  SimpleLineIcons.paper_plane,
+                ),
+                onPressed: onDM,
+                color: Colors.black,
+              ),
+            ),
+            if (hasUnread)
+              Positioned.fill(
+                top: 13,
+                right: 8,
+                child: Align(
+                  alignment: Alignment.topRight,
+                  child: CircleAvatar(
+                    radius: 5,
+                    backgroundColor: Colors.blue,
+                  ),
+                ),
+              )
+          ],
         ),
       ],
       elevation: 1.5,

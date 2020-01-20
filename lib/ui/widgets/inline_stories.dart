@@ -1,14 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:nutes/core/models/story.dart';
-import 'package:nutes/core/models/user.dart';
+import 'package:nutes/core/services/firestore_service.dart';
 import 'package:nutes/core/services/local_cache.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/shared/loading_indicator.dart';
 import 'package:nutes/ui/shared/story_avatar.dart';
 import 'package:nutes/ui/widgets/profile_header.dart';
 import 'package:nutes/ui/widgets/story_page_view.dart';
-import 'package:provider/provider.dart';
 
 class InlineStories extends StatefulWidget {
   final List<UserStory> userStories;
@@ -28,7 +27,7 @@ class _InlineStoriesState extends State<InlineStories> {
 
   @override
   Widget build(BuildContext context) {
-    final profile = Provider.of<UserProfile>(context);
+    final profile = FirestoreService.ath;
 
     return StreamBuilder<DocumentSnapshot>(
         stream: Repo.seenStoriesStream(),

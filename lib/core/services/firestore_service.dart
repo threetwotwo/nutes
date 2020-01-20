@@ -1,3 +1,4 @@
+import 'package:bot_toast/bot_toast.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:meta/meta.dart';
@@ -8,7 +9,6 @@ import 'package:nutes/core/models/doodle.dart';
 import 'package:nutes/core/models/post.dart';
 import 'package:nutes/core/models/story.dart';
 import 'package:nutes/core/models/user.dart';
-import 'package:nutes/core/services/auth.dart';
 import 'package:nutes/core/services/local_cache.dart';
 import 'package:nutes/utils/image_file_bundle.dart';
 
@@ -19,6 +19,10 @@ class FirestoreService {
   static UserProfile auth;
 
   static UserProfile get ath => FirestoreService.auth;
+
+  static String FCMToken;
+
+  static String get token => FirestoreService.FCMToken;
 
   final cache = LocalCache.instance;
 
@@ -42,6 +46,12 @@ class FirestoreService {
 
   DocumentReference postRef(String postId) =>
       shared.collection('posts').document(postId);
+
+  DocumentReference _commentRef(String postId, String commentId) =>
+      postRef(postId).collection('comments').document(commentId);
+
+  DocumentReference myPostFeedRef(String postId) =>
+      myProfileRef.collection('feed').document(postId);
 
   DocumentReference get myProfileRef => userRef(auth.uid);
 
@@ -446,6 +456,7 @@ class FirestoreService {
     String content,
     String response,
     User peer,
+    String postId,
   ) {
     ///Update shout message in chat ref by adding metadata response and
     ///updated timestamp
@@ -469,7 +480,10 @@ class FirestoreService {
       'timestamp': timestamp,
       'content': response,
       'type': BubbleHelper.stringValue(Bubbles.shout_complete),
-      'metadata': {'responding_to': content},
+      'metadata': {
+        'responding_to': content,
+        'post_id': postId,
+      },
     };
 
     final batch = shared.batch();
@@ -592,13 +606,13 @@ class FirestoreService {
     return batch.commit();
   }
 
-  UserProfile updateProfile({
+  Future<UserProfile> updateProfile({
     String username,
     String displayName,
     String bio,
     ImageUrlBundle urls,
-  }) {
-    shared.collection('users').document(auth.uid).updateData({
+  }) async {
+    await shared.collection('users').document(auth.uid).updateData({
       if (username != null) 'username': username,
       if (displayName != null) 'display_name': displayName,
       if (bio != null) 'bio': bio,
@@ -620,7 +634,7 @@ class FirestoreService {
   Future getMyFollowRequests() {}
 
   ///Writes a follow request doc on a given user's follow request collection
-  Future requestFollow(String uid) {
+  Future<void> requestFollow(String uid) {
     final batch = shared.batch();
     final followRequestRef = _followRequestsRef(uid).document(auth.uid);
     final myRequestListRef = myFollowRequestsRef();
@@ -714,6 +728,9 @@ class FirestoreService {
 
     final isFull = uids.length > 7500;
 
+    if (isFull)
+      BotToast.showText(text: 'You cannot follow more than 7500 accounts');
+
     if (isFull) return;
 
     batch.setData(
@@ -752,6 +769,18 @@ class FirestoreService {
       merge: true,
     );
 
+    ///4. Write to followed's activity
+    final followedActivityRef =
+        activityRef(following.uid).document('${follower.uid} -${follower.uid}');
+
+    batch.setData(followedActivityRef, {
+      'follower_id': follower.uid,
+      'follower': follower.toMap(),
+      'following': following.toMap(),
+      'timestamp': timestamp,
+      'activity_type': 'follow',
+    });
+
     ///4. (Cloud function) increment following's follower count
     ///4b. update following's activity feed (some guy started following you)
     ///4c. fan out follow activity to follower's followers
@@ -781,6 +810,20 @@ class FirestoreService {
 
     docs.documents.forEach((doc) =>
         batch.setData(followerFeedRef.document(doc.documentID), doc.data));
+
+    return batch.commit();
+  }
+
+  Future<void> deletePost(String postId) async {
+    final publicRef = postRef(postId);
+    final myRef = myPostRef(postId);
+    final feedRef = myPostFeedRef(postId);
+
+    final batch = shared.batch();
+
+    batch.delete(publicRef);
+    batch.delete(myRef);
+    batch.delete(feedRef);
 
     return batch.commit();
   }
@@ -1007,23 +1050,135 @@ class FirestoreService {
       owner: auth.user,
       parentId: parentComment?.id ?? null,
       parentOwner: parentComment?.owner ?? null,
+      stats: CommentStats(likeCount: 0, replyCount: 0),
     );
   }
 
-  Future<List<Comment>> getComments(String postId) async {
+  Future<void> likeComment(String postId, Comment comment) async {
+    final ref =
+        _commentRef(postId, comment.id).collection('likes').document(auth.uid);
+    final payload = {
+      'timestamp': Timestamp.now(),
+      'liker': auth.user.toMap(),
+      'content': comment.text,
+      'comment_owner': comment.owner.toMap(),
+    };
+
+    return ref.setData(payload);
+  }
+
+  Future<void> unlikeComment(String postId, Comment comment) async {
+    final ref =
+        _commentRef(postId, comment.id).collection('likes').document(auth.uid);
+
+    return ref.delete();
+  }
+
+  Future<bool> didLikeComment(String postId, String commentId) async {
+    final ref =
+        _commentRef(postId, commentId).collection('likes').document(auth.uid);
+
+    final doc = await ref.get();
+
+    return doc.exists;
+  }
+
+  Stream<DocumentSnapshot> commentLikeStream(String postId, String commentId) {
+    final ref =
+        _commentRef(postId, commentId).collection('likes').document(auth.uid);
+
+    return ref.snapshots();
+  }
+
+  Future<List<Comment>> getMoreReplies(
+      String postId, String parentId, DocumentSnapshot startAfter) async {
+    final query = startAfter == null
+        ? shared
+            .collection('posts')
+            .document(postId)
+            .collection('comments')
+            .where('parent_id', isEqualTo: parentId)
+            .orderBy('like_count', descending: true)
+            .limit(3)
+        : shared
+            .collection('posts')
+            .document(postId)
+            .collection('comments')
+            .where('parent_id', isEqualTo: parentId)
+            .orderBy('like_count', descending: true)
+            .startAfterDocument(startAfter)
+            .limit(3);
+
+    final snap = await query.getDocuments();
+
+    return snap.documents.reversed.map((doc) => Comment.fromDoc(doc)).toList();
+  }
+
+  Future<CommentCursor> getComments(
+      String postId, DocumentSnapshot startAfter) async {
+    List<Future<QuerySnapshot>> replyFutures = [];
+
     ///1. get root comments
+    final query = startAfter == null
+        ? shared
+            .collection('posts')
+            .document(postId)
+            .collection('comments')
+            .where('parent_id', isEqualTo: 'root')
+            .orderBy('like_count', descending: true)
+            .limit(8)
+        : shared
+            .collection('posts')
+            .document(postId)
+            .collection('comments')
+            .where('parent_id', isEqualTo: 'root')
+            .orderBy('like_count', descending: true)
+            .startAfterDocument(startAfter)
+            .limit(8);
+
+    final rootSnap = await query.getDocuments();
+
+    List<Comment> comments =
+        rootSnap.documents.map((doc) => Comment.fromDoc(doc)).toList();
+
     ///2. get comment replies (if any)
-    final commentsRef = shared
-        .collection('posts')
-        .document(postId)
-        .collection('comments')
-        .where('parent_id', isEqualTo: 'root')
-        .orderBy('like_count', descending: true)
-        .limit(16);
 
-    final docs = await commentsRef.getDocuments();
+    comments.forEach((c) {
+      if (c.stats.replyCount > 0) {
+//        print('get replies for comment ${c.id}');
 
-    return docs.documents.map((doc) => Comment.fromDoc(doc)).toList();
+        final repliesRef = shared
+            .collection('posts')
+            .document(postId)
+            .collection('comments')
+            .where('parent_id', isEqualTo: c.id)
+            .orderBy('like_count', descending: true)
+            .limit(3);
+
+        replyFutures.add(repliesRef.getDocuments());
+      }
+    });
+
+    final replySnaps = await Future.wait(replyFutures);
+
+    replySnaps.forEach((snap) {
+      ///Reversed so as to paginate within comment screen
+      ///need to find the immediate reply after the view replies button
+      final replies =
+          snap.documents.map((doc) => Comment.fromDoc(doc)).toList().reversed;
+      print('got replies ${replies.length}');
+
+      print(replies.last.text);
+
+      final insertIndex =
+          comments.indexWhere((rc) => rc.id == replies.first.parentId) + 1;
+
+      comments.insertAll(insertIndex, replies);
+    });
+
+    return rootSnap.documents.isNotEmpty
+        ? CommentCursor(comments, rootSnap.documents.last)
+        : CommentCursor(comments, startAfter);
   }
 
   Future uploadComment({
@@ -1035,7 +1190,7 @@ class FirestoreService {
 //    String parentId,
   }) async {
     final postRef = shared.collection('posts').document(postId);
-    final commentRef = postRef.collection('comments').document();
+    final commentRef = postRef.collection('comments').document(comment.id);
 
 //    final timestamp = Timestamp.now();
 
@@ -1045,7 +1200,7 @@ class FirestoreService {
       'parent_id': comment.parentId ?? 'root',
       'owner': comment.owner.toMap(),
       'text': comment.text,
-      'published': comment.timestamp,
+      'timestamp': comment.timestamp,
       'like_count': 0,
     };
 
@@ -1296,7 +1451,6 @@ class FirestoreService {
     return batch.commit();
   }
 
-  ///TODO: how to get didlikes and stats?
   Stream<QuerySnapshot> myPostStream() {
     final ref = userRef(auth.uid)
         .collection('posts')
@@ -1364,8 +1518,8 @@ class FirestoreService {
     final result = await getPostsComplete(posts);
 
     return docs.isNotEmpty
-        ? PostCursor(result, docs.last)
-        : PostCursor(result, startAfter);
+        ? PostCursor(result, docs.last, docs.first)
+        : PostCursor(result, startAfter, null);
   }
 
   Future<PostCursor> getNewestPosts(DocumentSnapshot startAfter) async {
@@ -1373,12 +1527,12 @@ class FirestoreService {
         ? shared
             .collection('posts')
             .orderBy('published', descending: true)
-            .limit(10)
+            .limit(12)
         : shared
             .collection('posts')
             .orderBy('published', descending: true)
             .startAfterDocument(startAfter)
-            .limit(10);
+            .limit(16);
 
     final docs = await statsColRef.getDocuments();
 
@@ -1391,8 +1545,8 @@ class FirestoreService {
     result.removeWhere((p) => (p == null || p.id == null || p.type == null));
 
     return docs.documents.isNotEmpty
-        ? PostCursor(result, docs.documents.last)
-        : PostCursor(result, startAfter);
+        ? PostCursor(result, docs.documents.last, docs.documents.first)
+        : PostCursor(result, startAfter, null);
   }
 
   Future<PostCursor> getTrendingPosts(DocumentSnapshot startAfter) async {
@@ -1400,13 +1554,15 @@ class FirestoreService {
     final query = startAfter == null
         ? shared
             .collection('posts')
+            .orderBy('published', descending: true)
             .orderBy('like_count', descending: true)
-            .limit(10)
+            .limit(12)
         : shared
             .collection('posts')
+            .orderBy('published', descending: true)
             .orderBy('like_count', descending: true)
             .startAfterDocument(startAfter)
-            .limit(10);
+            .limit(16);
 
     final docs = await query.getDocuments();
 
@@ -1421,8 +1577,8 @@ class FirestoreService {
     result.removeWhere((p) => (p == null || p.id == null || p.type == null));
 
     return docs.documents.isNotEmpty
-        ? PostCursor(result, docs.documents.last)
-        : PostCursor(result, startAfter);
+        ? PostCursor(result, docs.documents.last, docs.documents.first)
+        : PostCursor(result, startAfter, null);
   }
 
   ///
@@ -1462,8 +1618,38 @@ class FirestoreService {
     print('${result.length} posts fetched');
 
     return docs.documents.isNotEmpty
-        ? PostCursor(result, docs.documents.last)
-        : PostCursor(result, startAfter);
+        ? PostCursor(result, docs.documents.last, docs.documents.first)
+        : PostCursor(result, startAfter, null);
+  }
+
+  Future<bool> checkIfThereAreNewPosts(Timestamp timestamp) async {
+    final query = myProfileRef
+        .collection('feed')
+        .orderBy('timestamp', descending: true)
+        .endBefore([timestamp]).limit(1);
+
+    final snap = await query.getDocuments();
+
+    return snap.documents.isNotEmpty;
+  }
+
+  Future<PostCursor> getNewPostsForFeed(DocumentSnapshot endAt) async {
+    final query = myProfileRef
+        .collection('feed')
+        .orderBy('timestamp', descending: true)
+        .endAtDocument(endAt)
+        .limit(8);
+
+    final snap = await query.getDocuments();
+
+    List<Post> posts = snap.documents.map((doc) => Post.fromDoc(doc)).toList();
+
+    final result = List<Post>.from(await getPostsComplete(posts))
+      ..removeWhere((p) => p == null);
+
+    return snap.documents.isNotEmpty
+        ? PostCursor(result, null, snap.documents.first)
+        : PostCursor(result, null, endAt);
   }
 
   Future<List<Activity>> getMyActivity() async {
@@ -1544,6 +1730,7 @@ class FirestoreService {
     return s.map((u) => User.fromMap(u)).toList();
   }
 
+  //TODO: review this
   Future<List<User>> getFollowingLikesOfPost(
       String postId, List<User> userFollowings) async {
     if (userFollowings.isEmpty || userFollowings == null) return [];
@@ -1587,6 +1774,8 @@ class FirestoreService {
     print('getting post complete for post: $postId, owner: $ownerId');
 
     final post = await getPost(postId, ownerId);
+
+    if (post == null) return null;
 
     return post.copyWith(
       topComments: await getPostTopComments(post.id),
@@ -1635,7 +1824,7 @@ class FirestoreService {
 
     final privateInfoRef = userRef.collection('private').document('info');
 
-    final user2 = UserProfile(
+    final profile = UserProfile(
       uid: uid,
       user: User(
           uid: uid,
@@ -1651,7 +1840,7 @@ class FirestoreService {
 
     final b = batch();
 
-    b.setData(userRef, user2.toMap());
+    b.setData(userRef, profile.toMap());
     b.setData(privateInfoRef, {'email': email});
 
     await b.commit();
@@ -1663,13 +1852,12 @@ class FirestoreService {
 //      'email': email,
 //    });
 
-    return user2;
+    return profile;
   }
 
   Future<void> logout() async {
     ///Remove FCM token from user ref
-    if (auth.uid != null && fcmToken != null)
-      deleteFCMToken(uid: auth.uid, token: fcmToken);
+    if (auth.uid != null && fcmToken != null) deleteFCMToken(fcmToken);
 
     ///Sign out via FIRAuth
     await FirebaseAuth.instance.signOut();
@@ -1769,11 +1957,11 @@ class FirestoreService {
     return ref.snapshots();
   }
 
-  DocumentReference _fcmTokensRef({String uid, String token}) =>
-      userRef(uid).collection('fcm_tokens').document('tokens');
+  DocumentReference _fcmTokensRef(String token) =>
+      myProfileRef.collection('fcm_tokens').document('tokens');
 
-  Future<void> createFCMDeviceToken({String uid, String token}) {
-    final ref = _fcmTokensRef(uid: uid, token: token);
+  Future<void> createFCMDeviceToken(String uid, String token) {
+    final ref = _fcmTokensRef(token);
     return ref.setData(
       {
         'tokens': FieldValue.arrayUnion([token])
@@ -1782,13 +1970,37 @@ class FirestoreService {
     );
   }
 
-  Future<void> deleteFCMToken({String uid, String token}) {
-    final ref = _fcmTokensRef(uid: uid, token: token);
+  Future<void> deleteFCMToken(String token) {
+    final ref = _fcmTokensRef(token);
     return ref.setData(
       {
         'tokens': FieldValue.arrayRemove([token])
       },
       merge: true,
     );
+  }
+
+  Future<Map> getMyInfo() async {
+    final ref = myProfileRef.collection('private').document('info');
+    final doc = await ref.get();
+    return doc.data ?? {};
+  }
+
+  Future<void> updateEmail(String email) async {
+    print('update email: $email');
+
+    final FIRUSer = await FirebaseAuth.instance.currentUser();
+
+    await FIRUSer.updateEmail(email).catchError((e) => throw (e));
+
+    final privateRef = myProfileRef.collection('private').document('info');
+
+    return privateRef.setData({'email': email}, merge: true);
+  }
+
+  Future<String> getMyEmail() async {
+    final FIRUSer = await FirebaseAuth.instance.currentUser();
+
+    return FIRUSer.email;
   }
 }

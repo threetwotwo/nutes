@@ -275,8 +275,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                             },
                                       onFollow: () {
 //                                        print('on follow');
-                                        eventBus.fire(
-                                            UserFollowEvent(profile.user));
+
                                         if (profile.user.isPrivate) {
                                           setState(() {
                                             profile = profile.copyWith(

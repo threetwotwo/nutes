@@ -51,6 +51,40 @@ Future initCurrentUser() async {
   }
 }
 
+Future<dynamic> _handleMessage(Map<String, dynamic> message) {
+  if (message.containsKey('data')) {
+    // Handle data message
+    final dynamic data = message['data'];
+
+    final extraData = data['extradata'] ?? '';
+
+    print('onResume screen: ${data['screen']}');
+    switch (data['screen']) {
+      case "dm":
+        print('go to chat $extraData');
+        break;
+      case "post":
+        print('go to post $extraData');
+//            Navigator.of(context).push(PostDetailScreen.route(post));
+        break;
+      case "user":
+        print('go to user $extraData');
+//        Navigator.of(context).push(ProfileScreen.route(extraData));
+
+        break;
+      default:
+        break;
+    }
+  }
+
+  if (message.containsKey('notification')) {
+    // Handle notification message
+    final dynamic notification = message['notification'];
+  }
+
+  // Or do other work.
+}
+
 class MyApp extends StatefulWidget {
   @override
   _MyAppState createState() => _MyAppState();
@@ -92,54 +126,45 @@ class _MainBuilderState extends State<MainBuilder> {
 
   UserProfile profile;
 
+  _createFCMToken() async {
+    final user = await FirebaseAuth.instance.currentUser();
+
+    if (user != null) Repo.createFCMDeviceToken(user.uid, fcmToken);
+  }
+
   @override
   void initState() {
     super.initState();
 
     _fcm.requestNotificationPermissions();
 
-    _fcm.onIosSettingsRegistered.listen((IosNotificationSettings settings) {
-      print("Settings registered: $settings");
-      iosSettings = settings;
-    });
-
     _fcm.getToken().then((String token) {
       assert(token != null);
       fcmToken = token;
-      Repo.fcmToken = fcmToken;
+//      Repo.fcmToken = fcmToken;
+      FirestoreService.FCMToken = fcmToken;
       print('FCM token: $token');
     });
 
+    _fcm.onIosSettingsRegistered.listen((IosNotificationSettings settings) {
+      print("Settings registered: $settings");
+      iosSettings = settings;
+
+      if (iosSettings != null && fcmToken != null) _createFCMToken();
+    });
+
     _fcm.configure(
+//      onBackgroundMessage: _handleMessage,
       onMessage: (Map<String, dynamic> message) async {
         print("onMessage: $message");
+//        _handleMessage(message);
       },
       onLaunch: (Map<String, dynamic> message) async {
         print("onLaunch: $message");
       },
-      onResume: (Map<String, dynamic> msg) async {
-        print("onResume: $msg");
-
-        final data = msg['data'] ?? {};
-        final extraData = data['extradata'] ?? '';
-
-        print('onResume screen: ${data['screen']}');
-        switch (data['screen']) {
-          case "dm":
-            print('go to chat $extraData');
-            break;
-          case "post":
-            print('go to post $extraData');
-//            Navigator.of(context).push(PostDetailScreen.route(post));
-            break;
-          case "user":
-            print('go to user $extraData');
-            await Navigator.of(context).push(ProfileScreen.route(extraData));
-
-            break;
-          default:
-            break;
-        }
+      onResume: (Map<String, dynamic> message) async {
+        print("onResume: $message");
+//        _handleMessage(message);
       },
     );
   }
@@ -156,9 +181,6 @@ class _MainBuilderState extends State<MainBuilder> {
       stream: FirebaseAuth.instance.onAuthStateChanged,
       builder: (context, snapshot) {
         if (!snapshot.hasData) return LoginScreen();
-
-        if (iosSettings != null && fcmToken != null)
-          Repo.createFCMDeviceToken(uid: snapshot.data.uid, token: fcmToken);
 
 //        if (snapshot.data != null) _getProfile(snapshot.data.uid);
 
@@ -201,22 +223,22 @@ class _MainBuilderState extends State<MainBuilder> {
     );
   }
 
-  Future<void> _getProfile(String uid) async {
-    print('#### Get Profile for $uid');
-    final result = await Repo.getUserProfile(uid);
-
-    if (result == null)
-      await Repo.logout();
-    else {
-      Auth.instance.profile = result;
-
-      profile = result;
-
-      ///TODO: get rid of auth == null error
-
-      setState(() {});
-    }
-
-    return;
-  }
+//  Future<void> _getProfile(String uid) async {
+//    print('#### Get Profile for $uid');
+//    final result = await Repo.getUserProfile(uid);
+//
+//    if (result == null)
+//      await Repo.logout();
+//    else {
+//      Auth.instance.profile = result;
+//
+//      profile = result;
+//
+//      ///TODO: get rid of auth == null error
+//
+//      setState(() {});
+//    }
+//
+//    return;
+//  }
 }

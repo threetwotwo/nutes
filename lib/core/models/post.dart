@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:meta/meta.dart';
 import 'package:nutes/core/models/comment.dart';
@@ -28,8 +30,9 @@ class PostContent {
 class PostCursor {
   final List<Post> posts;
   final DocumentSnapshot startAfter;
+  final DocumentSnapshot endAt;
 
-  PostCursor(this.posts, this.startAfter);
+  PostCursor(this.posts, this.startAfter, this.endAt);
 }
 
 class Post {
@@ -49,6 +52,11 @@ class Post {
   ///List of users who are also my followings who liked this post
   final List<User> myFollowingLikes;
   final PostType type;
+
+  double get biggestAspectRatio {
+    final ars = urlBundles.map((b) => b.aspectRatio).toList();
+    return ars.reduce(min);
+  }
 
   Post({
     @required this.type,
@@ -121,9 +129,10 @@ class Post {
   factory Post.fromMap(Map map) {
     final List urlBundle = map['urls'] ?? [];
 
-    if (urlBundle.isEmpty && map['data'] == null && map['metadata'] == null)
+    if (urlBundle.isEmpty && map['data'] == null && map['metadata'] == null) {
+      print('post has no data');
       return null;
-
+    }
     final urlBundles = urlBundle
         .map((e) => ImageUrlBundle.fromMap(urlBundle.indexOf(e), e))
         .toList();
@@ -141,7 +150,10 @@ class Post {
     } else
       type = PostHelper.postType(map['type'].toString());
 
-    if (type == null) return null;
+    if (type == null) {
+      print('post has no type');
+      return null;
+    }
 
     final post = Post(
       id: map['post_id'],
@@ -155,6 +167,8 @@ class Post {
     return post.id == null ? null : post;
   }
   factory Post.fromDoc(DocumentSnapshot doc) {
+    if (doc == null || doc.data == null) return null;
+
     final List urlBundle = doc['urls'] ?? [];
 
     if (urlBundle.isEmpty && doc['data'] == null) return null;

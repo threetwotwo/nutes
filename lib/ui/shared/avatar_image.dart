@@ -2,7 +2,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:nutes/ui/shared/styles.dart';
 import 'package:nutes/ui/widgets/profile_header.dart';
-import 'package:transparent_image/transparent_image.dart';
 
 class AvatarImage extends StatelessWidget {
   final String url;

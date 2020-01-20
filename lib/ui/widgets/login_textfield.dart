@@ -162,6 +162,7 @@ class EmailTextField extends StatelessWidget {
   final Function(String) onSubmit;
 
   final bool emailIsValid;
+  final String message;
 
   const EmailTextField({
     Key key,
@@ -169,6 +170,7 @@ class EmailTextField extends StatelessWidget {
     this.onChanged,
     this.onSubmit,
     this.emailIsValid = true,
+    this.message = '',
   }) : super(key: key);
   @override
   Widget build(BuildContext context) {
@@ -176,7 +178,9 @@ class EmailTextField extends StatelessWidget {
       keyboardType: TextInputType.emailAddress,
       controller: controller,
       textSize: 15,
-      message: emailIsValid ? '' : 'Enter a valid email',
+      message: message.isNotEmpty
+          ? message
+          : emailIsValid ? '' : 'Enter a valid email',
       hint: 'Email',
       labelColor: emailIsValid ? Colors.white : Colors.black54,
       onChanged: onChanged,

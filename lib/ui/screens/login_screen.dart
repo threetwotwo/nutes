@@ -97,6 +97,10 @@ class _LoginScreenState extends State<LoginScreen> {
             message = 'Please enter a valid email';
             break;
 
+          case 'ERROR_WEAK_PASSWORD':
+            message = 'The password must be 6 characters long or more';
+            break;
+
           default:
             message = 'Cannot sign up. Please try again later';
         }
@@ -286,7 +290,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   if (isSigningIn)
                     FlatButton(
                       onPressed: () {
-                        print('forgot pass');
                         return Navigator.of(context, rootNavigator: true)
                             .push(AccountRecoveryScreen.route());
                       },

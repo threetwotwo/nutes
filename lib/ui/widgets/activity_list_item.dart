@@ -30,7 +30,11 @@ class ActivityListItem extends StatelessWidget {
     final activityPeer = activity.activiyPeer;
 
     final ownerSpan = TextSpan(
-        text: activityOwner.username + ' ', style: TextStyles.w500Text);
+        text: activityOwner.username + ' ',
+        style: TextStyles.w500Text,
+        recognizer: TapGestureRecognizer()
+          ..onTap = () =>
+              Navigator.push(context, ProfileScreen.route(activityOwner.uid)));
 
     final timeAgoSpan = TextSpan(
         text: ' ' + TimeAgo.formatShort(activity.timestamp.toDate()),
@@ -42,7 +46,6 @@ class ActivityListItem extends StatelessWidget {
 
     switch (activity.activityType) {
       case ActivityType.post_like:
-        // TODO: Handle this case.
         activitySpan =
             TextSpan(text: 'liked' + ' ', style: TextStyles.defaultText);
         peerSpan = TextSpan(
@@ -75,12 +78,13 @@ class ActivityListItem extends StatelessWidget {
 
         break;
       case ActivityType.follow:
-        // TODO: Handle this case.
         activitySpan = TextSpan(
             text: 'started following' + ' ', style: TextStyles.defaultText);
         peerSpan = TextSpan(children: [
           TextSpan(
-            text: activityPeer.username + '.',
+            text: activityPeer.uid == FirestoreService.auth.uid
+                ? 'you'
+                : activityPeer.username + '.',
             style: TextStyles.w500Text,
             recognizer: TapGestureRecognizer()
               ..onTap = () => Navigator.push(

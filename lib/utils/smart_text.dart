@@ -5,16 +5,16 @@ import 'package:flutter/widgets.dart';
 abstract class SmartTextElement {}
 
 /// Represents an element containing a link
-class LinkElement extends SmartTextElement {
-  final String url;
-
-  LinkElement(this.url);
-
-  @override
-  String toString() {
-    return "LinkElement: $url";
-  }
-}
+//class LinkElement extends SmartTextElement {
+//  final String url;
+//
+//  LinkElement(this.url);
+//
+//  @override
+//  String toString() {
+//    return "LinkElement: $url";
+//  }
+//}
 
 /// Represents an element containing a hastag
 class HashTagElement extends SmartTextElement {
@@ -63,9 +63,10 @@ class LeadingElement extends SmartTextElement {
   }
 }
 
-final _linkRegex = RegExp(
-    r"(http(s)?:\/\/.)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)",
-    caseSensitive: false);
+//final _linkRegex = RegExp(
+//    r"(http(s)?:\/\/.)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)",
+//    caseSensitive: false);
+
 final _tagRegex = RegExp(r"\B#\w*[a-zA-Z]+\w*", caseSensitive: false);
 
 /// Turns [text] into a list of [SmartTextElement]
@@ -75,9 +76,11 @@ List<SmartTextElement> _smartify(String text, {TextSpan leading}) {
   sentences.forEach((sentence) {
     final words = sentence.split(' ');
     words.forEach((word) {
-      if (_linkRegex.hasMatch(word)) {
-        span.add(LinkElement(word));
-      } else if (_tagRegex.hasMatch(word)) {
+//      if (_linkRegex.hasMatch(word)) {
+//        span.add(LinkElement(word));
+//      } else
+//
+      if (_tagRegex.hasMatch(word)) {
         span.add(HashTagElement(word));
       } else {
         span.add(TextElement(word));
@@ -161,13 +164,16 @@ class SmartText extends StatelessWidget {
           text: element.text,
           style: style,
         );
-      } else if (element is LinkElement) {
-        return LinkTextSpan(
-          text: element.url,
-          style: linkStyle,
-          onPressed: () => _onOpen(element.url),
-        );
-      } else if (element is LeadingElement) {
+      }
+//      else if (element is LinkElement) {
+//        return LinkTextSpan(
+//          text: element.url,
+//          style: linkStyle,
+//          onPressed: () => _onOpen(element.url),
+//        );
+//      }
+
+      else if (element is LeadingElement) {
         return LinkTextSpan(
           text: element.text,
           style: style.copyWith(fontWeight: FontWeight.bold),

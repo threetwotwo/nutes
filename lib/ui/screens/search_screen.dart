@@ -7,8 +7,15 @@ import 'package:nutes/ui/shared/styles.dart';
 
 class SearchScreen extends StatefulWidget {
   final void Function(int) onTab;
+  final ScrollController popularSearchController;
+  final ScrollController newestSearchController;
 
-  const SearchScreen({Key key, this.onTab}) : super(key: key);
+  const SearchScreen(
+      {Key key,
+      this.onTab,
+      this.popularSearchController,
+      this.newestSearchController})
+      : super(key: key);
   @override
   _SearchScreenState createState() => _SearchScreenState();
 }
@@ -64,7 +71,12 @@ class _SearchScreenState extends State<SearchScreen>
           )),
       body: index == 0
           ? ExploreScreen(
-              onTab: (idx) => widget.onTab(idx),
+              popularSearchController: widget.popularSearchController,
+              newestSearchController: widget.newestSearchController,
+              onTab: (idx) {
+                print('on search tab $idx');
+                return widget.onTab(idx);
+              },
             )
           : SearchResultsScreen(controller: _searchController),
     );

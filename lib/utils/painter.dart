@@ -89,6 +89,10 @@ class _PainterState extends State<Painter> {
 
     widget.painterController._notifyListeners();
 
+    if (_debounce?.isActive ?? false) _debounce.cancel();
+    _debounce = Timer(const Duration(milliseconds: 2500), () {
+      return widget.onFinish();
+    });
     return start != null;
   }
 

@@ -13,14 +13,12 @@ import 'package:nutes/core/models/chat_message.dart';
 import 'package:nutes/core/models/comment.dart';
 import 'package:nutes/core/models/post_type.dart';
 import 'package:nutes/core/models/story.dart';
-import 'package:nutes/core/services/auth.dart';
 import 'package:nutes/core/services/firestore_service.dart';
 import 'package:nutes/core/services/rtdb_provider.dart';
 import 'package:nutes/core/services/storage_provider.dart';
 import 'package:nutes/core/models/post.dart';
 import 'package:nutes/core/models/user.dart';
 import 'package:nutes/utils/image_file_bundle.dart';
-import 'package:provider/provider.dart';
 
 const scrollDuration = Duration(milliseconds: 300);
 const scrollCurve = Curves.easeInOut;
@@ -198,9 +196,10 @@ class Repo {
       String messageId,
       String content,
       String response,
-      User peer}) {
-    return shared._firestore
-        .completeShoutChallenge(chatId, messageId, content, response, peer);
+      User peer,
+      String postId}) {
+    return shared._firestore.completeShoutChallenge(
+        chatId, messageId, content, response, peer, postId);
   }
 
   static Future uploadMessage({
@@ -235,32 +234,6 @@ class Repo {
   ///The public ref is responsible for maintaining any post engagement
   ///activity such as likes, challenger likes
   ///
-  static uploadPublicShout({
-    @required User peer,
-    @required Map data,
-  }) async {
-    final shoutRef = shared._firestore.publicPostRef();
-    final shoutId = shoutRef.documentID;
-
-    final selfRef = shared._firestore.userPostRef(auth.uid, shoutId);
-
-    final peerRef = shared._firestore.userPostRef(peer.uid, shoutId);
-
-    final timestamp = Timestamp.now();
-
-    final payload = {
-      'type': 'shout',
-      'uploader': auth.toMap(),
-      'timestamp': timestamp,
-      'data': data,
-    };
-
-    return shared._firestore.runTransaction((t) {
-      t.set(shoutRef, payload);
-      t.set(selfRef, payload);
-      return t.set(peerRef, payload);
-    });
-  }
 
   static uploadComment({
     @required String postId,
@@ -292,13 +265,17 @@ class Repo {
     return;
   }
 
+  static Future<void> deletePost(String postId) async =>
+      shared._firestore.deletePost(postId);
+
   ///Uploads a shout as a post
-  static Future uploadShoutPost({@required User peer, @required Map data}) {
+  static Future<Post> uploadShoutPost(
+      {@required User peer, @required Map data}) {
     return uploadPost(
         type: PostType.shout, isPrivate: false, peer: peer, metadata: data);
   }
 
-  static Future uploadPost({
+  static Future<Post> uploadPost({
     @required PostType type,
     @required bool isPrivate,
     List<ImageFileBundle> fileBundles,
@@ -354,7 +331,7 @@ class Repo {
           {};
     }
 
-    final uploader = auth.user.toMap();
+    final uploader = FirestoreService.ath.user.toMap();
 
     print('post uploader: $uploader');
 
@@ -371,15 +348,31 @@ class Repo {
 
     ///2b. Set peer user post ref if shout
     if (type == PostType.shout) {
+      final shoutPayload = {
+        'type': PostHelper.stringValue(type),
+        'uploader': peer.toMap(),
+        'timestamp': timestamp,
+        'caption': caption ?? '',
+        if (metadata != null) 'data': metadata,
+        if (fileBundles != null) 'urls': bundleMaps,
+      };
       final peerPostRef = shared._firestore.userPostRef(peer.uid, postId);
-      batch.setData(peerPostRef, payload);
+      batch.setData(peerPostRef, shoutPayload);
     }
 
     ///3. Cloud Functions - fanout write to followers' feeds
     ///
     /// 4?. fan out write to followers' activity
+    ///
+    /// 5. write to my feed
+    final feedRef = myFeedRef(postId);
+    batch.setData(feedRef, payload);
 
-    return batch.commit();
+    await batch.commit();
+
+    final post = Post.fromMap(payload..['post_id'] = postId);
+
+    return post;
   }
 
   ///current user's story stream
@@ -408,6 +401,15 @@ class Repo {
   ///fetch posts
   static Future<PostCursor> getFeed({DocumentSnapshot startAfter}) async {
     final postCursor = await shared._firestore.getFeed(startAfter: startAfter);
+
+    return postCursor;
+  }
+
+  static Future<bool> checkIfThereAreNewPosts(Timestamp timestamp) =>
+      shared._firestore.checkIfThereAreNewPosts(timestamp);
+
+  static Future<PostCursor> getNewPostsForFeed({DocumentSnapshot endAt}) async {
+    final postCursor = await shared._firestore.getNewPostsForFeed(endAt);
 
     return postCursor;
   }
@@ -441,15 +443,18 @@ class Repo {
   }
 
   /// follow a user
-  static requestFollow(User user, bool isPrivate) {
+  static requestFollow(User user, bool isPrivate) async {
     isPrivate
         ? shared._firestore.requestFollow(user.uid)
-        : shared._firestore.follow(follower: auth.user, following: user);
+        : await shared._firestore.follow(follower: auth.user, following: user);
+
+    return eventBus.fire(UserFollowEvent(user));
   }
 
   /// unfollow a user
-  static void unfollowUser(String uid) {
-    shared._firestore.unfollow(uid);
+  static Future<void> unfollowUser(String uid) async {
+    await shared._firestore.unfollow(uid);
+    return eventBus.fire(UserUnFollowEvent(uid));
   }
 
   /// check if following a user
@@ -462,6 +467,9 @@ class Repo {
 
   static Stream<DocumentSnapshot> userProfileStream(String uid) =>
       shared._firestore.userProfileStream(uid);
+
+  static Stream<DocumentSnapshot> myProfileStream() =>
+      shared._firestore.userProfileStream(FirestoreService.ath.uid);
 
   static Future<UserProfile> getUserProfile(String uid) =>
       shared._firestore.getUserProfile(uid);
@@ -515,12 +523,17 @@ class Repo {
     });
 
     ///create user doc on firestore
-    return (authResult != null)
+    final profile = (authResult != null)
         ? await shared._firestore.createUser(
             uid: authResult.user.uid,
             username: username,
             email: authResult.user.email)
         : null;
+
+    if (profile != null && FirestoreService.token != null)
+      createFCMDeviceToken(profile.uid, FirestoreService.token);
+
+    return profile;
   }
 
   static Future<UserStats> getUserStats(String uid) =>
@@ -549,6 +562,19 @@ class Repo {
       shared._firestore
           .getPostsForUser(uid: uid, limit: limit, startAfter: startAfter);
 
+  static Stream<DocumentSnapshot> commentLikeStream(
+          String postId, String commentId) =>
+      shared._firestore.commentLikeStream(postId, commentId);
+
+  static Future<bool> didLikeComment(String postId, String commentId) =>
+      shared._firestore.didLikeComment(postId, commentId);
+
+  static Future<void> likeComment(String postId, Comment comment) =>
+      shared._firestore.likeComment(postId, comment);
+
+  static Future<void> unlikeComment(String postId, Comment comment) =>
+      shared._firestore.unlikeComment(postId, comment);
+
   static Comment createComment(
           {@required String text,
           @required String postId,
@@ -556,8 +582,13 @@ class Repo {
       shared._firestore
           .newComment(text: text, postId: postId, parentComment: parentComment);
 
-  static Future<List<Comment>> getComments(String postId) async =>
-      shared._firestore.getComments(postId);
+  static Future<CommentCursor> getComments(
+          String postId, DocumentSnapshot startAfter) async =>
+      shared._firestore.getComments(postId, startAfter);
+
+  static Future<List<Comment>> getMoreReplies(
+          String postId, String parentId, DocumentSnapshot startAfter) =>
+      shared._firestore.getMoreReplies(postId, parentId, startAfter);
 
   ///Returns a complete post from an incomplete one
   static Future<Post> getPostStatsAndLikes(Post post) async {
@@ -581,8 +612,12 @@ class Repo {
     String bio,
     ImageUrlBundle urls,
   }) async {
-    final profile = shared._firestore.updateProfile(
-        username: username, displayName: displayName, bio: bio, urls: urls);
+    final profile = await shared._firestore
+        .updateProfile(
+            username: username, displayName: displayName, bio: bio, urls: urls)
+        .catchError((e) {
+      throw (e);
+    });
 
     FirestoreService.auth = profile;
 
@@ -620,6 +655,10 @@ class Repo {
     return shared._firestore.userRef(auth.uid);
   }
 
+  static DocumentReference myFeedRef(String postId) {
+    return myRef().collection('feed').document(postId);
+  }
+
   static Stream<DocumentSnapshot> myPostLikeStream(Post post) =>
       shared._firestore.myPostLikeStream(post);
 
@@ -629,6 +668,15 @@ class Repo {
   static Stream<DocumentSnapshot> myShoutRightLikeStream(Post post) =>
       shared._firestore.myShoutRightLikeStream(post);
 
-  static void createFCMDeviceToken({String uid, String token}) =>
-      shared._firestore.createFCMDeviceToken(uid: uid, token: token);
+  static void createFCMDeviceToken(String uid, String token) =>
+      shared._firestore.createFCMDeviceToken(uid, token);
+
+  static Future<void> updateEmail(String email) =>
+      shared._firestore.updateEmail(email).catchError((e) {
+        print('HAHAHAHAHA you failed $e');
+        throw (e);
+      });
+
+  static Future<Map> getMyInfo() => shared._firestore.getMyInfo();
+  static Future<String> getMyEmail() => shared._firestore.getMyEmail();
 }

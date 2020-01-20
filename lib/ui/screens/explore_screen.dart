@@ -1,20 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:nutes/core/models/post.dart';
 import 'package:nutes/core/models/post_type.dart';
-import 'package:nutes/core/services/local_cache.dart';
+//import 'package:nutes/core/services/local_cache.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:nutes/ui/screens/post_detail_screen.dart';
 import 'package:nutes/ui/shared/refresh_list_view.dart';
 import 'package:nutes/ui/shared/shout_grid_item.dart';
-import 'package:nutes/ui/shared/shout_post.dart';
+//import 'package:nutes/ui/shared/shout_post.dart';
 import 'package:nutes/ui/shared/styles.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ExploreScreen extends StatefulWidget {
   final void Function(int) onTab;
+  final ScrollController popularSearchController;
+  final ScrollController newestSearchController;
 
-  const ExploreScreen({Key key, this.onTab}) : super(key: key);
+  const ExploreScreen(
+      {Key key,
+      this.onTab,
+      this.popularSearchController,
+      this.newestSearchController})
+      : super(key: key);
 
   @override
   _ExploreScreenState createState() => _ExploreScreenState();
@@ -28,42 +35,60 @@ class _ExploreScreenState extends State<ExploreScreen>
   DocumentSnapshot newestLastDoc;
   DocumentSnapshot trendingLastDoc;
 
-  final cache = LocalCache.instance;
+//  final cache = LocalCache.instance;
 
-  Future _getTrendingPosts() async {
-    ///Clear posts if cursor is null
-    if (trendingLastDoc == null) trendingPosts.clear();
+  Future _getInitialTrending() async {
+    print('get init trending posts');
+    final result = await Repo.getTrendingPosts(null);
 
-    print('get trending posts');
+//    print('trending initial: ${result.posts.length}');
+
+    if (result.posts.isNotEmpty && mounted)
+      setState(() {
+        trendingPosts = result.posts;
+        trendingLastDoc = result.startAfter;
+      });
+  }
+
+  Future _getMoreTrending() async {
+    print('get more trending posts');
     final result = await Repo.getTrendingPosts(trendingLastDoc);
+
+//    print('trending initial: ${result.posts.length}');
 
     if (result.posts.isNotEmpty && mounted)
       setState(() {
         trendingPosts.addAll(result.posts);
+        trendingLastDoc = result.startAfter;
       });
-
-    trendingLastDoc = result.startAfter;
   }
 
-  Future _getNewestPosts() async {
-    ///Clear posts if cursor is null
-    if (newestLastDoc == null) newestPosts.clear();
-
+  Future _getInitialNewest() async {
     print('get newest posts');
+    final result = await Repo.getNewestPosts(null);
+
+    if (result.posts.isNotEmpty && mounted)
+      setState(() {
+        newestPosts = result.posts;
+        newestLastDoc = result.startAfter;
+      });
+  }
+
+  Future _getMoreNewest() async {
+    print('get more newest posts');
     final result = await Repo.getNewestPosts(newestLastDoc);
 
     if (result.posts.isNotEmpty && mounted)
       setState(() {
         newestPosts.addAll(result.posts);
+        newestLastDoc = result.startAfter;
       });
-
-    newestLastDoc = result.startAfter;
   }
 
   @override
   void initState() {
-    _getTrendingPosts();
-    _getNewestPosts();
+    _getInitialTrending();
+    _getInitialNewest();
     super.initState();
   }
 
@@ -76,7 +101,10 @@ class _ExploreScreenState extends State<ExploreScreen>
       child: Column(
         children: <Widget>[
           TabBar(
-            onTap: (idx) => widget.onTab(idx),
+            onTap: (idx) {
+              print('on explore tap $idx');
+              return widget.onTab(idx);
+            },
             indicatorColor: Colors.black,
             labelColor: Colors.black,
             labelStyle: TextStyles.w600Text,
@@ -91,22 +119,16 @@ class _ExploreScreenState extends State<ExploreScreen>
             child: TabBarView(
               children: [
                 ExploreTabView(
-                  controller: cache.searchPopularScrollController,
+                  controller: widget.popularSearchController,
                   posts: trendingPosts,
-                  onRefresh: () {
-                    trendingLastDoc = null;
-                    return _getTrendingPosts();
-                  },
-                  onLoadMore: _getTrendingPosts,
+                  onRefresh: _getInitialTrending,
+                  onLoadMore: _getMoreTrending,
                 ),
                 ExploreTabView(
-                  controller: cache.searchSubmittedScrollController,
+                  controller: widget.newestSearchController,
                   posts: newestPosts,
-                  onRefresh: () {
-                    newestLastDoc = null;
-                    return _getNewestPosts();
-                  },
-                  onLoadMore: _getNewestPosts,
+                  onRefresh: _getInitialNewest,
+                  onLoadMore: _getMoreNewest,
                 ),
               ],
             ),

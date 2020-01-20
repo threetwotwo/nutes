@@ -1,19 +1,30 @@
 import 'package:bot_toast/bot_toast.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:nutes/ui/shared/app_bars.dart';
 import 'package:nutes/ui/shared/buttons.dart';
 import 'package:nutes/ui/shared/empty_indicator.dart';
+import 'package:nutes/ui/shared/loading_indicator.dart';
 import 'package:nutes/ui/shared/styles.dart';
 import 'package:nutes/ui/widgets/login_textfield.dart';
 
-class AccountRecoveryScreen extends StatelessWidget {
+class AccountRecoveryScreen extends StatefulWidget {
   static Route route() => MaterialPageRoute(
         fullscreenDialog: true,
         builder: (_) => AccountRecoveryScreen(),
       );
 
+  @override
+  _AccountRecoveryScreenState createState() => _AccountRecoveryScreenState();
+}
+
+class _AccountRecoveryScreenState extends State<AccountRecoveryScreen> {
   final controller = TextEditingController();
+
+  String _errorMessage = '';
+
+  bool _isLoading = false;
 
   @override
   Widget build(BuildContext context) {
@@ -37,23 +48,46 @@ class AccountRecoveryScreen extends StatelessWidget {
               padding: const EdgeInsets.all(16.0),
               child: EmailTextField(
                 controller: controller,
+                message: _errorMessage,
               ),
             ),
-            FlatButton(
+            _isLoading
+                ? LoadingIndicator()
+                : FlatButton(
 //              color: Colors.blueAccent,
-              onPressed: () async {
-                if (controller.text.isEmpty) return;
-                await FirebaseAuth.instance
-                    .sendPasswordResetEmail(email: controller.text);
-                BotToast.showText(text: 'Email sent!');
+                    onPressed: () async {
+                      setState(() {
+                        _errorMessage = '';
+                        _isLoading = true;
+                      });
+                      await FirebaseAuth.instance
+                          .sendPasswordResetEmail(email: controller.text)
+                          .catchError((e) {
+                        if (e is PlatformException) {
+                          setState(() {
+                            _errorMessage = e.message;
+                          });
+                          setState(() {
+                            _isLoading = false;
+                          });
+                          return;
+                        }
+                      });
+                      setState(() {
+                        _isLoading = false;
+                      });
+                      if (_errorMessage.isEmpty) {
+                        BotToast.showText(text: 'Email sent!');
+                        Navigator.pop(context);
+                      }
 
-                Navigator.pop(context);
-              },
-              child: Text(
-                'Send email',
-                style: TextStyles.w600Text,
-              ),
-            ),
+                      return;
+                    },
+                    child: Text(
+                      'Send email',
+                      style: TextStyles.w600Text,
+                    ),
+                  ),
           ],
         ),
       ),

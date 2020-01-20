@@ -3,6 +3,12 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/foundation.dart';
 import 'package:nutes/utils/image_file_bundle.dart';
 
+class PrivateInfo {
+  final String email;
+
+  PrivateInfo(this.email);
+}
+
 class UserProfile {
   final String uid;
   final User user;
@@ -10,6 +16,7 @@ class UserProfile {
   final String bio;
 //  final bool isPrivate;
   final bool isVerified;
+//  final String email;
 
   UserProfile({
     @required this.uid,
@@ -18,6 +25,7 @@ class UserProfile {
     @required this.bio,
 //    @required this.isPrivate,
     @required this.isVerified,
+//    @required this.email,
   });
 
   factory UserProfile.fromDoc(DocumentSnapshot doc) {

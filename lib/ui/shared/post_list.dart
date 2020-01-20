@@ -8,11 +8,15 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:line_icons/line_icons.dart';
+import 'package:nutes/core/events/events.dart';
+import 'package:nutes/core/models/comment.dart';
 import 'package:nutes/core/models/doodle.dart';
+import 'package:nutes/core/services/events.dart';
 import 'package:nutes/core/services/local_cache.dart';
 import 'package:nutes/ui/screens/edit_post_screen.dart';
 import 'package:nutes/ui/screens/send_post_screen.dart';
 import 'package:nutes/ui/shared/comment_post_list_item.dart';
+import 'package:nutes/ui/shared/empty_indicator.dart';
 import 'package:nutes/ui/shared/loading_indicator.dart';
 import 'package:nutes/ui/shared/toast_message.dart';
 import 'package:nutes/ui/widgets/doodle_editor.dart';
@@ -118,13 +122,12 @@ class _PostListItemState extends State<PostListItem>
   bool _showDoodle = false;
 
   void _navigateToProfile(BuildContext context) {
-    print('nav to prof ${widget.post.owner.uid}');
     Navigator.of(context).push(ProfileScreen.route(widget.post.owner.uid));
   }
 
   ///Helper fields to calculate like count correctly
   ///This value will not change once set
-  bool likedPost;
+  bool _likedPost;
   bool likedShoutLeft;
   bool likedShoutRight;
 
@@ -146,6 +149,8 @@ class _PostListItemState extends State<PostListItem>
 
   Animation _heartAnimation;
   AnimationController _heartAnimationController;
+
+  bool hasError = false;
 
   _initPainter() {
     _painterController = PainterController()
@@ -211,6 +216,13 @@ class _PostListItemState extends State<PostListItem>
   }
 
   _getPostComplete() async {
+    if (widget.post == null) {
+      setState(() {
+        hasError = true;
+      });
+      return;
+    }
+
     print('get post compelte');
 
     final result = widget.post.urlBundles == null
@@ -247,18 +259,28 @@ class _PostListItemState extends State<PostListItem>
     ///Get aspect ratio for [PageViewer] from the biggest image
     ///ie. lowest aspect ratio
 
-    if (post.type == PostType.text) {
-      final aspectRatios = post.urlBundles.map((b) => b.aspectRatio).toList();
-      biggestAspectRatio = aspectRatios.reduce(min);
-    }
+//    if (post.type == PostType.text) {
+//      final aspectRatios = post.urlBundles.map((b) => b.aspectRatio).toList();
+//      biggestAspectRatio = aspectRatios.reduce(min);
+//    }
 
-//    print(aspectRatios);
-
+    ///like stream
+    if (post != null)
+      Repo.myPostLikeStream(post).listen((data) {
+        setState(() {
+          if (_likedPost == null) _likedPost = data.data != null;
+          postLiked = data.data != null;
+        });
+      });
     super.initState();
   }
 
+  bool postLiked;
+
   @override
   Widget build(BuildContext context) {
+    if (hasError) return EmptyIndicator('This post has been deleted.');
+
     final isShout = post.type == PostType.shout;
 
     final data = post.metadata;
@@ -274,45 +296,101 @@ class _PostListItemState extends State<PostListItem>
             children: <Widget>[
               ///Header
               isShout
-                  ? Container(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            RichText(
-                              text: TextSpan(children: [
-                                TextSpan(
-                                  text: challenger.username,
-                                  style: TextStyles.w600Text,
-                                  recognizer: TapGestureRecognizer()
-                                    ..onTap = (() => Navigator.push(context,
-                                        ProfileScreen.route(challenger.uid))),
-                                ),
-                                TextSpan(
-                                  text: ' and ',
-                                  style: TextStyles.defaultText,
-                                ),
-                                TextSpan(
-                                  text: challenged.username,
-                                  style: TextStyles.w600Text,
-                                  recognizer: TapGestureRecognizer()
-                                    ..onTap = (() => Navigator.push(context,
-                                        ProfileScreen.route(challenged.uid))),
-                                ),
-                              ]),
-                            ),
-                            SizedBox(height: 3),
-                            Text(
-                              post.id,
-                              style: TextStyle(
-                                  color: Colors.grey,
-                                  fontWeight: FontWeight.w400,
-                                  fontSize: 14),
-                            ),
-                          ],
-                        ),
-                      ),
+                  ? ShoutHeader(
+                      challenger: challenger,
+                      challenged: challenged,
+                      post: post,
+                      onTrailing: post.owner.uid != auth.uid
+                          ? null
+                          : () {
+                              final isOwner = post.owner.uid == auth.uid;
+
+                              return !isOwner
+                                  ? null
+                                  : showCupertinoModalPopup(
+                                      context: context,
+                                      builder: (context) {
+                                        return CupertinoActionSheet(
+                                          actions: <Widget>[
+                                            if (isOwner)
+                                              CupertinoActionSheetAction(
+                                                child: Text('Delete',
+                                                    style: TextStyles
+                                                        .defaultDisplay
+                                                        .copyWith(
+                                                      color: Colors.red,
+                                                    )),
+                                                onPressed: () async {
+                                                  BotToast.showText(
+                                                    text: 'Deleting post',
+                                                    align: Alignment.center,
+                                                  );
+                                                  await Repo.deletePost(
+                                                      post.id);
+                                                  BotToast.showText(
+                                                    text: 'Deleted',
+                                                    align: Alignment.center,
+                                                  );
+                                                  eventBus.fire(
+                                                      PostDeleteEvent(post.id));
+
+                                                  Navigator.popUntil(context,
+                                                      (r) => r.isFirst);
+
+                                                  return;
+                                                },
+                                              ),
+                                            if (isOwner)
+                                              CupertinoActionSheetAction(
+                                                child: Text('Edit',
+                                                    style: TextStyles
+                                                        .defaultDisplay),
+                                                onPressed: () async {
+                                                  Navigator.pop(context);
+                                                  final result =
+                                                      await Navigator.push(
+                                                          context,
+                                                          EditPostScreen.route(
+                                                              post));
+
+                                                  if (result is Post) {
+                                                    setState(() {
+                                                      post = result;
+                                                    });
+                                                  }
+                                                  return;
+                                                },
+                                              ),
+                                            if (!isOwner) ...[
+                                              CupertinoActionSheetAction(
+                                                child: Text('Unfollow',
+                                                    style: TextStyles
+                                                        .defaultDisplay),
+                                                onPressed: () {
+                                                  Repo.unfollowUser(
+                                                      post.owner.uid);
+                                                  BotToast.showText(
+                                                    text:
+                                                        'Unfollowed ${post.owner.username}',
+                                                    align: Alignment.center,
+                                                  );
+                                                  widget.onUnfollow(
+                                                      post.owner.uid);
+                                                  return Navigator.pop(context);
+                                                },
+                                              ),
+                                            ]
+                                          ],
+                                          cancelButton: FlatButton(
+                                            onPressed: () =>
+                                                Navigator.pop(context),
+                                            child: Text('Cancel',
+                                                style:
+                                                    TextStyles.defaultDisplay),
+                                          ),
+                                        );
+                                      });
+                            },
                     )
                   : PostHeader(
                       post: post,
@@ -332,11 +410,22 @@ class _PostListItemState extends State<PostListItem>
                                             TextStyles.defaultDisplay.copyWith(
                                           color: Colors.red,
                                         )),
-                                    onPressed: () {
+                                    onPressed: () async {
                                       BotToast.showText(
-                                        text: 'Deleted post',
+                                        text: 'Deleting post',
                                         align: Alignment.center,
                                       );
+                                      await Repo.deletePost(post.id);
+                                      BotToast.showText(
+                                        text: 'Deleted',
+                                        align: Alignment.center,
+                                      );
+                                      eventBus.fire(PostDeleteEvent(post.id));
+
+                                      Navigator.popUntil(
+                                          context, (r) => r.isFirst);
+
+                                      return;
                                     },
                                   ),
                                 if (isOwner)
@@ -477,7 +566,7 @@ class _PostListItemState extends State<PostListItem>
                       ),
                     if (!isShout)
                       AspectRatio(
-                        aspectRatio: biggestAspectRatio ?? 1,
+                        aspectRatio: post.biggestAspectRatio ?? 1,
                         child: PageViewer(
                           controller: _controller,
                           length: post.urlBundles.length,
@@ -624,179 +713,266 @@ class _PostListItemState extends State<PostListItem>
 
               ///Action Buttons
 
-              Container(
-//                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: StreamBuilder<DocumentSnapshot>(
-                    stream: Repo.myPostLikeStream(widget.post),
-                    builder: (context, snapshot) {
-                      if (!snapshot.hasData) return SizedBox();
+              (postLiked == null)
+                  ? SizedBox()
+                  : Column(
+                      children: <Widget>[
+                        PostActionBar(
+                          didLike: postLiked,
+                          onHeartTapped: () async {
+                            print('heart tapped for post ${post.id}');
 
-                      final liked = snapshot.data.exists;
+                            postLiked
+                                ? Repo.unlikePost(post)
+                                : Repo.likePost(post);
 
-                      if (!postLikeIsInitiated) {
-                        likedPost = liked;
-                        postLikeIsInitiated = true;
-                      }
+                            setState(() {
+                              postLiked = !postLiked;
+                            });
+                          },
+                          onCommentTapped: () async {
+                            _onCommentTapped();
+                          },
+                          onSendTapped: () =>
+                              Navigator.of(context, rootNavigator: true)
+                                  .push(SendPostScreen.route(post)),
+                          onDoodle: () async {
+                            _painterController.clear();
 
-                      return Column(
-                        children: <Widget>[
-                          PostActionBar(
-                            didLike: liked,
-                            onHeartTapped: () async {
-                              liked
-                                  ? Repo.unlikePost(post)
-                                  : Repo.likePost(post);
-                            },
-                            onCommentTapped: () =>
-                                Navigator.of(context, rootNavigator: true).push(
-                              CommentScreen.route(post),
-                            ),
-                            onSendTapped: () =>
-                                Navigator.of(context, rootNavigator: true)
-                                    .push(SendPostScreen.route(post)),
-                            onDoodle: () async {
-                              _painterController.clear();
+                            if (_showDoodle) {
+                              setState(() {
+                                _showDoodle = false;
+                              });
 
-                              if (_showDoodle) {
-                                setState(() {
-                                  _showDoodle = false;
-                                });
+                              return;
+                            }
 
-                                return;
-                              }
+                            if (_isDoodling) {
+                              setState(() {
+                                _isDoodling = false;
+                              });
+                              return;
+                            } else {
+                              setState(() {
+                                _isDoodling = true;
+                                _painterController = PainterController()
+                                  ..drawColor = Colors.black
+                                  ..backgroundColor = Colors.transparent
+                                  ..thickness = 4.0;
+                              });
+                              widget.onDoodleStart();
+                            }
+                          },
+                          controller: _controller,
+                          itemCount: post.type == PostType.shout
+                              ? 1
+                              : post.urlBundles.length,
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              Visibility(
+                                visible: post.stats.likeCount +
+                                        (_likedPost ? 0 : 1) +
+                                        (postLiked ? 0 : -1) >
+                                    0,
+                                child: LikeCountBar(
+                                  post: post,
+                                  likeCount: post.stats.likeCount +
+                                      (_likedPost ? 0 : 1) +
+                                      (postLiked ? 0 : -1),
+                                ),
+                              ),
 
-                              if (_isDoodling) {
-                                setState(() {
-                                  _isDoodling = false;
-                                });
-                                return;
-                              } else {
-                                setState(() {
-                                  _isDoodling = true;
-                                  _painterController = PainterController()
-                                    ..drawColor = Colors.black
-                                    ..backgroundColor = Colors.transparent
-                                    ..thickness = 4.0;
-                                });
-                                widget.onDoodleStart();
-                              }
-                            },
-                            controller: _controller,
-                            itemCount: post.type == PostType.shout
-                                ? 1
-                                : post.urlBundles.length,
-                          ),
-                          Padding(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 16.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: <Widget>[
-                                Visibility(
-                                  visible: post.stats.likeCount +
-                                          (likedPost ? 0 : 1) +
-                                          (liked ? 0 : -1) >
-                                      0,
-                                  child: LikeCountBar(
-                                    post: post,
-                                    likeCount: post.stats.likeCount +
-                                        (likedPost ? 0 : 1) +
-                                        (liked ? 0 : -1),
-                                  ),
+                              ///Caption
+                              if (post.caption.isNotEmpty)
+                                CommentPostListItem(
+                                  uploader: post.owner,
+                                  text: post.caption,
+                                  onTap: () => Navigator.push(
+                                      context, CommentScreen.route(post)),
                                 ),
 
-                                ///Caption
-                                if (post.caption.isNotEmpty)
-                                  CommentPostListItem(
-                                    uploader: post.owner,
-                                    text: post.caption,
-                                  ),
-
-                                Padding(
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 4.0),
-                                  child: Row(
-                                    children: <Widget>[
-                                      ///View more comments button
-                                      if (post.stats.commentCount > 0) ...[
-                                        Material(
-                                          color: Colors.white,
-                                          child: InkWell(
-                                            onTap: () => Navigator.push(
-                                              context,
-                                              CommentScreen.route(post),
-                                            ),
-                                            child: Text(
-                                              'View all ${post.stats.commentCount} comments',
-                                              style: TextStyles.defaultText
-                                                  .copyWith(color: Colors.grey),
-                                            ),
-                                          ),
-                                        ),
-                                        Center(
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 4.0),
+                                child: Row(
+                                  children: <Widget>[
+                                    ///View more comments button
+                                    if (post.stats.commentCount > 0) ...[
+                                      Material(
+                                        color: Colors.white,
+                                        child: InkWell(
+                                          onTap: _onCommentTapped,
                                           child: Text(
-                                            ' · ',
+                                            'View all ${post.stats.commentCount} comments',
                                             style: TextStyles.defaultText
                                                 .copyWith(color: Colors.grey),
                                           ),
                                         ),
-                                      ],
-
-                                      ///Add Comment Button
-                                      Material(
-                                        color: Colors.white,
-                                        child: InkWell(
-                                          splashColor: Colors.white,
-                                          highlightColor: Colors.grey[100],
-                                          onTap: () => widget
-                                              .onAddComment(widget.post.id),
-                                          child: Text(
-                                            '${post.stats.commentCount > 0 ? 'A' : 'A'}dd comment',
-                                            style:
-                                                TextStyles.defaultText.copyWith(
-                                              color: Colors.grey,
-                                            ),
-                                          ),
+                                      ),
+                                      Center(
+                                        child: Text(
+                                          ' · ',
+                                          style: TextStyles.defaultText
+                                              .copyWith(color: Colors.grey),
                                         ),
                                       ),
                                     ],
-                                  ),
-                                ),
 
-                                if (post.topComments != null &&
-                                    post.topComments.isNotEmpty)
-                                  for (final c in post.topComments)
-                                    CommentPostListItem(
-                                        uploader: c.owner, text: c.text),
-
-                                ///Timestamp
-                                Padding(
-                                  padding: const EdgeInsets.only(
-                                      top: 4.0, bottom: 8.0),
-                                  child: Text(
-                                    TimeAgo.formatLong(post.timestamp.toDate()),
-                                    style: TextStyles.defaultText.copyWith(
-                                        fontSize: 13, color: Colors.grey),
-                                  ),
+                                    ///Add Comment Button
+                                    Material(
+                                      color: Colors.white,
+                                      child: InkWell(
+                                        splashColor: Colors.white,
+                                        highlightColor: Colors.grey[100],
+                                        onTap: () =>
+                                            widget.onAddComment(widget.post.id),
+                                        child: Text(
+                                          '${post.stats.commentCount > 0 ? 'A' : 'A'}dd comment',
+                                          style:
+                                              TextStyles.defaultText.copyWith(
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
+                              ),
+
+                              if (post.topComments != null &&
+                                  post.topComments.isNotEmpty)
+                                for (final c in post.topComments)
+                                  CommentPostListItem(
+                                    uploader: c.owner,
+                                    text: c.text,
+                                    onTap: () => Navigator.push(
+                                        context, CommentScreen.route(post)),
+                                  ),
+
+                              ///Timestamp
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                    top: 4.0, bottom: 8.0),
+                                child: Text(
+                                  TimeAgo.formatLong(post.timestamp.toDate()),
+                                  style: TextStyles.defaultText.copyWith(
+                                      fontSize: 13, color: Colors.grey),
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
-                      );
-                    }),
-              ),
+                        ),
+                      ],
+                    )
+
+//              StreamBuilder<DocumentSnapshot>(
+//                  stream: Repo.myPostLikeStream(widget.post),
+//                  builder: (context, snapshot) {
+//                    if (!snapshot.hasData) return SizedBox();
+//
+//                    final liked = snapshot.data.exists;
+//
+//                    if (!postLikeIsInitiated) {
+//                      likedPost = liked;
+//                      postLikeIsInitiated = true;
+//                    }
+//
+//                  }),
             ],
           );
+  }
+
+  Future<void> _onCommentTapped() async {
+    final comments = await Navigator.of(context, rootNavigator: true)
+        .push(CommentScreen.route(post));
+
+    if (comments is List<Comment>)
+      post = post.copyWith(topComments: post.topComments + comments);
+  }
+}
+
+class ShoutHeader extends StatelessWidget {
+  const ShoutHeader({
+    Key key,
+    @required this.challenger,
+    @required this.challenged,
+    @required this.post,
+    this.onTrailing,
+  }) : super(key: key);
+
+  final User challenger;
+  final User challenged;
+  final Post post;
+  final VoidCallback onTrailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: <Widget>[
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                RichText(
+                  text: TextSpan(children: [
+                    TextSpan(
+                      text: challenger.username,
+                      style: TextStyles.w600Text,
+                      recognizer: TapGestureRecognizer()
+                        ..onTap = (() => Navigator.push(
+                            context, ProfileScreen.route(challenger.uid))),
+                    ),
+                    TextSpan(
+                      text: ' and ',
+                      style: TextStyles.defaultText,
+                    ),
+                    TextSpan(
+                      text: challenged.username,
+                      style: TextStyles.w600Text,
+                      recognizer: TapGestureRecognizer()
+                        ..onTap = (() => Navigator.push(
+                            context, ProfileScreen.route(challenged.uid))),
+                    ),
+                  ]),
+                ),
+                SizedBox(height: 3),
+                Text(
+                  '${post.owner.username} ${post.id}',
+                  style: TextStyle(
+                      color: Colors.grey,
+                      fontWeight: FontWeight.w400,
+                      fontSize: 14),
+                ),
+              ],
+            ),
+          ),
+          if (onTrailing != null)
+            IconButton(
+              icon: Icon(
+                Icons.more_horiz,
+                size: 24,
+              ),
+              onPressed: onTrailing,
+            )
+        ],
+      ),
+    );
   }
 }
 
 class PostHeader extends StatelessWidget {
   final Post post;
-  final Function onMorePressed;
-
-  final Function onDisplayNameTapped;
+  final VoidCallback onMorePressed;
+  final VoidCallback onDisplayNameTapped;
   final VoidCallback onAvatarTapped;
+
   const PostHeader(
       {Key key,
       this.onMorePressed,
@@ -827,41 +1003,3 @@ class PostHeader extends StatelessWidget {
     );
   }
 }
-
-//class PostEngagementButtons extends StatelessWidget {
-//  final Function onHeartTapped;
-//  final Function onCommentTapped;
-//  final Function onSendTapped;
-//  final bool didLike;
-//  const PostEngagementButtons({
-//    Key key,
-//    this.onHeartTapped,
-//    this.onCommentTapped,
-//    this.onSendTapped,
-//    this.didLike,
-//  }) : super(key: key);
-//  @override
-//  Widget build(BuildContext context) {
-//    ///Try Feather Icons
-//    return Row(
-//      mainAxisAlignment: MainAxisAlignment.start,
-//      children: <Widget>[
-//        EngagementButton(
-//          onTap: onHeartTapped,
-//          color: didLike ? Colors.red : Colors.black,
-//          icon: didLike ? FontAwesome.heart : FontAwesome.heart_o,
-//        ),
-//        SizedBox(width: 15),
-//        EngagementButton(
-//          onTap: onCommentTapped,
-//          icon: FontAwesome.comment_o,
-//        ),
-//        SizedBox(width: 15),
-//        EngagementButton(
-//          onTap: onSendTapped,
-//          icon: SimpleLineIcons.paper_plane,
-//        ),
-//      ],
-//    );
-//  }
-//}

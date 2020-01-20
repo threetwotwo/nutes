@@ -301,14 +301,17 @@ class _ShoutScreenState extends State<ShoutScreen> {
       'challenged_text': controller.text,
     };
 
-    Repo.completeShoutChallenge(
-        chatId: widget.chatId,
-        messageId: widget.messageId,
-        content: widget.content,
-        response: controller.text,
-        peer: widget.peer);
+    final post = await Repo.uploadShoutPost(peer: widget.peer, data: metadata);
 
-    await Repo.uploadShoutPost(peer: widget.peer, data: metadata);
+    Repo.completeShoutChallenge(
+      postId: post.id,
+      chatId: widget.chatId,
+      messageId: widget.messageId,
+      content: widget.content,
+      response: controller.text,
+      peer: widget.peer,
+    );
+
     return Navigator.pop(context);
   }
 }

@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:nutes/core/models/user.dart';
@@ -6,24 +7,15 @@ import 'package:nutes/ui/shared/app_bars.dart';
 import 'package:nutes/ui/shared/styles.dart';
 
 class AccountSettingsScreen extends StatefulWidget {
-  final UserProfile profile;
-
-  const AccountSettingsScreen({Key key, this.profile}) : super(key: key);
-
-  static Route route(UserProfile profile) => MaterialPageRoute(
-      builder: (context) => AccountSettingsScreen(
-            profile: profile,
-          ));
+  static Route route(UserProfile profile) =>
+      MaterialPageRoute(builder: (context) => AccountSettingsScreen());
   @override
   _AccountSettingsScreenState createState() => _AccountSettingsScreenState();
 }
 
 class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
-  bool isPrivate;
-
   @override
   void initState() {
-    isPrivate = widget.profile.user.isPrivate ?? false;
     super.initState();
   }
 
@@ -36,29 +28,30 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
           style: TextStyles.header,
         ),
       ),
-      body: Container(
-        child: ListView(
-          children: <Widget>[
-            ListTile(
-              trailing: CupertinoSwitch(
-                  value: isPrivate,
-                  onChanged: (val) {
-                    setState(() {
-                      isPrivate = val;
-                    });
+      body: StreamBuilder<DocumentSnapshot>(
+          stream: Repo.myProfileStream(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) return SizedBox();
 
-                    Repo.updateAccountPrivacy(val);
-                  }),
-              title: Text(
-                'Private Account',
-                style: TextStyles.w600Display,
+            final isPrivate = snapshot.data['is_private'] ?? false;
+            return Container(
+              child: ListView(
+                children: <Widget>[
+                  ListTile(
+                    trailing: CupertinoSwitch(
+                        value: isPrivate,
+                        onChanged: (val) => Repo.updateAccountPrivacy(val)),
+                    title: Text(
+                      'Private Account',
+                      style: TextStyles.w600Display,
+                    ),
+                    subtitle: Text('${isPrivate ? 'Private' : 'Public'} - '
+                        '${isPrivate ? 'only people you approve can see your photos and stories' : 'anyone can see your photos and stories'}'),
+                  )
+                ],
               ),
-              subtitle: Text('${isPrivate ? 'Private' : 'Public'} - '
-                  '${isPrivate ? 'only people you approve can see your photos and stories' : 'anyone can see your photos and stories'}'),
-            )
-          ],
-        ),
-      ),
+            );
+          }),
     );
   }
 }

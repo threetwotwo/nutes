@@ -167,16 +167,16 @@ class ShoutPostBubble extends StatelessWidget {
               ),
             Expanded(
               child: Container(
-                padding: EdgeInsets.only(
-                    left: isChallenger ? 0 : 8, right: isChallenger ? 8 : 0),
+//                padding: EdgeInsets.only(
+//                    left: isChallenger ? 0 : 8, right: isChallenger ? 8 : 0),
                 child: Bubble(
                   alignment: isChallenger
                       ? Alignment.centerLeft
                       : Alignment.centerRight,
                   shadowColor: Colors.black,
                   color: isChallenger ? kPeerBubbleColor : kMyBubbleColor,
-                  padding: BubbleEdges.symmetric(vertical: 10, horizontal: 10),
-                  margin: BubbleEdges.only(top: 10),
+//                  padding: BubbleEdges.symmetric(vertical: 10, horizontal: 10),
+                  margin: BubbleEdges.only(top: 8),
                   nip: isChallenger
                       ? BubbleNip.leftBottom
                       : BubbleNip.rightBottom,
@@ -207,6 +207,8 @@ class ShoutPostBubble extends StatelessWidget {
                         style: isChallenger ? kPeerTextStyle : kMyTextStyle,
                       ),
                       SizedBox(height: 8),
+
+                      ///Like bar
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         mainAxisSize: MainAxisSize.min,
@@ -227,15 +229,19 @@ class ShoutPostBubble extends StatelessWidget {
                                 ),
                               ),
                             ),
+
+                          ///like button
                           GestureDetector(
                             onTap: () {
                               Vibrate.feedback(FeedbackType.selection);
                               return onHeartTapped();
                             },
-                            child: Padding(
+                            child: Container(
+//                              color: Colors.pink[100],
+//                              padding: const EdgeInsets.all(4),
                               padding: EdgeInsets.only(
-                                top: 0.0,
-                                bottom: 0.0,
+                                top: 4.0,
+                                bottom: 4.0,
                                 right: isChallenger ? 4.0 : 0.0,
                                 left: !isChallenger ? 4.0 : 0.0,
                               ),

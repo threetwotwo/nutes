@@ -128,22 +128,10 @@ class ProfileHeader extends StatelessWidget {
           Padding(
             padding:
                 const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: <Widget>[
-                Text(
-                  profile.user.displayName ?? '',
-                  style: TextStyles.w600Text.copyWith(fontSize: 15),
-                ),
-//                IconButton(
-//                  onPressed: null,
-//                  icon: Icon(
-//                    MdiIcons.chevronDown,
-//                    color: Colors.white,
-//                    size: defaultSize(24, context, defaultTo: 20),
-//                  ),
-//                ),
-              ],
+            child: Text(
+              profile.user.displayName ?? '',
+              style: TextStyles.w600Text.copyWith(fontSize: 15),
+              overflow: TextOverflow.fade,
             ),
           ),
 

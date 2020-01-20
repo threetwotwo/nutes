@@ -28,3 +28,15 @@ class UserFollowEvent {
 
   UserFollowEvent(this.user);
 }
+
+class UserUnFollowEvent {
+  final String uid;
+
+  UserUnFollowEvent(this.uid);
+}
+
+class ChatReadStatusEvent {
+  final Map<String, bool> unreadChats;
+
+  ChatReadStatusEvent(this.unreadChats);
+}

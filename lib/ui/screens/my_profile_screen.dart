@@ -1,10 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:nutes/core/events/events.dart';
 import 'package:nutes/core/models/post.dart';
 import 'package:nutes/core/models/story.dart';
 import 'package:nutes/core/models/user.dart';
 import 'package:nutes/core/services/auth.dart';
+import 'package:nutes/core/services/events.dart';
 import 'package:nutes/core/services/firestore_service.dart';
 import 'package:nutes/core/services/local_cache.dart';
 import 'package:nutes/core/services/repository.dart';
@@ -67,7 +69,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
     final result = await Repo.getPostsForUser(
       uid: profile.uid,
       limit: 10,
-      startAfter: startAfter,
+      startAfter: null,
     );
     if (mounted)
       setState(() {
@@ -108,12 +110,24 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
           final post = Post.fromDoc(doc);
 
           if (post == null) return;
+
           setState(() {
             posts = [post] + posts;
           });
         }
       });
     });
+
+    eventBus.on<PostDeleteEvent>().listen((event) {
+      setState(() {
+        posts = List<Post>.from(posts)
+          ..removeWhere((p) => p.id == event.postId);
+      });
+    });
+    eventBus.on<ProfileUpdateEvent>().listen((event) {
+      _getInitialPosts();
+    });
+
     super.initState();
   }
 
@@ -138,6 +152,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
             backgroundColor: Colors.white,
             body: SafeArea(
                 child: RefreshListView(
+              onRefresh: _getInitialPosts,
               onLoadMore: _loadMore,
               controller: widget.isRoot ? widget.scrollController : null,
               children: <Widget>[

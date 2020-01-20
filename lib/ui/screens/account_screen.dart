@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:nutes/core/models/user.dart';
+import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/screens/account_settings_screen.dart';
+import 'package:nutes/ui/screens/change_password_screen.dart';
 import 'package:nutes/ui/shared/app_bars.dart';
 import 'package:line_icons/line_icons.dart';
 import 'package:nutes/ui/shared/styles.dart';
@@ -25,9 +27,48 @@ class AccountScreen extends StatelessWidget {
         body: ListView(
           children: <Widget>[
 //            AccountListTile(LineIcons.bookmark_o, 'Saved'),
-            AccountListTile(LineIcons.gear, 'Settings',
-                onTap: () => Navigator.push(
-                    context, AccountSettingsScreen.route(profile))),
+            AccountListTile(
+              LineIcons.gear,
+              'Settings',
+              onTap: () => Navigator.push(
+                context,
+                AccountSettingsScreen.route(profile),
+              ),
+            ),
+            AccountListTile(
+              LineIcons.key,
+              'Password',
+              onTap: () => Navigator.push(
+                context,
+                ChangePasswordScreen.route(),
+              ),
+            ),
+            AccountListTile(
+              LineIcons.sign_out,
+              'Sign Out',
+              onTap: () => showCupertinoDialog(
+                context: context,
+                builder: (context) => CupertinoAlertDialog(
+//                  title: Text('Are you sure you want to sign out?'),
+                  content: Text('Are you sure you want to sign out?'),
+                  actions: <Widget>[
+                    CupertinoDialogAction(
+                      child: Text('Cancel'),
+                      onPressed: () => Navigator.pop(context),
+                      isDefaultAction: true,
+                    ),
+                    CupertinoDialogAction(
+                      child: Text('Sign Out'),
+                      isDestructiveAction: true,
+                      onPressed: () async {
+                        await Repo.logout();
+                        return Navigator.pop(context);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
         ));
   }

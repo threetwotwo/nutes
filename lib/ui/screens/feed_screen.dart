@@ -1,6 +1,8 @@
-import 'package:bot_toast/bot_toast.dart';
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:nutes/core/events/events.dart';
 import 'package:nutes/core/models/post.dart';
 import 'package:nutes/core/models/story.dart';
 import 'package:nutes/core/models/user.dart';
@@ -12,6 +14,7 @@ import 'package:nutes/ui/shared/comment_overlay.dart';
 import 'package:nutes/ui/shared/loading_indicator.dart';
 import 'package:nutes/ui/shared/refresh_list_view.dart';
 import 'package:nutes/ui/shared/story_avatar.dart';
+import 'package:nutes/ui/shared/styles.dart';
 import 'package:nutes/ui/widgets/empty_view.dart';
 import 'package:nutes/ui/widgets/feed_app_bar.dart';
 import 'package:nutes/ui/shared/post_list.dart';
@@ -22,7 +25,7 @@ import 'package:provider/provider.dart';
 class FeedScreen extends StatefulWidget {
   final VoidCallback onCreatePressed;
   final VoidCallback onDM;
-  final VoidCallback onDoodleStart;
+//  final VoidCallback onDoodleStart;
   final VoidCallback onDoodleEnd;
   final ScrollController scrollController;
 //  final UserProfile profile;
@@ -32,10 +35,9 @@ class FeedScreen extends StatefulWidget {
     this.onCreatePressed,
     this.onDM,
     this.scrollController,
-    this.onDoodleStart,
+//    this.onDoodleStart,
     this.onDoodleEnd,
 //    @required this.profile,
-//      this.onAddStoryPressed,
   }) : super(key: key);
 
   @override
@@ -49,8 +51,6 @@ class _FeedScreenState extends State<FeedScreen>
   Stream<QuerySnapshot> myStoryStream;
 
   final cache = LocalCache.instance;
-
-//  UserProfile profile;
 
   List<Post> posts = [];
 
@@ -69,6 +69,10 @@ class _FeedScreenState extends State<FeedScreen>
   DocumentSnapshot startAfter;
 
   User auth = FirestoreService.ath.user;
+
+  Timer _debounce;
+
+  bool _hasUnreadDMs = false;
 
   @override
   void didChangeDependencies() {
@@ -108,26 +112,68 @@ class _FeedScreenState extends State<FeedScreen>
     _getMyStory();
     _getStoriesOfFollowings();
 
+//    eventBus.on<UserFollowEvent>().listen((event) {
+////      BotToast.showText(text: 'Followed ${event.user.username}');
+//
+//      _getInitialPosts();
+//    });
+//
+//    eventBus.on<UserUnFollowEvent>().listen((event) {
+////      setState(() {
+////        posts = List<Post>.from(posts)
+////          ..removeWhere((p) => p.owner.uid == event.uid);
+////      });
+//      _getInitialPosts();
+//    });
+//
+//    eventBus.on<PostUploadEvent>().listen((event) {
+//      _getInitialPosts();
+//    });
+
+    _refreshTimer();
+
     eventBus.on().listen((event) {
-      print(event);
+      if (event is ChatReadStatusEvent) {
+        setState(() {
+          _hasUnreadDMs = event.unreadChats.containsValue(true);
+        });
+      } else
+        _getInitialPosts();
     });
 
-    eventBus.on<UserProfileChangedEvent>().listen((event) {
-      print(event.profile.user.urls.small);
-      BotToast.showText(text: 'profile change ${event.profile.user.username}');
-      setState(() {
-        auth = event.profile.user;
-      });
-    });
-
-    eventBus.on<UserFollowEvent>().listen((event) {
-      print('Bus Followed ${event.user.username}');
-      BotToast.showText(text: 'Followed ${event.user.username}');
-    });
     super.initState();
   }
 
-  bool headerRefreshIndicatorVisible = false;
+  _checkIfThereAreNewPosts() async {
+    print('checking for new posts');
+    final result = await Repo.checkIfThereAreNewPosts(posts.first.timestamp);
+
+    if (result)
+      setState(() {
+        showThereAreNewPosts = true;
+      });
+    else
+      _refreshTimer();
+  }
+
+  _refreshTimer() {
+    print('refresh timer');
+    setState(() {
+      showThereAreNewPosts = false;
+    });
+    if (_debounce?.isActive ?? false) _debounce.cancel();
+
+    _debounce = Timer(const Duration(seconds: 100), () {
+      print(' timer up');
+
+      if (posts.isNotEmpty) {
+        _checkIfThereAreNewPosts();
+      }
+//      _refreshTimer();
+    });
+  }
+
+  bool showThereAreNewPosts = false;
 
   @override
   Widget build(BuildContext context) {
@@ -143,6 +189,7 @@ class _FeedScreenState extends State<FeedScreen>
         onCreatePressed: widget.onCreatePressed,
         onLogoutPressed: () => Repo.logout(),
         onDM: widget.onDM,
+        hasUnread: _hasUnreadDMs,
       ),
       body: profile == null
           ? LoadingIndicator()
@@ -177,83 +224,119 @@ class _FeedScreenState extends State<FeedScreen>
                 });
                 return;
               },
-              child: RefreshListView(
+              child: Stack(
+                children: <Widget>[
+                  Positioned.fill(
+                    child: RefreshListView(
 //          physics: isDoodling
 //              ? NeverScrollableScrollPhysics()
 //              : BouncingScrollPhysics(),
-                controller: widget.scrollController,
-                onRefresh: () {
-                  _getStoriesOfFollowings();
-                  return _getInitialPosts();
-                },
-                onLoadMore: _getMorePosts,
-                children: <Widget>[
-                  Container(
-                    height: 112,
-                    width: MediaQuery.of(context).size.width,
-                    color: Colors.white,
-                    child: myStory == null
-                        ? Center(child: LoadingIndicator())
-                        : Row(
-                            children: <Widget>[
-                              Visibility(
-                                visible: myStory.story.moments.isEmpty,
-                                child: StoryAvatar(
-                                  isOwner: true,
+                      controller: widget.scrollController,
+                      onRefresh: () {
+                        _getStoriesOfFollowings();
+                        return _getInitialPosts();
+                      },
+                      onLoadMore: _getMorePosts,
+                      children: <Widget>[
+                        Container(
+                          height: 112,
+                          width: MediaQuery.of(context).size.width,
+                          color: Colors.white,
+                          child: myStory == null
+                              ? Center(child: LoadingIndicator())
+                              : Row(
+                                  children: <Widget>[
+                                    Visibility(
+                                      visible: myStory.story.moments.isEmpty,
+                                      child: StoryAvatar(
+                                        isOwner: true,
 //                            user: User.empty(),
 
-                                  ///TODO: fix this bug causing app to not load
-                                  user: profile.user,
-                                  isEmpty: true,
-                                  onTap: widget.onCreatePressed,
-                                  onLongPress: widget.onCreatePressed,
-                                ),
-                              ),
-                              InlineStories(
-                                userStories: [
-                                      if (myStory.story.moments.isNotEmpty)
-                                        myStory
-                                    ] +
-                                    followingsStories,
+                                        user: profile.user,
+                                        isEmpty: true,
+                                        onTap: widget.onCreatePressed,
+                                        onLongPress: widget.onCreatePressed,
+                                      ),
+                                    ),
+                                    InlineStories(
+                                      userStories: [
+                                            if (myStory
+                                                .story.moments.isNotEmpty)
+                                              myStory
+                                          ] +
+                                          followingsStories,
 //                          onCreateStory: widget.onCreatePressed,
-                                topPadding: topPadding,
-                              ),
-                            ],
-                          ),
+                                      topPadding: topPadding,
+                                    ),
+                                  ],
+                                ),
+                        ),
+                        Divider(),
+                        isFetchingPosts
+                            ? LoadingIndicator()
+                            : posts.isEmpty
+                                ? EmptyView(
+                                    title: 'No posts to show',
+                                    subtitle:
+                                        'Start following users to see their posts',
+                                  )
+                                : PostListView(
+                                    posts: posts,
+                                    onUnfollow: (uid) {
+                                      print('onUnfollow $uid');
+                                      return setState(() {
+                                        posts = List<Post>.from(posts)
+                                          ..removeWhere(
+                                              (post) => post.owner.uid == uid);
+                                      });
+                                    },
+                                    onAddComment: (postId) {
+                                      print('add comment for post $postId');
+                                      setState(() {
+                                        commentingTo = postId;
+                                        showCommentTextField =
+                                            !showCommentTextField;
+                                      });
+                                      FocusScope.of(context)
+                                          .requestFocus(commentFocusNode);
+                                      return;
+                                    },
+                                    onDoodleStart: _onDoodleStart,
+                                    onDoodleEnd: _onDoodleEnd,
+                                  ),
+                        SizedBox(height: 64),
+                      ],
+                    ),
                   ),
-                  Divider(),
-                  isFetchingPosts
-                      ? LoadingIndicator()
-                      : posts.isEmpty
-                          ? EmptyView(
-                              title: 'No posts to show',
-                              subtitle:
-                                  'Start following users to see their posts',
-                            )
-                          : PostListView(
-                              posts: posts,
-                              onUnfollow: (uid) {
-                                print('onUnfollow $uid');
-                                return setState(() {
-                                  posts = List<Post>.from(posts)
-                                    ..removeWhere(
-                                        (post) => post.owner.uid == uid);
-                                });
-                              },
-                              onAddComment: (postId) {
-                                print('add comment for post $postId');
-                                setState(() {
-                                  commentingTo = postId;
-                                  showCommentTextField = !showCommentTextField;
-                                });
-                                FocusScope.of(context)
-                                    .requestFocus(commentFocusNode);
-                                return;
-                              },
-                              onDoodleStart: _onDoodleStart,
-                              onDoodleEnd: _onDoodleEnd,
-                            ),
-                  SizedBox(height: 64),
+
+                  ///New posts indicator
+                  if (showThereAreNewPosts)
+                    Align(
+                      alignment: Alignment.topCenter,
+                      child: FlatButton(
+                        color: Colors.black.withOpacity(0.8),
+                        shape: StadiumBorder(),
+                        child: Text(
+                          'New posts',
+                          style:
+                              TextStyles.w600Text.copyWith(color: Colors.white),
+                        ),
+                        onPressed: () async {
+                          widget.scrollController.animateTo(0,
+                              duration: Duration(milliseconds: 300),
+                              curve: Curves.easeInOut);
+
+//                          final result = await Repo.checkIfThereAreNewPosts(
+//                              posts.first.timestamp);
+//
+//                          print('are there new posts? $result');
+//
+//                          if (result)
+                          _getInitialPosts();
+                          _refreshTimer();
+                        },
+                      ),
+                    )
                 ],
               ),
             ),
@@ -264,6 +347,7 @@ class _FeedScreenState extends State<FeedScreen>
     if (mounted)
       setState(() {
 //        startAfter = null;
+        showThereAreNewPosts = false;
         isFetchingPosts = true;
       });
 
@@ -278,12 +362,16 @@ class _FeedScreenState extends State<FeedScreen>
   }
 
   Future<void> _getMorePosts() async {
+    if (posts.length < 4) return;
+
     final result = await Repo.getFeed(startAfter: startAfter);
 
     if (mounted)
       setState(() {
         posts = posts + result.posts;
         startAfter = result.startAfter;
+
+//        if (result.posts.isEmpty) noMorePostsToLoad = true;
       });
   }
 
@@ -323,7 +411,7 @@ class _FeedScreenState extends State<FeedScreen>
     setState(() {
       isDoodling = true;
     });
-    return widget.onDoodleStart;
+//    return widget.onDoodleStart;
   }
 
   VoidCallback _onDoodleEnd() {

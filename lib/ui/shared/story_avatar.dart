@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:nutes/core/models/user.dart';
-import 'package:nutes/core/services/auth.dart';
 import 'package:nutes/core/services/firestore_service.dart';
 import 'package:nutes/ui/shared/styles.dart';
 import 'package:nutes/ui/widgets/profile_header.dart';
-import 'package:provider/provider.dart';
 
 import 'avatar_image.dart';
 

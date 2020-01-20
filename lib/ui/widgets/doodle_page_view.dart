@@ -154,6 +154,7 @@ class _DoodlePageViewState extends State<DoodlePageView> {
           onPrevious: _previousDoodle,
           onLongPress: _onLongPress,
           onLongPressUp: _onLongPressUp,
+          onError: () {},
         );
 //            : Stack(
 //                children: <Widget>[

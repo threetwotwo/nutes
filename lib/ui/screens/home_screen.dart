@@ -6,7 +6,7 @@ import 'package:nutes/ui/screens/feed_screen.dart';
 import 'package:nutes/ui/screens/my_profile_screen.dart';
 import 'package:nutes/ui/screens/search_screen.dart';
 import 'package:nutes/core/models/tab_item.dart';
-import 'package:nutes/core/services/local_cache.dart';
+//import 'package:nutes/core/services/local_cache.dart';
 import 'package:nutes/ui/screens/create_screen.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/widgets/bottom_navigation.dart';
@@ -72,7 +72,6 @@ class _HomeScreenState extends State<HomeScreen>
     print('scroll up for $tab');
     ScrollController controller;
 
-    print(tab);
     switch (tab) {
       case TabItem.home:
         controller = homeScrollController;
@@ -91,6 +90,8 @@ class _HomeScreenState extends State<HomeScreen>
         break;
     }
 
+    print(controller.toString());
+
     ///Scroll up
     if (controller.hasClients)
       controller.animateTo(0, duration: scrollDuration, curve: scrollCurve);
@@ -101,9 +102,8 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    final profile = Provider.of<UserProfile>(context);
 
-    final cache = LocalCache.instance;
+//    final cache = LocalCache.instance;
 
     return WillPopScope(
       onWillPop: () async {
@@ -123,11 +123,12 @@ class _HomeScreenState extends State<HomeScreen>
             if (tab == currentTab) {
               switch (tab) {
                 case TabItem.home:
-                  if (cache.homeIsFirst) _animateToTop(tab);
+//                  if (cache.homeIsFirst)
+                  _animateToTop(tab);
 
                   break;
                 case TabItem.search:
-                  cache.animateToTop(tab);
+                  _animateToTop(tab);
                   break;
                 case TabItem.create:
                   break;
@@ -146,9 +147,9 @@ class _HomeScreenState extends State<HomeScreen>
             }
 
             setState(() {
-              cache.physics = tab == TabItem.home
-                  ? ClampingScrollPhysics()
-                  : NeverScrollableScrollPhysics();
+//              cache.physics = tab == TabItem.home
+//                  ? ClampingScrollPhysics()
+//                  : NeverScrollableScrollPhysics();
               return currentTab = tab;
             });
 
@@ -167,16 +168,15 @@ class _HomeScreenState extends State<HomeScreen>
               onGenerateRoute: (routeSettings) {
                 return MaterialPageRoute(
                   builder: (context) => FeedScreen(
-//                    profile: profile,
                     scrollController: homeScrollController,
                     onCreatePressed: widget.onCreatePressed,
                     onDM: widget.onDM,
-                    onDoodleStart: () {
-                      print('home on doodle');
-                      setState(() {
-                        cache.physics = NeverScrollableScrollPhysics();
-                      });
-                    },
+//                    onDoodleStart: () {
+//                      print('home on doodle');
+//                      setState(() {
+//                        cache.physics = NeverScrollableScrollPhysics();
+//                      });
+//                    },
                   ),
                 );
               },
@@ -189,7 +189,10 @@ class _HomeScreenState extends State<HomeScreen>
               onGenerateRoute: (routeSettings) {
                 return MaterialPageRoute(
                   builder: (context) => SearchScreen(
+                    popularSearchController: explorePopularScrollController,
+                    newestSearchController: exploreNewestScrollController,
                     onTab: (idx) {
+                      print('ontab $idx');
                       setState(() {
                         searchTabIndex = idx;
                       });

@@ -14,6 +14,7 @@ class BaseAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback onTrailingPressed;
 
   final bool automaticallyImplyLeading;
+  final result;
 
   const BaseAppBar(
       {Key key,
@@ -22,7 +23,8 @@ class BaseAppBar extends StatelessWidget implements PreferredSizeWidget {
       this.title,
       this.onLeadingPressed,
       this.onTrailingPressed,
-      this.automaticallyImplyLeading = true})
+      this.automaticallyImplyLeading = true,
+      this.result})
       : super(key: key);
 
   @override
@@ -35,7 +37,8 @@ class BaseAppBar extends StatelessWidget implements PreferredSizeWidget {
       leading: !automaticallyImplyLeading
           ? null
           : GestureDetector(
-              onTap: onLeadingPressed ?? () => Navigator.of(context).pop(),
+              onTap:
+                  onLeadingPressed ?? () => Navigator.of(context).pop(result),
               child: leading == null
                   ? Icon(
                       Icons.arrow_back_ios,
@@ -53,41 +56,6 @@ class BaseAppBar extends StatelessWidget implements PreferredSizeWidget {
       elevation: 1.5,
       brightness: Brightness.light,
       backgroundColor: Colors.white,
-    );
-  }
-}
-
-class EditProfileAppBar extends StatelessWidget implements PreferredSizeWidget {
-  final Function onCancelPressed;
-  final Function onDonePressed;
-
-  const EditProfileAppBar(
-      {Key key, @required this.onCancelPressed, @required this.onDonePressed})
-      : super(key: key);
-
-  @override
-  Size get preferredSize => Size.fromHeight(kToolbarHeight);
-
-  @override
-  Widget build(BuildContext context) {
-    return BaseAppBar(
-      leading: IconButton(
-        icon: Icon(Icons.close),
-        onPressed: onCancelPressed,
-        color: Colors.black,
-        tooltip: 'Cancel',
-      ),
-      title: NutesLogoPlain(),
-      trailing: Tooltip(
-        message: "Done",
-        child: FlatButton(
-          child: Text(
-            'Done',
-            style: TextStyles.defaultText.copyWith(color: Colors.blueAccent),
-          ),
-          onPressed: onDonePressed,
-        ),
-      ),
     );
   }
 }

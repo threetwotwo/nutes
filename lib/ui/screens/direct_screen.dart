@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:nutes/core/models/user.dart';
 import 'package:nutes/core/services/auth.dart';
+import 'package:nutes/core/services/events.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/shared/app_bars.dart';
 import 'package:nutes/ui/shared/empty_indicator.dart';
@@ -29,6 +30,8 @@ class _DirectScreenState extends State<DirectScreen> {
   final auth = Repo.auth;
 
   Stream<QuerySnapshot> _stream = Repo.DMStream();
+
+  Map<String, bool> unreadChats = {};
 
   @override
   void initState() {
@@ -118,6 +121,17 @@ class _DirectScreenState extends State<DirectScreen> {
 
                                   final endAt = doc['end_at'];
 
+                                  final hasUnread = (lastSeenTimestamp == null)
+                                      ? lastCheckedSender != auth.uid
+                                      : (lastSeenTimestamp.seconds <
+                                              lastCheckedTimestamp.seconds &&
+                                          lastCheckedSender != auth.uid);
+
+                                  unreadChats[user.uid] = hasUnread;
+
+                                  eventBus
+                                      .fire(ChatReadStatusEvent(unreadChats));
+                                  print(unreadChats);
                                   return DMListItem(
                                     user: user,
                                     lastChecked: lastChecked,
@@ -125,12 +139,7 @@ class _DirectScreenState extends State<DirectScreen> {
                                     lastSeenTimestampPeer:
                                         lastSeenTimestampPeer,
                                     endAt: endAt,
-                                    hasUnreadMessages: (lastSeenTimestamp ==
-                                            null)
-                                        ? lastCheckedSender != auth.uid
-                                        : (lastSeenTimestamp.seconds <
-                                                lastCheckedTimestamp.seconds &&
-                                            lastCheckedSender != auth.uid),
+                                    hasUnreadMessages: hasUnread,
                                   );
                                 },
                                 itemCount: snapshot.data.documents.length,

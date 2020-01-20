@@ -5,28 +5,28 @@ import 'package:flutter/widgets.dart';
 abstract class SmartTextElement {}
 
 /// Represents an element containing a link
-class LinkElement extends SmartTextElement {
-  final String url;
-
-  LinkElement(this.url);
-
-  @override
-  String toString() {
-    return "LinkElement: $url";
-  }
-}
+//class LinkElement extends SmartTextElement {
+//  final String url;
+//
+//  LinkElement(this.url);
+//
+//  @override
+//  String toString() {
+//    return "LinkElement: $url";
+//  }
+//}
 
 /// Represents an element containing a hastag
-class HashTagElement extends SmartTextElement {
-  final String tag;
-
-  HashTagElement(this.tag);
-
-  @override
-  String toString() {
-    return "HashTagElement: $tag";
-  }
-}
+//class HashTagElement extends SmartTextElement {
+//  final String tag;
+//
+//  HashTagElement(this.tag);
+//
+//  @override
+//  String toString() {
+//    return "HashTagElement: $tag";
+//  }
+//}
 
 /// Represents an element containing a mention
 class MentionElement extends SmartTextElement {
@@ -63,10 +63,11 @@ class LeadingElement extends SmartTextElement {
   }
 }
 
-final _linkRegex = RegExp(
-    r"(http(s)?:\/\/.)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)",
-    caseSensitive: false);
-final _tagRegex = RegExp(r"\B#\w*[a-zA-Z]+\w*", caseSensitive: false);
+//final _linkRegex = RegExp(
+//    r"(http(s)?:\/\/.)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)",
+//    caseSensitive: false);
+
+//final _tagRegex = RegExp(r"\B#\w*[a-zA-Z]+\w*", caseSensitive: false);
 final _mentionRegex = RegExp(r"\B@\w*[a-zA-Z._0-9]+\w*", caseSensitive: false);
 
 /// Turns [text] into a list of [SmartTextElement]
@@ -76,11 +77,13 @@ List<SmartTextElement> _smartify(String text, {TextSpan leading}) {
   sentences.forEach((sentence) {
     final words = sentence.split(' ');
     words.forEach((word) {
-      if (_linkRegex.hasMatch(word)) {
-        span.add(LinkElement(word));
-      } else if (_tagRegex.hasMatch(word)) {
-        span.add(HashTagElement(word));
-      } else if (_mentionRegex.hasMatch(word)) {
+//      if (_linkRegex.hasMatch(word)) {
+//        span.add(LinkElement(word));
+//      } else if (_tagRegex.hasMatch(word)) {
+//        span.add(HashTagElement(word));
+//      } else
+//
+      if (_mentionRegex.hasMatch(word)) {
         span.add(MentionElement(word));
       } else {
         span.add(TextElement(word));
@@ -100,7 +103,7 @@ List<SmartTextElement> _smartify(String text, {TextSpan leading}) {
 }
 
 /// Callback with URL to open
-typedef StringCallback(String url);
+typedef void StringCallback(String url);
 
 /// Turns URLs into links
 class CommentText extends StatelessWidget {
@@ -117,10 +120,10 @@ class CommentText extends StatelessWidget {
   final TextStyle tagStyle;
 
   /// Callback for tapping a link
-  final StringCallback onOpen;
+  final StringCallback onLeading;
 
   /// Callback for tapping a link
-  final StringCallback onTagClick;
+//  final StringCallback onTagClick;
 
   final TextSpan leading;
 
@@ -134,8 +137,8 @@ class CommentText extends StatelessWidget {
     this.style,
     this.linkStyle,
     this.tagStyle,
-    this.onOpen,
-    this.onTagClick,
+    this.onLeading,
+//    this.onTagClick,
     this.leading,
     this.onMention,
     @required this.uid,
@@ -171,18 +174,21 @@ class CommentText extends StatelessWidget {
 
     return TextSpan(
         children: elements.map<TextSpan>((element) {
+//      else if (element is LinkElement) {
+//        return LinkTextSpan(
+//          text: element.url,
+//          style: linkStyle,
+//          onPressed: () => _onOpen(element.url),
+//        );
+//      }
+
       if (element is TextElement) {
         return TextSpan(
           text: element.text,
           style: style,
         );
-      } else if (element is LinkElement) {
-        return LinkTextSpan(
-          text: element.url,
-          style: linkStyle,
-          onPressed: () => _onOpen(element.url),
-        );
-      } else if (element is LeadingElement) {
+      }
+      if (element is LeadingElement) {
         return LinkTextSpan(
           text: element.text,
           style: style.copyWith(fontWeight: FontWeight.w600),
@@ -197,13 +203,16 @@ class CommentText extends StatelessWidget {
             return onMention(element.mention.substring(1));
           },
         );
-      } else if (element is HashTagElement) {
-        return LinkTextSpan(
-          text: element.tag,
-          style: tagStyle,
-          onPressed: () => _onTagClick(element.tag),
-        );
       }
+//      else if (element is HashTagElement) {
+//        return LinkTextSpan(
+//          text: element.tag,
+//          style: tagStyle,
+//          onPressed: () => _onTagClick(element.tag),
+//        );
+//      }
+      else
+        return null;
     }).toList());
   }
 
@@ -231,8 +240,8 @@ class CommentText extends StatelessWidget {
               color: Colors.blue[900],
             )
             .merge(linkStyle),
-        onOpen: onOpen,
-        onTagClick: onTagClick,
+        onOpen: onLeading,
+//        onTagClick: onTagClick,
       ),
     );
   }

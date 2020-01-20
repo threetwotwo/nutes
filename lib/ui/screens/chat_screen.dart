@@ -7,6 +7,7 @@ import 'package:nutes/core/models/chat_message.dart';
 import 'package:nutes/core/models/user.dart';
 import 'package:nutes/core/services/auth.dart';
 import 'package:nutes/core/services/repository.dart';
+import 'package:nutes/ui/screens/post_detail_screen.dart';
 import 'package:nutes/ui/screens/profile_screen.dart';
 import 'package:nutes/ui/screens/shout_screen.dart';
 import 'package:nutes/ui/shared/app_bars.dart';
@@ -419,7 +420,13 @@ class _ChatScreenState extends State<ChatScreen> {
                                     peer: widget.peer,
                                     isLast: showPeerAvatar,
                                     onTapped: () {
-                                      print('tapped shout response');
+                                      if (message.metadata['post_id'] != null)
+                                        Navigator.push(
+                                            context,
+                                            PostDetailScreen.route(null,
+                                                postId:
+                                                    message.metadata['post_id'],
+                                                ownerId: auth.uid));
                                     },
                                   );
 

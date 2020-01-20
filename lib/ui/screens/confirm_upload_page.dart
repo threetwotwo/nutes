@@ -2,7 +2,9 @@ import 'dart:math';
 
 import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
+import 'package:nutes/core/events/events.dart';
 import 'package:nutes/core/services/auth.dart';
+import 'package:nutes/core/services/events.dart';
 import 'package:nutes/core/services/local_cache.dart';
 import 'package:preload_page_view/preload_page_view.dart';
 import 'package:nutes/core/models/post_type.dart';
@@ -179,19 +181,26 @@ class ConfirmUploadPage extends StatelessWidget {
                   child: RaisedButton(
                     onPressed: () async {
                       print('pressed share to post');
-                      Repo.uploadPost(
+                      BotToast.showText(
+                          text: 'Sharing post', align: Alignment.center);
+
+                      Navigator.popUntil(context, (r) => r.isFirst);
+
+                      await LocalCache.instance.animateTo(1);
+
+                      final post = await Repo.uploadPost(
                         type: PostType.text,
                         fileBundles: fileBundles,
                         isPrivate: auth.user.isPrivate,
                         caption: captionController.text,
                       );
 
-                      Navigator.popUntil(context, (r) => r.isFirst);
+//                      print('new post map: ${post.toMap()}');
 
-                      await LocalCache.instance.animateTo(1);
+                      BotToast.showText(
+                          text: 'Shared', align: Alignment.center);
 
-                      return BotToast.showText(
-                          text: 'Shared post', align: Alignment.center);
+                      eventBus.fire(PostUploadEvent(post));
                     },
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(80.0)),

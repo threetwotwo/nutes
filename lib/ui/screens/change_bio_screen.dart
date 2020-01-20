@@ -6,30 +6,38 @@ import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/shared/app_bars.dart';
 import 'package:nutes/ui/shared/styles.dart';
 
-class ChangeUsernameScreen extends StatefulWidget {
+class ChangeBioScreen extends StatefulWidget {
   final UserProfile profile;
 
-  const ChangeUsernameScreen({Key key, this.profile}) : super(key: key);
+  const ChangeBioScreen({Key key, this.profile}) : super(key: key);
 
   static Route route(UserProfile profile) => MaterialPageRoute(
-      builder: (context) => ChangeUsernameScreen(
+      builder: (context) => ChangeBioScreen(
             profile: profile,
           ));
 
   @override
-  _ChangeUsernameScreenState createState() => _ChangeUsernameScreenState();
+  _ChangeBioScreenState createState() => _ChangeBioScreenState();
 }
 
-class _ChangeUsernameScreenState extends State<ChangeUsernameScreen> {
+class _ChangeBioScreenState extends State<ChangeBioScreen> {
   final controller = TextEditingController();
 
   bool hasError = false;
 
-  bool isCheckingUsername = false;
+  bool isChecking = false;
+
+  String text = '';
 
   @override
   void initState() {
-    controller.text = widget.profile.user.username;
+    controller.text = widget.profile.bio;
+
+    controller.addListener(() {
+      setState(() {
+        text = controller.text;
+      });
+    });
     super.initState();
   }
 
@@ -41,7 +49,7 @@ class _ChangeUsernameScreenState extends State<ChangeUsernameScreen> {
           'Username',
           style: TextStyles.header,
         ),
-        trailing: isCheckingUsername
+        trailing: isChecking
             ? Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: CupertinoActivityIndicator(),
@@ -60,13 +68,14 @@ class _ChangeUsernameScreenState extends State<ChangeUsernameScreen> {
           child: Column(
             children: <Widget>[
               TextField(
-                maxLength: 30,
                 controller: controller,
-                inputFormatters: [
-                  WhitelistingTextInputFormatter(RegExp("[a-z\._0-9]")),
-                ],
+//                inputFormatters: [
+//                  WhitelistingTextInputFormatter(RegExp("[a-z\._0-9]")),
+//                ],
+                maxLength: 150,
+                maxLines: 10,
                 decoration: InputDecoration(
-                  counterText: '',
+//                  counterText: (150 - text.length).toString(),
                   suffix: InkWell(
                     onTap: onCancel,
                     child: Icon(
@@ -76,9 +85,10 @@ class _ChangeUsernameScreenState extends State<ChangeUsernameScreen> {
                     ),
                   ),
                   contentPadding: const EdgeInsets.all(8),
-                  labelText:
-                      hasError ? 'This username is not available' : 'Username',
-                  hintText: ('Enter a new username'),
+//                  labelText:
+//                      hasError ? 'This username is not available' : 'Username',
+                  labelText: 'Bio',
+                  hintText: ('Enter a bio'),
                   labelStyle: TextStyles.defaultText.copyWith(
                     color: hasError ? Colors.red : Colors.grey,
                   ),
@@ -103,44 +113,51 @@ class _ChangeUsernameScreenState extends State<ChangeUsernameScreen> {
   }
 
   Future<void> onDone() async {
-    if (controller.text == widget.profile.user.username)
-      return Navigator.pop(context);
+    if (controller.text == widget.profile.bio) return Navigator.pop(context);
+
+//    setState(() {
+//      isChecking = true;
+//    });
+//
+//    if (controller.text.length < 2) {
+//      setState(() {
+//        isChecking = false;
+//        hasError = true;
+//      });
+//      return;
+//    }
+//
+//    final exists = await Repo.usernameExists(controller.text);
+//
+//    setState(() {
+//      isChecking = false;
+//      hasError = exists;
+//    });
+//
+//    if (hasError) return;
+//
+//    setState(() {
+//      isChecking = true;
+//    });
+//
+//    UserProfile profile;
+//    if (!hasError) {
+//    }
+//
+//    setState(() {
+//      isChecking = false;
+//      hasError = exists;
+//    });
 
     setState(() {
-      isCheckingUsername = true;
+      isChecking = true;
     });
 
-    if (controller.text.length < 2) {
-      setState(() {
-        isCheckingUsername = false;
-        hasError = true;
-      });
-      return;
-    }
-
-    final exists = await Repo.usernameExists(controller.text);
+    final profile = await Repo.updateProfile(bio: controller.text);
 
     setState(() {
-      isCheckingUsername = false;
-      hasError = exists;
+      isChecking = false;
     });
-
-    if (hasError) return;
-
-    setState(() {
-      isCheckingUsername = true;
-    });
-
-    UserProfile profile;
-    if (!hasError) {
-      profile = await Repo.updateProfile(username: controller.text);
-    }
-
-    setState(() {
-      isCheckingUsername = false;
-      hasError = exists;
-    });
-
     return Navigator.pop(context, profile);
   }
 }

@@ -2,13 +2,19 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:nutes/core/events/events.dart';
 import 'package:nutes/core/services/auth.dart';
+import 'package:nutes/core/services/events.dart';
+import 'package:nutes/ui/screens/change_bio_screen.dart';
+import 'package:nutes/ui/screens/change_email_sceen.dart';
 import 'package:nutes/ui/screens/change_username_screen.dart';
 import 'package:nutes/ui/shared/app_bars.dart';
 import 'package:nutes/ui/shared/avatar_image.dart';
 import 'package:nutes/core/models/user.dart';
 import 'package:nutes/core/services/firestore_service.dart';
 import 'package:nutes/core/services/repository.dart';
+import 'package:nutes/ui/shared/loading_indicator.dart';
+import 'package:nutes/ui/shared/logos.dart';
 import 'package:nutes/ui/shared/styles.dart';
 //import 'package:image_cropper/image_cropper.dart';
 
@@ -31,10 +37,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
   final _displayNameController = TextEditingController();
   final _bioController = TextEditingController();
   final _emailController = TextEditingController();
-  bool isUpdating = false;
+
+  bool isUpdatingPhoto = false;
+  bool isUpdatingProfile = false;
 
   final auth = Repo.auth;
   UserProfile profile;
+
+  bool isLoadingPrivateInfo = false;
 
 //  UserProfile profile;
 
@@ -44,7 +54,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _usernameController.text = profile.user.username;
     _displayNameController.text = profile.user.displayName;
     _bioController.text = profile.bio;
-    _emailController.text = profile.user.username;
+
+    _emailController.addListener(() {
+      final emailText = _emailController.text;
+      print(emailText);
+    });
+
+    _getEmail();
     super.initState();
   }
 
@@ -52,26 +68,55 @@ class _EditProfilePageState extends State<EditProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: EditProfileAppBar(
-        onCancelPressed: () => Navigator.of(context).pop(),
-        onDonePressed: () async {
-          print('done');
+      appBar: BaseAppBar(
+        leading: IconButton(
+          icon: Icon(Icons.close),
+          onPressed: () {
+            eventBus.fire(ProfileUpdateEvent(profile));
+            return Navigator.of(context).pop();
+          },
+          color: Colors.black,
+          tooltip: 'Cancel',
+        ),
+        title: NutesLogoPlain(),
+        trailing: Tooltip(
+          message: "Done",
+          child: isUpdatingProfile
+              ? LoadingIndicator()
+              : FlatButton(
+                  child: Text(
+                    'Done',
+                    style: TextStyles.defaultText
+                        .copyWith(color: Colors.blueAccent),
+                  ),
+                  onPressed: () async {
+                    final displayName = _displayNameController.text;
+                    final username = _usernameController.text;
+                    final bio = _bioController.text;
 
-          final displayName = _displayNameController.text;
-          final username = _usernameController.text;
-          final bio = _bioController.text;
+                    setState(() {
+                      isUpdatingProfile = true;
+                    });
 
-          await FirestoreService().updateProfile(
-            username: username,
-            displayName: displayName,
-            bio: bio,
-          );
+                    await FirestoreService().updateProfile(
+                      username: username,
+                      displayName: displayName,
+                      bio: bio,
+                    );
 
-          final updatedProfile = auth.copyWith(
-              username: username, displayName: displayName, bio: bio);
+                    final updatedProfile = auth.copyWith(
+                        username: username, displayName: displayName, bio: bio);
 
-          return Navigator.of(context).pop(updatedProfile);
-        },
+                    setState(() {
+                      isUpdatingProfile = false;
+                    });
+
+                    eventBus.fire(ProfileUpdateEvent(updatedProfile));
+
+                    return Navigator.of(context).pop(updatedProfile);
+                  },
+                ),
+        ),
       ),
       body: SafeArea(
           child: SingleChildScrollView(
@@ -88,7 +133,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   width: 200,
                   child: Stack(
                     children: <Widget>[
-                      if (isUpdating)
+                      if (isUpdatingPhoto)
                         Positioned.fill(
                           child: Padding(
                             padding: const EdgeInsets.all(4.0),
@@ -141,29 +186,44 @@ class _EditProfilePageState extends State<EditProfilePage> {
               },
             ),
             EditListItem(
+              maxLines: 2,
               title: 'Bio',
-              controller: _bioController,
+              controller: _bioController..text = profile.bio,
+              readOnly: true,
+              onTap: () async {
+                final prof = await Navigator.push(
+                    context, ChangeBioScreen.route(profile));
+
+                if (prof is UserProfile)
+                  setState(() {
+                    profile = prof;
+                  });
+              },
             ),
 
             SizedBox(height: 8),
 
             ///Private
-            ///TODO: figure out how to get email
-//            LargeHeader(title: 'Private information'),
-//            Padding(
-//              padding: const EdgeInsets.all(8.0),
-//              child: Text(
-//                'Private info',
-//                style: TextStyles.w600Display,
-//              ),
-//            ),
-            EditListItem(
-              title: 'Email',
-              child: TextField(
+
+            if (isLoadingPrivateInfo)
+              LoadingIndicator(),
+            if (!isLoadingPrivateInfo)
+              EditListItem(
+                title: 'Email',
                 controller: _emailController,
-                decoration: InputDecoration.collapsed(hintText: 'Enter email'),
+                readOnly: true,
+                onTap: () async {
+                  final email = await Navigator.push(
+                      context, ChangeEmailScreen.route(_emailController.text));
+
+                  if (email is String) {
+                    if (email.isNotEmpty)
+                      setState(() {
+                        _emailController.text = email;
+                      });
+                  }
+                },
               ),
-            ),
           ],
         ),
       )),
@@ -205,13 +265,15 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   Future removeCurrentPhoto() async {
     setState(() {
-      isUpdating = true;
+      isUpdatingPhoto = true;
     });
     final updatedProfile = await Repo.removeCurrentPhoto();
     setState(() {
-      isUpdating = false;
+      isUpdatingPhoto = false;
       profile = updatedProfile;
     });
+
+    eventBus.fire(ProfileUpdateEvent(updatedProfile));
   }
 
   Future<void> pickImageFromLibrary() async {
@@ -228,15 +290,33 @@ class _EditProfilePageState extends State<EditProfilePage> {
     if (cropped == null) return;
 
     setState(() {
-      isUpdating = true;
+      isUpdatingPhoto = true;
     });
     final updatedProfile =
         await Repo.updatePhotoUrl(uid: widget.profile.uid, original: cropped);
 
     setState(() {
-      isUpdating = false;
+      isUpdatingPhoto = false;
       profile = updatedProfile;
 //      profile = updatedProfile;
+    });
+
+    eventBus.fire(ProfileUpdateEvent(updatedProfile));
+  }
+
+  Future<void> _getEmail() async {
+    setState(() {
+      isLoadingPrivateInfo = true;
+    });
+
+//    final result = await Repo.getMyInfo();
+
+    final email = await Repo.getMyEmail();
+
+    setState(() {
+      isLoadingPrivateInfo = false;
+//      _emailController.text = result['email'] ?? 'HAHA';
+      _emailController.text = email;
     });
   }
 }
@@ -250,6 +330,8 @@ class EditListItem extends StatelessWidget {
   final String hint;
 
   final VoidCallback onTap;
+  final int maxLines;
+  final int maxLength;
 
   const EditListItem({
     Key key,
@@ -259,6 +341,8 @@ class EditListItem extends StatelessWidget {
     this.readOnly = false,
     this.hint = '',
     this.onTap,
+    this.maxLines = 1,
+    this.maxLength = 150,
   }) : super(key: key);
 
   @override
@@ -279,10 +363,13 @@ class EditListItem extends StatelessWidget {
           Flexible(
               flex: 2,
               child: TextField(
+                maxLength: 150,
+                maxLines: maxLines,
                 readOnly: readOnly,
                 controller: controller,
                 onTap: onTap,
                 decoration: InputDecoration(
+                  counterText: '',
                   hintText: hint,
 //                  filled: true,
 //                  fillColor: Colors.grey[200],

@@ -6,7 +6,6 @@ import 'package:nutes/core/models/user.dart';
 class Comment {
   final String id;
   final User owner;
-//  final Post post;
 
   ///The comment is a reply to another comment if [parentId] is null
   final String parentId;
@@ -17,6 +16,8 @@ class Comment {
   final CommentStats stats;
   final String text;
 
+  final DocumentSnapshot doc;
+
   Comment({
     this.id,
 //    @required this.post,
@@ -26,23 +27,46 @@ class Comment {
     @required this.timestamp,
     @required this.owner,
     this.stats,
+    this.doc,
   });
 
   factory Comment.fromDoc(DocumentSnapshot doc) {
-    final data = doc.data;
-
-    final post = null;
+    final likeCount = doc['like_count'] ?? 0;
+    final replyCount = doc['reply_count'] ?? 0;
 
     return Comment(
       id: doc.documentID,
 //      post: post,
-      timestamp: data['published'] ?? '',
-      owner: User.fromMap(data['owner'] ?? {}),
-      parentId: data['parent_id'] ?? '',
-      parentOwner: User.fromMap(data['parent_owner'] ?? {}),
-      text: data['text'] ?? '',
+      timestamp: doc['timestamp'],
+      owner: User.fromMap(doc['owner'] ?? {}),
+      parentId: doc['parent_id'] ?? '',
+      parentOwner: User.fromMap(doc['parent_owner'] ?? {}),
+      text: doc['text'] ?? '',
+      stats: CommentStats(replyCount: replyCount, likeCount: likeCount),
+      doc: doc,
     );
   }
+
+  Comment copyWith({int likeCount, int replyCount}) {
+    return Comment(
+        id: id,
+        timestamp: timestamp,
+        owner: owner,
+        parentId: parentId,
+        parentOwner: parentOwner,
+        text: text,
+        doc: doc,
+        stats: CommentStats(
+            likeCount: likeCount ?? stats.likeCount,
+            replyCount: replyCount ?? stats.replyCount));
+  }
+
+  Map toMap() => {
+        'id': id,
+        'timestamp': timestamp,
+        'parent_id': parentId,
+        'text': text,
+      };
 }
 
 class CommentStats {
@@ -50,4 +74,17 @@ class CommentStats {
   final int replyCount;
 
   CommentStats({this.likeCount, this.replyCount});
+}
+
+///For pagination
+class CommentCursor {
+  final List<Comment> comments;
+  final DocumentSnapshot startAfter;
+//  final DocumentSnapshot endAt;
+
+  CommentCursor(
+    this.comments,
+    this.startAfter,
+//    this.endAt,
+  );
 }
