@@ -196,6 +196,7 @@ class Repo {
       String messageId,
       String content,
       String response,
+      String topic,
       User peer,
       String postId}) {
     return shared._firestore.completeShoutChallenge(
@@ -208,6 +209,7 @@ class Repo {
     String content,
     User peer,
     Map data,
+    String topic,
   }) {
     return shared._firestore.uploadMessage(
       messageRef: ref,
@@ -215,6 +217,7 @@ class Repo {
       content: content,
       peer: peer,
       data: data,
+      topic: topic,
     );
   }
 
@@ -297,10 +300,16 @@ class Repo {
 
     print('new post: $postId');
 
+    final milliSinceEpoch = DateTime.now().millisecondsSinceEpoch;
+
+    final daysSinceEpoch = milliSinceEpoch ~/ 86400000;
+
     batch.setData(publicRef, {
       'owner_id': auth.uid,
       'published': timestamp,
+      'days_since_epoch': daysSinceEpoch,
       'is_private': isPrivate,
+      'like_count': 0,
     });
 
     ///2. set user post doc
@@ -332,8 +341,6 @@ class Repo {
     }
 
     final uploader = FirestoreService.ath.user.toMap();
-
-    print('post uploader: $uploader');
 
     final payload = {
       'type': PostHelper.stringValue(type),
@@ -414,6 +421,9 @@ class Repo {
     return postCursor;
   }
 
+  static Stream<DocumentSnapshot> myFollowRequestStream() =>
+      shared._firestore.myFollowRequestStream();
+
   static Future<List> getMyFollowRequests() async {
     final doc = await shared._firestore.myFollowRequestsRef().get();
 
@@ -421,15 +431,16 @@ class Repo {
   }
 
   ///Deletes a follow request
-  static redactFollowRequest(String followerId, String followingId) {
-    shared._firestore
+  static deleteFollowRequest(String followerId, String followingId) {
+    return shared._firestore
         .deleteFollowRequest(follower: followerId, following: followingId);
   }
 
   static authorizeFollowRequest(User follower) {
-    shared._firestore
-        .deleteFollowRequest(follower: follower.uid, following: auth.uid);
-    return shared._firestore.follow(follower: follower, following: auth.user);
+    shared._firestore.deleteFollowRequest(
+        follower: follower.uid, following: FirestoreService.ath.uid);
+    return shared._firestore
+        .follow(follower: follower, following: FirestoreService.ath.user);
   }
 
   static Map followingsArray = {};
@@ -443,8 +454,8 @@ class Repo {
   }
 
   /// follow a user
-  static requestFollow(User user, bool isPrivate) async {
-    isPrivate
+  static requestFollow(User user) async {
+    user.isPrivate
         ? shared._firestore.requestFollow(user.uid)
         : await shared._firestore.follow(follower: auth.user, following: user);
 
@@ -530,8 +541,8 @@ class Repo {
             email: authResult.user.email)
         : null;
 
-    if (profile != null && FirestoreService.token != null)
-      createFCMDeviceToken(profile.uid, FirestoreService.token);
+//    if (profile != null && FirestoreService.token != null)
+//      createFCMDeviceToken(profile.uid, FirestoreService.token);
 
     return profile;
   }
@@ -668,8 +679,8 @@ class Repo {
   static Stream<DocumentSnapshot> myShoutRightLikeStream(Post post) =>
       shared._firestore.myShoutRightLikeStream(post);
 
-  static void createFCMDeviceToken(String uid, String token) =>
-      shared._firestore.createFCMDeviceToken(uid, token);
+//  static void createFCMDeviceToken(String uid, String token) =>
+//      shared._firestore.createFCMDeviceToken(uid, token);
 
   static Future<void> updateEmail(String email) =>
       shared._firestore.updateEmail(email).catchError((e) {

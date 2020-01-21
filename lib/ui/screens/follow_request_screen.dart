@@ -65,7 +65,7 @@ class FollowRequestScreen extends StatelessWidget {
                                 onConfirm: (user) =>
                                     Repo.authorizeFollowRequest(user),
                                 onDelete: (uid) =>
-                                    Repo.redactFollowRequest(auth.uid, uid),
+                                    Repo.deleteFollowRequest(uid, auth.uid),
                               ),
                             );
                           },

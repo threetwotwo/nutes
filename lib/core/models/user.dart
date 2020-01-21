@@ -69,7 +69,7 @@ class UserProfile {
     int postCount,
     int followerCount,
     int followingCount,
-    bool hasRequestedFollow,
+//    bool hasRequestedFollow,
   }) {
     return UserProfile(
       uid: this.uid,
@@ -79,7 +79,7 @@ class UserProfile {
 //            photoUrl: photoUrl,
             urls: bundle,
             isPrivate: isPrivate,
-            hasRequestedFollow: hasRequestedFollow,
+//            hasRequestedFollow: hasRequestedFollow,
           ),
 //      isPrivate: isPrivate ?? false,
       isVerified: isVerified ?? false,
@@ -102,7 +102,7 @@ class UserProfile {
       'photo_url': user.urls.small,
       'bio': bio,
       'is_verified': isVerified,
-//      'is_private': isPrivate,
+      'is_private': user.isPrivate,
       'post_count': stats.postCount,
       'follower_count': stats.followerCount,
       'following_count': stats.followingCount,
@@ -119,7 +119,7 @@ class User {
 //  final String photoUrl;
   final ImageUrlBundle urls;
   final bool isPrivate;
-  final bool hasRequestedFollow;
+//  final bool hasRequestedFollow;
 
   User({
     @required this.uid,
@@ -128,7 +128,7 @@ class User {
 //    @required this.photoUrl,
     @required this.isPrivate,
     @required this.urls,
-    this.hasRequestedFollow,
+//    this.hasRequestedFollow,
   });
 
   factory User.empty() {
@@ -193,7 +193,7 @@ class User {
 //    String photoUrl,
     ImageUrlBundle urls,
     bool isPrivate,
-    hasRequestedFollow,
+//    hasRequestedFollow,
   }) {
     return User(
       isPrivate: isPrivate ?? this.isPrivate,
@@ -202,7 +202,7 @@ class User {
       displayName: displayName ?? this.displayName,
 //      photoUrl: photoUrl ?? this.photoUrl,
       urls: urls ?? this.urls,
-      hasRequestedFollow: hasRequestedFollow ?? this.hasRequestedFollow,
+//      hasRequestedFollow: hasRequestedFollow ?? this.hasRequestedFollow,
     );
   }
 }

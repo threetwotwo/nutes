@@ -48,7 +48,7 @@ class ChatPeerAvatar extends StatelessWidget {
           child: AvatarImage(
             url: peer.urls.small,
             spacing: 0,
-            padding: 0,
+            padding: 2,
           ),
         ),
       ),

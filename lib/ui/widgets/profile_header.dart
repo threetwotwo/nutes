@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:nutes/core/models/user.dart';
 import 'package:nutes/ui/shared/buttons.dart';
 import 'package:nutes/ui/shared/styles.dart';
@@ -27,6 +26,8 @@ class ProfileHeader extends StatelessWidget {
   final VoidCallback onFollow;
   final VoidCallback onRequest;
 
+  final bool hasRequest;
+
   const ProfileHeader({
     Key key,
     @required this.profile,
@@ -42,6 +43,7 @@ class ProfileHeader extends StatelessWidget {
     this.onFollowingsPressed,
     this.onRequest,
     this.storyState = StoryState.none,
+    this.hasRequest = false,
   }) : super(key: key);
 
   @override
@@ -109,6 +111,7 @@ class ProfileHeader extends StatelessWidget {
                                   onEditPressed: onEditPressed,
                                 )
                               : ProfileFollowButton(
+                                  hasRequest: hasRequest,
                                   user: profile.user,
                                   isFollowing: isFollowing,
                                   onMessagePressed: onMessagePressed,
@@ -243,6 +246,7 @@ class ProfileFollowButton extends StatelessWidget {
   final Function onFollow;
   final VoidCallback onRequest;
   final User user;
+  final bool hasRequest;
 
   const ProfileFollowButton({
     Key key,
@@ -251,10 +255,11 @@ class ProfileFollowButton extends StatelessWidget {
     this.onFollow,
     @required this.user,
     this.onRequest,
+    this.hasRequest,
   }) : super(key: key);
   @override
   Widget build(BuildContext context) {
-    final hasRequest = user.hasRequestedFollow == true;
+//    final hasRequest = user.hasRequestedFollow == true;
 
     return Row(
       children: <Widget>[

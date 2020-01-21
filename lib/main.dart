@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:bot_toast/bot_toast.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -6,8 +8,13 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:nutes/core/services/auth.dart';
-import 'package:nutes/ui/screens/profile_screen.dart';
+//import 'package:nutes/ui/screens/profile_screen.dart';
 import 'package:nutes/core/services/local_cache.dart';
+import 'package:nutes/ui/screens/account_recovery_screen.dart';
+import 'package:nutes/ui/screens/chat_screen.dart';
+import 'package:nutes/ui/screens/post_detail_screen.dart';
+import 'package:nutes/ui/screens/profile_screen.dart';
+import 'package:nutes/ui/shared/avatar_image.dart';
 import 'package:nutes/ui/shared/loading_indicator.dart';
 import 'package:nutes/ui/widgets/app_page_view.dart';
 import 'package:nutes/ui/screens/login_screen.dart';
@@ -16,7 +23,7 @@ import 'package:provider/provider.dart';
 import 'core/models/user.dart';
 import 'core/services/firestore_service.dart';
 
-final auth = Auth.instance;
+//final auth = Auth.instance;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -51,38 +58,41 @@ Future initCurrentUser() async {
   }
 }
 
-Future<dynamic> _handleMessage(Map<String, dynamic> message) {
-  if (message.containsKey('data')) {
-    // Handle data message
-    final dynamic data = message['data'];
+Future<void> _handleNotification(
+    BuildContext context, Map<dynamic, dynamic> message, bool dialog) async {
+  var data = message['data'] ?? message;
 
-    final extraData = data['extradata'] ?? '';
+  final id = data['id'] ?? '';
 
-    print('onResume screen: ${data['screen']}');
-    switch (data['screen']) {
-      case "dm":
-        print('go to chat $extraData');
-        break;
-      case "post":
-        print('go to post $extraData');
-//            Navigator.of(context).push(PostDetailScreen.route(post));
-        break;
-      case "user":
-        print('go to user $extraData');
-//        Navigator.of(context).push(ProfileScreen.route(extraData));
+  switch (data['screen']) {
+    case "dm":
+      print('go to chat $id');
 
-        break;
-      default:
-        break;
-    }
+      if (!dialog) {
+        Navigator.popUntil(context, (r) => r.isFirst);
+        Navigator.push(context, ChatScreen.FCMroute(id));
+      }
+
+      break;
+    case "post":
+      if (!dialog) {
+        Navigator.popUntil(context, (r) => r.isFirst);
+        Navigator.push(
+            context,
+            PostDetailScreen.route(null,
+                postId: id, ownerId: data['extradata'] ?? ''));
+      }
+
+      break;
+    case "user":
+      if (!dialog) {
+        Navigator.popUntil(context, (r) => r.isFirst);
+        Navigator.push(context, ProfileScreen.route(id));
+      }
+      break;
+    default:
+      break;
   }
-
-  if (message.containsKey('notification')) {
-    // Handle notification message
-    final dynamic notification = message['notification'];
-  }
-
-  // Or do other work.
 }
 
 class MyApp extends StatefulWidget {
@@ -129,17 +139,21 @@ class _MainBuilderState extends State<MainBuilder> {
   _createFCMToken() async {
     final user = await FirebaseAuth.instance.currentUser();
 
-    if (user != null) Repo.createFCMDeviceToken(user.uid, fcmToken);
+    if (user != null) {
+//      Repo.createFCMDeviceToken(user.iuid, fcmToken);
+      await _fcm.subscribeToTopic(user.uid);
+      print('subcribed to topic ${user.uid}');
+    }
   }
 
   @override
   void initState() {
     super.initState();
 
-    _fcm.requestNotificationPermissions();
+    if (Platform.isIOS) _fcm.requestNotificationPermissions();
 
     _fcm.getToken().then((String token) {
-      assert(token != null);
+      print('_______DEVICE TOKEN: $token ________');
       fcmToken = token;
 //      Repo.fcmToken = fcmToken;
       FirestoreService.FCMToken = fcmToken;
@@ -158,13 +172,15 @@ class _MainBuilderState extends State<MainBuilder> {
       onMessage: (Map<String, dynamic> message) async {
         print("onMessage: $message");
 //        _handleMessage(message);
+        _handleNotification(context, message, true);
       },
       onLaunch: (Map<String, dynamic> message) async {
         print("onLaunch: $message");
       },
       onResume: (Map<String, dynamic> message) async {
         print("onResume: $message");
-//        _handleMessage(message);
+        _handleNotification(context, message, false);
+//        Navigator.push(context, AccountRecoveryScreen.route());
       },
     );
   }

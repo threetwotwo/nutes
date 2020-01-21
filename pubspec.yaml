@@ -28,12 +28,12 @@ dependencies:
   flutter_launcher_icons: ^0.7.4
 
   #Firebase tools
-  firebase_auth: ^0.14.0+8
-  firebase_core: ^0.4.1+3
-  cloud_firestore: ^0.12.10
-  firebase_database: ^3.0.9
-  firebase_storage: ^3.0.8
-  firebase_messaging: ^6.0.8
+  firebase_auth: ^0.15.3+1
+  firebase_core: ^0.4.3+2
+  cloud_firestore: ^0.13.0+1
+  firebase_database: ^3.1.1
+  firebase_storage: ^3.1.1
+  firebase_messaging: ^6.0.9
 
   #image compressing for avatars, etc
   flutter_image_compress: ^0.6.3

@@ -91,15 +91,15 @@ class FirestoreService {
     return shared.collection('chats').document(chatId).collection('messages');
   }
 
-  CollectionReference _followingsRef(String uid) {
-    return shared
-        .collection('followings')
-        .document(uid)
-        .collection('followings');
-  }
-
   DocumentReference myFollowRequestsRef() {
     return myProfileRef.collection('my_follow_requests').document('list');
+  }
+
+  Stream<DocumentSnapshot> myFollowRequestStream() {
+    return myProfileRef
+        .collection('my_follow_requests')
+        .document('list')
+        .snapshots();
   }
 
 //  Future<bool> hasRequestedFollow(String requester, String recipient) async {
@@ -118,10 +118,6 @@ class FirestoreService {
         .collection('follow_requests');
   }
 
-  DocumentReference _mySnapshotStoriesRef() {
-    return userRef(auth.uid).collection('snapshots').document('stories');
-  }
-
   CollectionReference _storiesRef(String uid) {
 //    assert(uid != null);
     return shared.collection('users').document(uid).collection('stories');
@@ -135,16 +131,6 @@ class FirestoreService {
   CollectionReference _likesRef({String uid, String postId}) {
     assert(uid != null);
     return _userPostsRef(uid).document(postId).collection('likes');
-  }
-
-  CollectionReference _challengerLikesRef({String uid, String postId}) {
-    assert(uid != null);
-    return _userPostsRef(uid).document(postId).collection('challenger_likes');
-  }
-
-  CollectionReference _challengedLikesRef({String uid, String postId}) {
-    assert(uid != null);
-    return _userPostsRef(uid).document(postId).collection('challenged_likes');
   }
 
   Future<UserProfile> getUserProfileFromUsername(String username) async {
@@ -163,6 +149,8 @@ class FirestoreService {
 
   Future<UserProfile> getUserProfile(String uid) async {
     final doc = await userRef(uid).get();
+
+    print('get user profile $uid is verified ${doc['is_verified']}');
     return !doc.exists ? null : UserProfile.fromDoc(doc);
   }
 
@@ -230,12 +218,14 @@ class FirestoreService {
     return qs.documents.isNotEmpty;
   }
 
-  Future updateAccountPrivacy(bool isPrivate) async {
+  Future<void> updateAccountPrivacy(bool isPrivate) async {
     final ref = shared.collection('users').document(auth.uid);
 
     auth = auth.copyWith(isPrivate: isPrivate);
 
-    return ref.updateData({'is_private': isPrivate});
+    ref.updateData({'is_private': isPrivate});
+
+    return updateProfile(isPrivate: isPrivate);
   }
 
   ///Updates the [end_at] field for the chat doc ref
@@ -433,19 +423,6 @@ class FirestoreService {
     }
   }
 
-  ///updates the timestamp of a chat doc whenever there's an activity
-  ///can be done within cloud functions
-  Future updateChatLastChecked(String chatId, Map data) async {
-    final snap = await _chatRef(chatId).get();
-    if (!snap.exists) return;
-
-    _chatRef(chatId).updateData({
-      'timestamp': Timestamp.now(),
-      'last_checked': data,
-      'persist_${auth.uid}': true,
-    });
-  }
-
   DocumentReference createMessageRef(String chatId) {
     return _messagesRef(chatId).document();
   }
@@ -456,8 +433,9 @@ class FirestoreService {
     String content,
     String response,
     User peer,
-    String postId,
-  ) {
+    String postId, {
+    String topic,
+  }) {
     ///Update shout message in chat ref by adding metadata response and
     ///updated timestamp
     ///Update last_checked for both chat participants
@@ -551,6 +529,7 @@ class FirestoreService {
     String content,
     User peer,
     Map data,
+    String topic,
   }) async {
     final timestamp = Timestamp.now();
 
@@ -567,6 +546,7 @@ class FirestoreService {
       'sender_id': auth.uid,
       'timestamp': timestamp,
       'content': content,
+      if (topic != null) 'topic': topic,
       'type': BubbleHelper.stringValue(type),
       if (data != null) 'metadata': data,
     };
@@ -607,22 +587,25 @@ class FirestoreService {
   }
 
   Future<UserProfile> updateProfile({
+    bool isPrivate,
     String username,
     String displayName,
     String bio,
     ImageUrlBundle urls,
   }) async {
+    final profile = auth.copyWith(
+        username: username, displayName: displayName, bio: bio, bundle: urls);
+
     await shared.collection('users').document(auth.uid).updateData({
+      if (isPrivate != null) 'is_private': isPrivate,
       if (username != null) 'username': username,
       if (displayName != null) 'display_name': displayName,
       if (bio != null) 'bio': bio,
       if (urls != null) 'photo_url': urls.original,
       if (urls != null) 'photo_url_medium': urls.medium,
       if (urls != null) 'photo_url_small': urls.small,
+      'user': profile.user.toMap(),
     });
-
-    final profile = auth.copyWith(
-        username: username, displayName: displayName, bio: bio, bundle: urls);
 
     return profile;
   }
@@ -661,16 +644,32 @@ class FirestoreService {
   Future deleteFollowRequest(
       {@required String follower, @required String following}) {
     final batch = shared.batch();
-    final ref = _followRequestsRef(following).document(follower);
+    final followingRequestRef =
+        _followRequestsRef(following).document(follower);
 
-    batch.delete(ref);
-    batch.setData(
-      myFollowRequestsRef(),
-      {
-        'requests': FieldValue.arrayRemove([following]),
-      },
-      merge: true,
-    );
+    print('delete peer ref: ${followingRequestRef.path}');
+    batch.delete(followingRequestRef);
+
+    if (follower == auth.uid)
+      batch.setData(
+        myFollowRequestsRef(),
+        {
+          'requests': FieldValue.arrayRemove([following]),
+        },
+        merge: true,
+      );
+    else {
+      final followerRequestRef =
+          userRef(follower).collection('my_follow_requests').document('list');
+
+      batch.setData(
+        followerRequestRef,
+        {
+          'requests': FieldValue.arrayRemove([following]),
+        },
+        merge: true,
+      );
+    }
 
     return batch.commit();
   }
@@ -1307,34 +1306,6 @@ class FirestoreService {
     return ref.delete();
   }
 
-  Future likeChallenger(bool like, Post post) async {
-    final data = post.metadata;
-
-    final String challengerId = data['challenger']['uid'];
-    final String challengedId = data['challenged']['uid'];
-
-    final uid = auth.uid;
-
-    final challengerRef =
-        _challengerLikesRef(uid: challengerId, postId: post.id).document(uid);
-    final challengedRef =
-        _challengerLikesRef(uid: challengedId, postId: post.id).document(uid);
-
-    final timestamp = Timestamp.now();
-
-    final load = {"timestamp": timestamp};
-
-    like
-        ? shared.runTransaction((t) {
-            t.set(challengerRef, load);
-            return t.set(challengedRef, load);
-          })
-        : shared.runTransaction((t) {
-            t.delete(challengerRef);
-            return t.delete(challengedRef);
-          });
-  }
-
 //  Future<EngagementHandler> engagementHandler(
 //      String key, Post post, Timestamp timestamp, bool isDestructive) async {
 //    ///update engagement activity
@@ -1367,7 +1338,7 @@ class FirestoreService {
 
     final payload = {
       'timestamp': timestamp,
-      'liker': auth.user.toMap(),
+      'liker': ath.user.toMap(),
     }..addAll(post.toMap());
 
     batch.setData(
@@ -1426,19 +1397,19 @@ class FirestoreService {
 //        },
 //        merge: true);
 
-    final myLikesDocRef =
-        myProfileRef.collection('activity').document('post_likes');
-
-    ///1. delete from post's likes collection
-    ///2. delete from my likes doc
-    ///3. (Cloud function) update post like count
-    ///4. (Cloud function) delete from my followers' followings' likes feed
-    batch.setData(
-        myLikesDocRef,
-        {
-          'likes': FieldValue.arrayRemove([post.id])
-        },
-        merge: true);
+//    final myLikesDocRef =
+//        myProfileRef.collection('activity').document('post_likes');
+//
+//    ///1. delete from post's likes collection
+//    ///2. delete from my likes doc
+//    ///3. (Cloud function) update post like count
+//    ///4. (Cloud function) delete from my followers' followings' likes feed
+//    batch.setData(
+//        myLikesDocRef,
+//        {
+//          'likes': FieldValue.arrayRemove([post.id])
+//        },
+//        merge: true);
 
     final ownerActivityRef =
         activityRef(post.owner.uid).document('${auth.uid}-${post.id}');
@@ -1554,12 +1525,12 @@ class FirestoreService {
     final query = startAfter == null
         ? shared
             .collection('posts')
-            .orderBy('published', descending: true)
+            .orderBy('days_since_epoch', descending: true)
             .orderBy('like_count', descending: true)
             .limit(12)
         : shared
             .collection('posts')
-            .orderBy('published', descending: true)
+            .orderBy('days_since_epoch', descending: true)
             .orderBy('like_count', descending: true)
             .startAfterDocument(startAfter)
             .limit(16);
@@ -1827,12 +1798,12 @@ class FirestoreService {
     final profile = UserProfile(
       uid: uid,
       user: User(
-          uid: uid,
-          username: username,
-          displayName: '',
-//          photoUrl: '',
-          urls: ImageUrlBundle.empty(),
-          isPrivate: false),
+        uid: uid,
+        username: username,
+        displayName: '',
+        urls: ImageUrlBundle.empty(),
+        isPrivate: false,
+      ),
       stats: UserStats(postCount: 0, followerCount: 0, followingCount: 0),
       bio: '',
       isVerified: false,
@@ -1857,7 +1828,8 @@ class FirestoreService {
 
   Future<void> logout() async {
     ///Remove FCM token from user ref
-    if (auth.uid != null && fcmToken != null) deleteFCMToken(fcmToken);
+//    if (auth.uid != null && fcmToken != null)
+//      deleteFCMToken(auth.uid, fcmToken);
 
     ///Sign out via FIRAuth
     await FirebaseAuth.instance.signOut();
@@ -1957,28 +1929,28 @@ class FirestoreService {
     return ref.snapshots();
   }
 
-  DocumentReference _fcmTokensRef(String token) =>
-      myProfileRef.collection('fcm_tokens').document('tokens');
+  DocumentReference _fcmTokensRef(String uid) =>
+      userRef(uid).collection('fcm_tokens').document('tokens');
 
-  Future<void> createFCMDeviceToken(String uid, String token) {
-    final ref = _fcmTokensRef(token);
-    return ref.setData(
-      {
-        'tokens': FieldValue.arrayUnion([token])
-      },
-      merge: true,
-    );
-  }
-
-  Future<void> deleteFCMToken(String token) {
-    final ref = _fcmTokensRef(token);
-    return ref.setData(
-      {
-        'tokens': FieldValue.arrayRemove([token])
-      },
-      merge: true,
-    );
-  }
+//  Future<void> createFCMDeviceToken(String uid, String token) {
+//    final ref = _fcmTokensRef(uid);
+//    return ref.setData(
+//      {
+//        'tokens': FieldValue.arrayUnion([token])
+//      },
+//      merge: true,
+//    );
+//  }
+//
+//  Future<void> deleteFCMToken(String uid, String token) {
+//    final ref = _fcmTokensRef(uid);
+//    return ref.setData(
+//      {
+//        'tokens': FieldValue.arrayRemove([token])
+//      },
+//      merge: true,
+//    );
+//  }
 
   Future<Map> getMyInfo() async {
     final ref = myProfileRef.collection('private').document('info');

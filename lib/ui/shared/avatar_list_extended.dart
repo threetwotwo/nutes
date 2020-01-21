@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:nutes/core/models/user.dart';
 import 'package:nutes/core/services/auth.dart';
+import 'package:nutes/core/services/firestore_service.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/screens/profile_screen.dart';
 import 'package:nutes/ui/shared/buttons.dart';
@@ -29,53 +30,56 @@ class _AvatarListExtendedState extends State<AvatarListExtended> {
           final List followingIds = snapshot.data.data == null
               ? []
               : snapshot.data.data['uids'] ?? [];
-          return ListView.builder(
-              shrinkWrap: true,
-              itemCount: widget.users.length,
-              itemBuilder: (context, index) {
-                final user = widget.users[index];
-                final isFollowing = followingIds.contains(user.uid);
-                final isMe = user.uid == auth.uid;
+          return StreamBuilder<DocumentSnapshot>(
+              stream: Repo.myFollowRequestStream(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) return SizedBox();
 
-                return AvatarListItem(
-                  avatar: AvatarImage(
-                    url: user.urls.small,
-                  ),
-                  title: user.username,
-                  subtitle: user.displayName,
-                  onAvatarTapped: () =>
-                      Navigator.push(context, ProfileScreen.route(user.uid)),
-                  onBodyTapped: () =>
-                      Navigator.push(context, ProfileScreen.route(user.uid)),
-                  trailingWidget: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: isMe
-                        ? SizedBox()
-                        : FollowButtonExtended(
-                            isRequested: user.hasRequestedFollow == true,
-                            isFollowing: isFollowing,
-                            onRequest: () {
-                              setState(() {
-                                widget.users[index] =
-                                    user.copyWith(hasRequestedFollow: false);
-                              });
-                            },
-                            onFollow: () {
-                              if (isFollowing) {
-                                Repo.unfollowUser(user.uid);
-                              } else {
-                                Repo.requestFollow(user, user.isPrivate);
-                                if (user.isPrivate) {
-                                  setState(() {
-                                    widget.users[index] =
-                                        user.copyWith(hasRequestedFollow: true);
-                                  });
-                                }
-                              }
-                            },
-                          ),
-                  ),
-                );
+                final List requests = snapshot.data['requests'];
+
+                return ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: widget.users.length,
+                    itemBuilder: (context, index) {
+                      final user = widget.users[index];
+                      final isFollowing = followingIds.contains(user.uid);
+                      final isMe = user.uid == auth.uid;
+                      final isRequested = requests.contains(user.uid);
+
+                      return AvatarListItem(
+                        avatar: AvatarImage(
+                          url: user.urls.small,
+                        ),
+                        title: user.username,
+                        subtitle: user.displayName,
+                        onAvatarTapped: () => Navigator.push(
+                            context, ProfileScreen.route(user.uid)),
+                        onBodyTapped: () => Navigator.push(
+                            context, ProfileScreen.route(user.uid)),
+                        trailingWidget: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: isMe
+                              ? SizedBox()
+                              : FollowButtonExtended(
+                                  isRequested: isRequested,
+                                  isFollowing: isFollowing,
+                                  onRequest: () {
+                                    isRequested
+                                        ? Repo.deleteFollowRequest(
+                                            FirestoreService.ath.uid, user.uid)
+                                        : Repo.requestFollow(user);
+                                  },
+                                  onFollow: () {
+                                    if (isFollowing) {
+                                      Repo.unfollowUser(user.uid);
+                                    } else {
+                                      Repo.requestFollow(user);
+                                    }
+                                  },
+                                ),
+                        ),
+                      );
+                    });
               });
         });
   }

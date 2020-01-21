@@ -82,7 +82,8 @@ class _CreateScreenState extends State<CreateScreen> {
                                             chatId: chatId,
                                             peer: peer,
                                             messageId: doc.documentID,
-                                            content: doc['content'],
+                                            content: doc['content'] ?? '',
+                                            topic: doc['topic'] ?? '',
                                           )),
                                       child: CreateScreenShoutItem(
                                         user: peer,

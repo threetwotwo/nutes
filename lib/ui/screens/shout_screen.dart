@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:line_icons/line_icons.dart';
+import 'package:nutes/core/events/events.dart';
 import 'package:nutes/core/models/user.dart';
 import 'package:nutes/core/services/auth.dart';
+import 'package:nutes/core/services/events.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/shared/app_bars.dart';
 import 'package:bubble/bubble.dart';
 import 'package:nutes/ui/shared/avatar_image.dart';
+import 'package:nutes/ui/shared/empty_indicator.dart';
 import 'package:nutes/ui/shared/styles.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:nutes/ui/widgets/chat_bubble.dart';
@@ -16,6 +19,7 @@ class ShoutScreen extends StatefulWidget {
   final String chatId;
   final String messageId;
   final String content;
+  final String topic;
   final User peer;
 
   ShoutScreen({
@@ -24,6 +28,7 @@ class ShoutScreen extends StatefulWidget {
     this.content,
     this.peer,
     this.chatId,
+    this.topic,
   }) : super(key: key);
 
   static Route route({
@@ -31,6 +36,7 @@ class ShoutScreen extends StatefulWidget {
     @required User peer,
     @required String messageId,
     @required String content,
+    @required String topic,
   }) =>
       MaterialPageRoute(builder: (context) {
         return ShoutScreen(
@@ -38,6 +44,7 @@ class ShoutScreen extends StatefulWidget {
           peer: peer,
           messageId: messageId,
           content: content,
+          topic: topic,
         );
       });
 
@@ -88,10 +95,13 @@ class _ShoutScreenState extends State<ShoutScreen> {
       body: SafeArea(
         child: Container(
           width: size.width,
-          color: Colors.grey[100],
+          color: Colors.grey[50],
           child: ListView(
 //            crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
+              if (widget.topic.isNotEmpty)
+                EmptyIndicator('Topic: ${widget.topic}'),
+
               ///Peer bubble
               Padding(
                 padding: const EdgeInsets.all(8.0),
@@ -298,10 +308,13 @@ class _ShoutScreenState extends State<ShoutScreen> {
       'challenger': widget.peer.toMap(),
       'challenged': auth.user.toMap(),
       'challenger_text': widget.content,
-      'challenged_text': controller.text,
+      'challenged_text': controller.text.trim(),
+      if (widget.topic != null) 'topic': widget.topic,
     };
 
     final post = await Repo.uploadShoutPost(peer: widget.peer, data: metadata);
+
+    eventBus.fire(PostUploadEvent(post));
 
     Repo.completeShoutChallenge(
       postId: post.id,

@@ -5,7 +5,6 @@ import 'package:nutes/core/events/events.dart';
 import 'package:nutes/core/models/post.dart';
 import 'package:nutes/core/models/story.dart';
 import 'package:nutes/core/models/user.dart';
-import 'package:nutes/core/services/auth.dart';
 import 'package:nutes/core/services/events.dart';
 import 'package:nutes/core/services/firestore_service.dart';
 import 'package:nutes/core/services/local_cache.dart';
@@ -19,12 +18,10 @@ import 'package:nutes/ui/shared/loading_indicator.dart';
 import 'package:nutes/ui/shared/post_grid_view.dart';
 import 'package:nutes/ui/shared/post_list.dart';
 import 'package:nutes/ui/shared/refresh_list_view.dart';
-import 'package:nutes/ui/shared/styles.dart';
 import 'package:nutes/ui/widgets/my_empty_post_view.dart';
 import 'package:nutes/ui/widgets/profile_header.dart';
 import 'package:nutes/ui/widgets/profile_tab_controller.dart';
 import 'package:nutes/ui/widgets/story_page_view.dart';
-import 'package:provider/provider.dart';
 
 import 'account_screen.dart';
 

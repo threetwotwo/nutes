@@ -69,14 +69,14 @@ class _LikeScreenState extends State<LikeScreen> {
       isLoading = true;
     });
     final result = await Repo.getPostUserLikes(widget.post);
-    final myFollowRequests = await Repo.getMyFollowRequests();
+//    final myFollowRequests = await Repo.getMyFollowRequests();
 
     setState(() {
       users = result;
-      users = users
-          .map((u) =>
-              u.copyWith(hasRequestedFollow: myFollowRequests.contains(u.uid)))
-          .toList();
+//      users = users
+//          .map((u) =>
+//              u.copyWith(hasRequestedFollow: myFollowRequests.contains(u.uid)))
+//          .toList();
       isLoading = false;
     });
   }

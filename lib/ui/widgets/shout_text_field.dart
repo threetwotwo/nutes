@@ -7,12 +7,16 @@ import 'package:nutes/ui/shared/styles.dart';
 
 class ShoutTextField extends StatelessWidget {
   final TextEditingController controller;
+  final TextEditingController topicController;
   final Function(String) onSendPressed;
 
   final _focusNode = FocusNode();
 
   ShoutTextField(
-      {Key key, @required this.onSendPressed, @required this.controller})
+      {Key key,
+      @required this.onSendPressed,
+      @required this.controller,
+      this.topicController})
       : super(key: key);
 
   @override
@@ -120,7 +124,8 @@ class ShoutTextField extends StatelessWidget {
                     child: Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: TextField(
-                    maxLength: 120,
+                    controller: topicController,
+                    maxLength: 80,
                     style: TextStyle(fontSize: 14, color: Colors.black),
                     decoration: InputDecoration(
                       counterText: '',

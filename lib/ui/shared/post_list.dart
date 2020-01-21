@@ -918,6 +918,7 @@ class ShoutHeader extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 RichText(
@@ -942,14 +943,19 @@ class ShoutHeader extends StatelessWidget {
                     ),
                   ]),
                 ),
-                SizedBox(height: 3),
-                Text(
-                  '${post.owner.username} ${post.id}',
-                  style: TextStyle(
+                if ((post.metadata['topic'] ?? '').isNotEmpty) ...[
+                  SizedBox(height: 4),
+                  Text(
+                    post.metadata['topic'],
+//                  '${post.owner.username} ${post.id}',
+                    maxLines: 1,
+                    overflow: TextOverflow.fade,
+                    style: TextStyle(
                       color: Colors.grey,
                       fontWeight: FontWeight.w400,
-                      fontSize: 14),
-                ),
+                    ),
+                  ),
+                ]
               ],
             ),
           ),
@@ -987,7 +993,7 @@ class PostHeader extends StatelessWidget {
         url: post.owner.urls.small,
       ),
       title: post.owner.username,
-      subtitle: post.id,
+//      subtitle: post.id,
       trailingWidget: IconButton(
         icon: Icon(
           Icons.more_horiz,
