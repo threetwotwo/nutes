@@ -1,6 +1,7 @@
 import 'package:bot_toast/bot_toast.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:meta/meta.dart';
 import 'package:nutes/core/models/activity.dart';
 import 'package:nutes/core/models/chat_message.dart';
@@ -1053,14 +1054,15 @@ class FirestoreService {
     );
   }
 
-  Future<void> likeComment(String postId, Comment comment) async {
+  Future<void> likeComment(Post post, Comment comment) async {
     final ref =
-        _commentRef(postId, comment.id).collection('likes').document(auth.uid);
+        _commentRef(post.id, comment.id).collection('likes').document(auth.uid);
     final payload = {
       'timestamp': Timestamp.now(),
       'liker': auth.user.toMap(),
       'content': comment.text,
       'comment_owner': comment.owner.toMap(),
+      'post': post.toMap(),
     };
 
     return ref.setData(payload);
@@ -1181,37 +1183,46 @@ class FirestoreService {
   }
 
   Future uploadComment({
-    @required String postId,
+    @required Post post,
     @required Comment comment,
 
 //                         @required User owner,
 //    @required String text,
 //    String parentId,
   }) async {
-    final postRef = shared.collection('posts').document(postId);
+    final postRef = shared.collection('posts').document(post.id);
     final commentRef = postRef.collection('comments').document(comment.id);
 
 //    final timestamp = Timestamp.now();
 
     final batch = shared.batch();
 
-    final commentPayload = {
-      'parent_id': comment.parentId ?? 'root',
-      'owner': comment.owner.toMap(),
-      'text': comment.text,
-      'timestamp': comment.timestamp,
-      'like_count': 0,
-    };
+    final commentPayload = comment.toMap()
+      ..addAll({
+        'like_count': 0,
+        'post': post.toMap(),
+      });
+//      ..['post'] = post.toMap()
+//      ..['like_count'] = 0;
+//      addAll({
+////      'parent_id': comment.parentId ?? 'root',
+////      'owner': comment.owner.toMap(),
+////      'text': comment.text,
+////      'timestamp': comment.timestamp,
+//        'like_count': 0,
+//        'post': post.toMap(),
+//      });
 
     batch.setData(commentRef, commentPayload);
 
-    batch.setData(
-      postRef,
-      {
-        'comment_count': FieldValue.increment(1),
-      },
-      merge: true,
-    );
+    ///Update comment count via cloud function
+//    batch.setData(
+//      postRef,
+//      {
+//        'comment_count': FieldValue.increment(1),
+//      },
+//      merge: true,
+//    );
 
     return batch.commit();
   }
@@ -1833,7 +1844,7 @@ class FirestoreService {
 
     ///Sign out via FIRAuth
     await FirebaseAuth.instance.signOut();
-
+    return FirebaseMessaging().unsubscribeFromTopic(ath.uid);
 //    auth.reset();
   }
 
@@ -1882,13 +1893,13 @@ class FirestoreService {
     return null;
   }
 
-  Future<List<Comment>> getPostTopComments(String postId) async {
+  Future<List<Comment>> getPostTopComments(String postId, {int limit}) async {
     final ref = shared
         .collection('posts')
         .document(postId)
         .collection('comments')
         .orderBy('like_count', descending: true)
-        .limit(2);
+        .limit(limit ?? 2);
 
     final docs = await ref.getDocuments();
 

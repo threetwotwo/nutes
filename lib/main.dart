@@ -71,6 +71,18 @@ Future<void> _handleNotification(
       if (!dialog) {
         Navigator.popUntil(context, (r) => r.isFirst);
         Navigator.push(context, ChatScreen.FCMroute(id));
+      } else {
+        BotToast.showNotification(
+            duration: Duration(seconds: 5),
+            leading: (_) => AvatarImage(
+                  url: data['extradata'] ?? '',
+                  padding: 4,
+                ),
+            title: (_) => Text(data['body'] ?? ''),
+            onTap: () {
+              Navigator.popUntil(context, (r) => r.isFirst);
+              Navigator.push(context, ChatScreen.FCMroute(id));
+            });
       }
 
       break;
@@ -81,6 +93,21 @@ Future<void> _handleNotification(
             context,
             PostDetailScreen.route(null,
                 postId: id, ownerId: data['extradata'] ?? ''));
+      } else {
+        BotToast.showNotification(
+            duration: Duration(seconds: 5),
+            leading: (_) => AvatarImage(
+                  url: data['extradata'] ?? '',
+                  padding: 4,
+                ),
+            title: (_) => Text(data['body'] ?? ''),
+            onTap: () {
+              Navigator.popUntil(context, (r) => r.isFirst);
+              Navigator.push(
+                  context,
+                  PostDetailScreen.route(null,
+                      postId: id, ownerId: data['extradata'] ?? ''));
+            });
       }
 
       break;
@@ -88,6 +115,42 @@ Future<void> _handleNotification(
       if (!dialog) {
         Navigator.popUntil(context, (r) => r.isFirst);
         Navigator.push(context, ProfileScreen.route(id));
+      } else {
+        BotToast.showNotification(
+            duration: Duration(seconds: 5),
+            leading: (_) => AvatarImage(
+                  url: data['extradata'] ?? '',
+                  padding: 4,
+                ),
+            title: (_) => Text(data['body'] ?? ''),
+            onTap: () {
+              Navigator.popUntil(context, (r) => r.isFirst);
+              Navigator.push(context, ProfileScreen.route(id));
+            });
+      }
+      break;
+    case "comment":
+      if (!dialog) {
+        Navigator.popUntil(context, (r) => r.isFirst);
+        Navigator.push(
+            context,
+            PostDetailScreen.route(null,
+                postId: id, ownerId: data['post_owner_id'] ?? ''));
+      } else {
+        BotToast.showNotification(
+            duration: Duration(seconds: 5),
+            leading: (_) => AvatarImage(
+                  url: data['extradata'] ?? '',
+                  padding: 4,
+                ),
+            title: (_) => Text(data['body'] ?? ''),
+            onTap: () {
+              Navigator.popUntil(context, (r) => r.isFirst);
+              Navigator.push(
+                  context,
+                  PostDetailScreen.route(null,
+                      postId: id, ownerId: data['post_owner_id'] ?? ''));
+            });
       }
       break;
     default:
@@ -136,11 +199,10 @@ class _MainBuilderState extends State<MainBuilder> {
 
   UserProfile profile;
 
-  _createFCMToken() async {
+  _subscribeToTopic() async {
     final user = await FirebaseAuth.instance.currentUser();
 
     if (user != null) {
-//      Repo.createFCMDeviceToken(user.iuid, fcmToken);
       await _fcm.subscribeToTopic(user.uid);
       print('subcribed to topic ${user.uid}');
     }
@@ -155,7 +217,6 @@ class _MainBuilderState extends State<MainBuilder> {
     _fcm.getToken().then((String token) {
       print('_______DEVICE TOKEN: $token ________');
       fcmToken = token;
-//      Repo.fcmToken = fcmToken;
       FirestoreService.FCMToken = fcmToken;
       print('FCM token: $token');
     });
@@ -164,14 +225,12 @@ class _MainBuilderState extends State<MainBuilder> {
       print("Settings registered: $settings");
       iosSettings = settings;
 
-      if (iosSettings != null && fcmToken != null) _createFCMToken();
+      if (iosSettings != null && fcmToken != null) _subscribeToTopic();
     });
 
     _fcm.configure(
-//      onBackgroundMessage: _handleMessage,
       onMessage: (Map<String, dynamic> message) async {
         print("onMessage: $message");
-//        _handleMessage(message);
         _handleNotification(context, message, true);
       },
       onLaunch: (Map<String, dynamic> message) async {
@@ -180,7 +239,6 @@ class _MainBuilderState extends State<MainBuilder> {
       onResume: (Map<String, dynamic> message) async {
         print("onResume: $message");
         _handleNotification(context, message, false);
-//        Navigator.push(context, AccountRecoveryScreen.route());
       },
     );
   }

@@ -239,10 +239,10 @@ class Repo {
   ///
 
   static uploadComment({
-    @required String postId,
+    @required Post post,
     @required Comment comment,
   }) async {
-    return shared._firestore.uploadComment(postId: postId, comment: comment);
+    return shared._firestore.uploadComment(post: post, comment: comment);
   }
 
   static Future updatePost({@required Post post}) async {
@@ -580,8 +580,8 @@ class Repo {
   static Future<bool> didLikeComment(String postId, String commentId) =>
       shared._firestore.didLikeComment(postId, commentId);
 
-  static Future<void> likeComment(String postId, Comment comment) =>
-      shared._firestore.likeComment(postId, comment);
+  static Future<void> likeComment(Post post, Comment comment) =>
+      shared._firestore.likeComment(post, comment);
 
   static Future<void> unlikeComment(String postId, Comment comment) =>
       shared._firestore.unlikeComment(postId, comment);
@@ -605,6 +605,10 @@ class Repo {
   static Future<Post> getPostStatsAndLikes(Post post) async {
     return shared._firestore.getPostStatsAndLikes(post);
   }
+
+  static Future<List<Comment>> getPostTopComments(String postId,
+          {int limit}) async =>
+      shared._firestore.getPostTopComments(postId, limit: limit);
 
   ///Returns a complete post from post id
   static Future<Post> getPostComplete(String postId, String ownerId) async {

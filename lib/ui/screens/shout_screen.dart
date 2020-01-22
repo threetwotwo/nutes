@@ -99,7 +99,7 @@ class _ShoutScreenState extends State<ShoutScreen> {
           child: ListView(
 //            crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              if (widget.topic.isNotEmpty)
+              if (widget.topic?.isNotEmpty ?? false)
                 EmptyIndicator('Topic: ${widget.topic}'),
 
               ///Peer bubble

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nutes/core/models/comment.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/shared/app_bars.dart';
 import 'package:nutes/ui/shared/comment_overlay.dart';
@@ -37,7 +38,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
   bool isLoading = false;
 
-  Post post;
+  List<Post> posts = [];
 
   bool isDoodling = false;
 
@@ -45,12 +46,15 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     setState(() {
       isLoading = true;
     });
-    final result = await Repo.getPostComplete(widget.postId, widget.ownerId);
+    final result = await Repo.getPostComplete(widget.postId ?? widget.post.id,
+        widget.ownerId ?? widget.post.owner.uid);
 
     setState(() {
       isLoading = false;
-      post = result;
+      posts = [result];
     });
+
+    if (posts.first.topComments == null) _getComments();
   }
 
   @override
@@ -61,10 +65,12 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   @override
   void initState() {
     if (widget.post != null) {
-      post = widget.post;
+      posts = [widget.post];
+      if (posts.first.topComments == null) _getComments();
     } else {
       _getPost();
     }
+
     super.initState();
   }
 
@@ -73,12 +79,12 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: BaseAppBar(
-        title: post == null
+        title: posts.isEmpty
             ? SizedBox()
             : Column(
                 children: <Widget>[
                   Text(
-                    post.owner.username.toUpperCase(),
+                    posts.first.owner.username.toUpperCase(),
                     style: TextStyles.defaultText.copyWith(color: Colors.grey),
                   ),
                   Text(
@@ -94,7 +100,32 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
         child: isLoading
             ? LoadingIndicator()
             : CommentOverlay(
-                onSend: (val) {},
+                onSend: (text) async {
+                  print('on send $text');
+                  final commentingTo = posts.first;
+                  final comment = Repo.createComment(
+                    text: text,
+                    postId: commentingTo.id,
+                  );
+
+                  Repo.uploadComment(post: commentingTo, comment: comment);
+
+                  final newPost = posts.first.copyWith(
+                    topComments: posts.first.topComments + [comment],
+                  );
+
+                  setState(() {
+                    posts = [];
+                    showCommentTextField = false;
+                  });
+
+                  ///To fix bug where post list view wont refresh
+                  await Future.delayed(Duration(milliseconds: 15));
+
+                  setState(() {
+                    posts = [newPost];
+                  });
+                },
                 showTextField: showCommentTextField,
                 controller: commentController,
                 focusNode: commentFocusNode,
@@ -104,9 +135,10 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                   });
                 },
                 child: RefreshListView(
+                  onRefresh: _getPost,
                   children: <Widget>[
                     PostListView(
-                      posts: [post],
+                      posts: posts,
                       onAddComment: (postId) {
                         setState(() {
                           showCommentTextField = true;
@@ -129,5 +161,23 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
               ),
       )),
     );
+  }
+
+  void _getComments() async {
+    final result = await Repo.getPostTopComments(posts.first.id, limit: 5);
+
+    final newPost = posts.first.copyWith(
+        topComments: posts.first.topComments ?? List<Comment>() + result);
+
+    setState(() {
+      posts = [];
+    });
+
+    ///To fix bug where post list view wont refresh
+    await Future.delayed(Duration(milliseconds: 15));
+
+    setState(() {
+      posts = [newPost];
+    });
   }
 }

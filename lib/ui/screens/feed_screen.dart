@@ -56,7 +56,7 @@ class _FeedScreenState extends State<FeedScreen>
   bool isFetchingPosts = false;
 
   ///Comment overlay fields
-  String commentingTo;
+  Post commentingTo;
   bool showCommentTextField = false;
   final commentController = TextEditingController();
   final commentFocusNode = FocusNode();
@@ -203,12 +203,11 @@ class _FeedScreenState extends State<FeedScreen>
 
                 final comment = Repo.createComment(
                   text: text,
-                  postId: commentingTo,
+                  postId: commentingTo.id,
                 );
-
-                Repo.uploadComment(postId: commentingTo, comment: comment);
+                Repo.uploadComment(post: commentingTo, comment: comment);
                 final post =
-                    posts.firstWhere((post) => post.id == commentingTo);
+                    posts.firstWhere((post) => post.id == commentingTo.id);
 
                 if (mounted)
                   setState(() {
@@ -294,10 +293,9 @@ class _FeedScreenState extends State<FeedScreen>
                                               (post) => post.owner.uid == uid);
                                       });
                                     },
-                                    onAddComment: (postId) {
-                                      print('add comment for post $postId');
+                                    onAddComment: (post) {
                                       setState(() {
-                                        commentingTo = postId;
+                                        commentingTo = post;
                                         showCommentTextField =
                                             !showCommentTextField;
                                       });

@@ -166,7 +166,7 @@ class _CommentScreenState extends State<CommentScreen> {
                                               ? Repo.unlikeComment(
                                                   widget.post.id, comment)
                                               : Repo.likeComment(
-                                                  widget.post.id, comment);
+                                                  widget.post, comment);
                                           setState(() {
                                             comments[index] = comment.copyWith(
                                                 likeCount:
@@ -238,7 +238,7 @@ class _CommentScreenState extends State<CommentScreen> {
 
 //              print(comment.toMap());
 
-              Repo.uploadComment(postId: widget.post.id, comment: comment);
+              Repo.uploadComment(post: widget.post, comment: comment);
 
               int insertIndex;
 

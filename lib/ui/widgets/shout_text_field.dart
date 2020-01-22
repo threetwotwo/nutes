@@ -125,7 +125,7 @@ class ShoutTextField extends StatelessWidget {
                   padding: const EdgeInsets.all(8.0),
                   child: TextField(
                     controller: topicController,
-                    maxLength: 80,
+                    maxLength: 50,
                     style: TextStyle(fontSize: 14, color: Colors.black),
                     decoration: InputDecoration(
                       counterText: '',
@@ -137,7 +137,7 @@ class ShoutTextField extends StatelessWidget {
                         ),
                       ),
                       filled: true,
-                      fillColor: Colors.grey[300],
+                      fillColor: Colors.grey[200],
                       hintText: 'Optional',
                       hintStyle: TextStyle(fontSize: 14, color: Colors.white),
                     ),

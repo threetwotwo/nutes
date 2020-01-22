@@ -43,7 +43,7 @@ import 'package:vibrate/vibrate.dart';
 class PostListView extends StatelessWidget {
   final List<Post> posts;
   final bool pushNavigationEnabled;
-  final Function(String) onAddComment;
+  final Function(Post) onAddComment;
   final Function(String) onUnfollow;
   final VoidCallback onDoodleStart;
   final VoidCallback onDoodleEnd;
@@ -69,7 +69,7 @@ class PostListView extends StatelessWidget {
         itemBuilder: (context, index) {
           return PostListItem(
             post: posts[index],
-            onAddComment: (postId) => onAddComment(postId),
+            onAddComment: (post) => onAddComment(posts[index]),
             shouldNavigate: pushNavigationEnabled,
             onUnfollow: (uid) => onUnfollow(uid),
             onDoodleStart: onDoodleStart,
@@ -84,7 +84,7 @@ class PostListItem extends StatefulWidget {
   final bool shouldNavigate;
   final VoidCallback onProfileTapped;
   final VoidCallback onCommentTapped;
-  final Function(String) onAddComment;
+  final Function(Post) onAddComment;
   final Function(String) onUnfollow;
   final VoidCallback onDoodleStart;
   final VoidCallback onDoodleEnd;
@@ -829,7 +829,7 @@ class _PostListItemState extends State<PostListItem>
                                         splashColor: Colors.white,
                                         highlightColor: Colors.grey[100],
                                         onTap: () =>
-                                            widget.onAddComment(widget.post.id),
+                                            widget.onAddComment(widget.post),
                                         child: Text(
                                           '${post.stats.commentCount > 0 ? 'A' : 'A'}dd comment',
                                           style:
@@ -890,7 +890,8 @@ class _PostListItemState extends State<PostListItem>
     final comments = await Navigator.of(context, rootNavigator: true)
         .push(CommentScreen.route(post));
 
-    if (comments is List<Comment>)
+    if (comments == null) return;
+    if (comments is List<Comment> && comments.isNotEmpty)
       post = post.copyWith(topComments: post.topComments + comments);
   }
 }

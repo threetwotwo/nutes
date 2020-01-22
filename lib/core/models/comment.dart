@@ -61,11 +61,13 @@ class Comment {
             replyCount: replyCount ?? stats.replyCount));
   }
 
-  Map toMap() => {
+  Map<String, dynamic> toMap() => {
         'id': id,
         'timestamp': timestamp,
-        'parent_id': parentId,
+        'parent_id': parentId ?? 'root',
+        if (parentOwner != null) 'parent_owner': parentOwner.toMap(),
         'text': text,
+        'owner': owner.toMap(),
       };
 }
 
