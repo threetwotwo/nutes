@@ -7,10 +7,9 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:nutes/core/services/auth.dart';
+import 'package:nutes/core/services/events.dart';
 //import 'package:nutes/ui/screens/profile_screen.dart';
 import 'package:nutes/core/services/local_cache.dart';
-import 'package:nutes/ui/screens/account_recovery_screen.dart';
 import 'package:nutes/ui/screens/chat_screen.dart';
 import 'package:nutes/ui/screens/post_detail_screen.dart';
 import 'package:nutes/ui/screens/profile_screen.dart';
@@ -59,7 +58,8 @@ Future initCurrentUser() async {
 }
 
 Future<void> _handleNotification(
-    BuildContext context, Map<dynamic, dynamic> message, bool dialog) async {
+    BuildContext context, Map<dynamic, dynamic> message, bool dialog,
+    {bool chatIsActive = false}) async {
   var data = message['data'] ?? message;
 
   final id = data['id'] ?? '';
@@ -72,17 +72,19 @@ Future<void> _handleNotification(
         Navigator.popUntil(context, (r) => r.isFirst);
         Navigator.push(context, ChatScreen.FCMroute(id));
       } else {
-        BotToast.showNotification(
-            duration: Duration(seconds: 5),
-            leading: (_) => AvatarImage(
-                  url: data['extradata'] ?? '',
-                  padding: 4,
-                ),
-            title: (_) => Text(data['body'] ?? ''),
-            onTap: () {
-              Navigator.popUntil(context, (r) => r.isFirst);
-              Navigator.push(context, ChatScreen.FCMroute(id));
-            });
+        ///Show in app notification if not on home tab 0
+        if (!chatIsActive)
+          BotToast.showNotification(
+              duration: Duration(seconds: 5),
+              leading: (_) => AvatarImage(
+                    url: data['extradata'] ?? '',
+                    padding: 4,
+                  ),
+              title: (_) => Text(data['body'] ?? ''),
+              onTap: () {
+                Navigator.popUntil(context, (r) => r.isFirst);
+                Navigator.push(context, ChatScreen.FCMroute(id));
+              });
       }
 
       break;
@@ -199,6 +201,11 @@ class _MainBuilderState extends State<MainBuilder> {
 
   UserProfile profile;
 
+  int currentPageIndex = 1;
+  int currentHomeTab = 0;
+
+  bool chatScreenActive = false;
+
   _subscribeToTopic() async {
     final user = await FirebaseAuth.instance.currentUser();
 
@@ -215,10 +222,8 @@ class _MainBuilderState extends State<MainBuilder> {
     if (Platform.isIOS) _fcm.requestNotificationPermissions();
 
     _fcm.getToken().then((String token) {
-      print('_______DEVICE TOKEN: $token ________');
       fcmToken = token;
       FirestoreService.FCMToken = fcmToken;
-      print('FCM token: $token');
     });
 
     _fcm.onIosSettingsRegistered.listen((IosNotificationSettings settings) {
@@ -231,7 +236,8 @@ class _MainBuilderState extends State<MainBuilder> {
     _fcm.configure(
       onMessage: (Map<String, dynamic> message) async {
         print("onMessage: $message");
-        _handleNotification(context, message, true);
+        _handleNotification(context, message, true,
+            chatIsActive: chatScreenActive);
       },
       onLaunch: (Map<String, dynamic> message) async {
         print("onLaunch: $message");
@@ -241,6 +247,15 @@ class _MainBuilderState extends State<MainBuilder> {
         _handleNotification(context, message, false);
       },
     );
+
+    ///listen to if chat screen in visible
+    eventBus.on<ChatScreenActiveEvent>().listen((event) {
+      setState(() {
+        chatScreenActive = event.isActive;
+      });
+
+      print('chat is active: $chatScreenActive');
+    });
   }
 
   @override
@@ -290,6 +305,18 @@ class _MainBuilderState extends State<MainBuilder> {
                       create: (BuildContext context) => profile,
                       child: AppPageView(
                         uid: snapshot.data.uid,
+                        onPage: (index) {
+                          if (mounted)
+                            setState(() {
+                              currentPageIndex = index;
+                            });
+                        },
+                        onTab: (index) {
+                          if (mounted)
+                            setState(() {
+                              currentHomeTab = index;
+                            });
+                        },
                       ),
                     );
             });

@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/widgets.dart';
 import 'package:nutes/core/models/doodle.dart';
 import 'package:nutes/core/services/events.dart';
@@ -532,6 +533,8 @@ class Repo {
       print(err);
       throw (err);
     });
+
+    FirebaseMessaging().subscribeToTopic(authResult.user.uid);
 
     ///create user doc on firestore
     final profile = (authResult != null)

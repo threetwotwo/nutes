@@ -12,8 +12,10 @@ const scrollCurve = Curves.easeInOut;
 
 class AppPageView extends StatefulWidget {
   final String uid;
-
-  const AppPageView({Key key, this.uid}) : super(key: key);
+  final void Function(int) onTab;
+  final void Function(int) onPage;
+  const AppPageView({Key key, this.uid, this.onTab, this.onPage})
+      : super(key: key);
   @override
   _AppPageViewState createState() => _AppPageViewState();
 }
@@ -75,6 +77,7 @@ class _AppPageViewState extends State<AppPageView> {
   @override
   Widget build(BuildContext context) {
     return PageView(
+      onPageChanged: (index) => widget.onPage(index),
       physics: scrollPhysics,
       controller: appPageController,
       children: <Widget>[
@@ -94,6 +97,7 @@ class _AppPageViewState extends State<AppPageView> {
             scrollPhysics = index == 0
                 ? ClampingScrollPhysics()
                 : NeverScrollableScrollPhysics();
+            return widget.onTab(index);
           }),
         ),
         DirectScreen(

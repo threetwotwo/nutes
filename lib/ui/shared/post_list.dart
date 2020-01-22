@@ -48,6 +48,7 @@ class PostListView extends StatelessWidget {
   final VoidCallback onDoodleStart;
   final VoidCallback onDoodleEnd;
   final VoidCallback onDoodleShow;
+  final bool showEllipsis;
 
   const PostListView({
     Key key,
@@ -58,6 +59,7 @@ class PostListView extends StatelessWidget {
     this.onDoodleStart,
     this.onDoodleEnd,
     this.onDoodleShow,
+    this.showEllipsis,
   }) : super(key: key);
 
   @override
@@ -68,6 +70,7 @@ class PostListView extends StatelessWidget {
         itemCount: posts == null ? 0 : posts.length,
         itemBuilder: (context, index) {
           return PostListItem(
+            showEllipsis: showEllipsis,
             post: posts[index],
             onAddComment: (post) => onAddComment(posts[index]),
             shouldNavigate: pushNavigationEnabled,
@@ -88,6 +91,7 @@ class PostListItem extends StatefulWidget {
   final Function(String) onUnfollow;
   final VoidCallback onDoodleStart;
   final VoidCallback onDoodleEnd;
+  final bool showEllipsis;
 
   PostListItem({
     Key key,
@@ -99,6 +103,7 @@ class PostListItem extends StatefulWidget {
     this.onUnfollow,
     this.onDoodleStart,
     this.onDoodleEnd,
+    this.showEllipsis,
   }) : super(key: key);
 
   @override
@@ -393,6 +398,7 @@ class _PostListItemState extends State<PostListItem>
                             },
                     )
                   : PostHeader(
+                      showEllipsis: widget.showEllipsis ?? false,
                       post: post,
                       onDisplayNameTapped: () => widget.shouldNavigate
                           ? _navigateToProfile(context)
@@ -979,13 +985,15 @@ class PostHeader extends StatelessWidget {
   final VoidCallback onMorePressed;
   final VoidCallback onDisplayNameTapped;
   final VoidCallback onAvatarTapped;
+  final bool showEllipsis;
 
   const PostHeader(
       {Key key,
       this.onMorePressed,
       this.onDisplayNameTapped,
       @required this.post,
-      this.onAvatarTapped})
+      this.onAvatarTapped,
+      this.showEllipsis = false})
       : super(key: key);
   @override
   Widget build(BuildContext context) {
@@ -995,16 +1003,18 @@ class PostHeader extends StatelessWidget {
       ),
       title: post.owner.username,
 //      subtitle: post.id,
-      trailingWidget: IconButton(
-        icon: Icon(
-          Icons.more_horiz,
-          size: 24,
-        ),
-        onPressed: () {
-          onMorePressed();
-          return {print('post trailing widget pressed')};
-        },
-      ),
+      trailingWidget: showEllipsis
+          ? IconButton(
+              icon: Icon(
+                Icons.more_horiz,
+                size: 24,
+              ),
+              onPressed: () {
+                onMorePressed();
+                return {print('post trailing widget pressed')};
+              },
+            )
+          : null,
       onAvatarTapped: onAvatarTapped,
       onBodyTapped: onDisplayNameTapped,
     );

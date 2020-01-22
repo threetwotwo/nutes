@@ -1862,17 +1862,17 @@ class FirestoreService {
 
     final doc = snap.documents.first;
 
-    String email;
+//    String email;
 
     ///get email associated with username
-    email = doc['email'];
+//    email = doc['email'];
 
-    if (email == null ?? email.isEmpty) {
-      final info =
-          await doc.reference.collection('private').document('info').get();
+//    if (email == null ?? email.isEmpty) {
+    final info =
+        await doc.reference.collection('private').document('info').get();
 
-      email = info['email'] ?? '';
-    }
+    final email = info['email'] ?? '';
+//    }
 
     ///check if email matches with password entered
     ///
@@ -1887,9 +1887,10 @@ class FirestoreService {
     });
 
 //      ///return user object
-    if (authenticatedUser != null)
+    if (authenticatedUser != null) {
+      FirebaseMessaging().subscribeToTopic(authenticatedUser.user.uid);
       return UserProfile.fromDoc(snap.documents.first);
-
+    }
     return null;
   }
 

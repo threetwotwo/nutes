@@ -206,14 +206,17 @@ class _ProfileScreenState extends State<ProfileScreen>
                     Icon(
                       MdiIcons.checkDecagram,
                       color: Colors.blueAccent,
-                      size: 20,
+                      size: 18,
                     )
                   ],
                 ],
               ),
-              trailing: Icon(
-                Icons.arrow_back_ios,
-                color: Colors.transparent,
+              trailing: AspectRatio(
+                aspectRatio: 1,
+                child: Icon(
+                  Icons.arrow_back_ios,
+                  color: Colors.transparent,
+                ),
               ),
             ),
             body: SafeArea(

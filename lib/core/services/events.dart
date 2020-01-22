@@ -40,3 +40,9 @@ class ChatReadStatusEvent {
 
   ChatReadStatusEvent(this.unreadChats);
 }
+
+class ChatScreenActiveEvent {
+  final bool isActive;
+
+  ChatScreenActiveEvent(this.isActive);
+}

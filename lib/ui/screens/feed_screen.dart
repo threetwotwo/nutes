@@ -191,7 +191,7 @@ class _FeedScreenState extends State<FeedScreen>
       backgroundColor: Colors.white,
       appBar: FeedAppBar(
         onCreatePressed: widget.onCreatePressed,
-        onLogoutPressed: () => Repo.logout(),
+//        onLogoutPressed: () => Repo.logout(),
         onDM: widget.onDM,
         hasUnread: _hasUnreadDMs,
       ),
@@ -284,6 +284,7 @@ class _FeedScreenState extends State<FeedScreen>
                                         'Start following users to see their posts',
                                   )
                                 : PostListView(
+                                    showEllipsis: true,
                                     posts: posts,
                                     onUnfollow: (uid) {
                                       print('onUnfollow $uid');

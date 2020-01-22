@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:nutes/core/models/chat_message.dart';
 import 'package:nutes/core/models/user.dart';
+import 'package:nutes/core/services/events.dart';
 import 'package:nutes/core/services/firestore_service.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/screens/post_detail_screen.dart';
@@ -93,6 +95,7 @@ class _ChatScreenState extends State<ChatScreen> {
   void dispose() {
     print('dispose chat screen');
     Repo.isTyping(chatId, uid, false);
+    eventBus.fire(ChatScreenActiveEvent(false));
     super.dispose();
   }
 
@@ -127,6 +130,8 @@ class _ChatScreenState extends State<ChatScreen> {
         (uid.hashCode <= peerId.hashCode) ? '$uid-$peerId' : '$peerId-$uid';
 
     _runChat();
+
+    eventBus.fire(ChatScreenActiveEvent(true));
 
     super.initState();
   }
@@ -356,7 +361,9 @@ class _ChatScreenState extends State<ChatScreen> {
                                   bottom: bottomPadding,
                                 ),
                                 child: ListView.builder(
-                                  physics: BouncingScrollPhysics(),
+                                  physics: Platform.isAndroid
+                                      ? BouncingScrollPhysics()
+                                      : AlwaysScrollableScrollPhysics(),
                                   reverse: true,
                                   controller: _scrollController,
                                   itemCount: messages.length,

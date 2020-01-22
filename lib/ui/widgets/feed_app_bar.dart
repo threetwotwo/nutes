@@ -27,11 +27,11 @@ class FeedAppBar extends StatelessWidget implements PreferredSizeWidget {
       ),
       title: NutesLogoPlain(),
       actions: <Widget>[
-        IconButton(
-          icon: Icon(SimpleLineIcons.logout),
-          onPressed: onLogoutPressed,
-          color: Colors.black,
-        ),
+//        IconButton(
+//          icon: Icon(SimpleLineIcons.logout),
+//          onPressed: onLogoutPressed,
+//          color: Colors.black,
+//        ),
         Stack(
           children: <Widget>[
             Center(

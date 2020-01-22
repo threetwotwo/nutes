@@ -150,23 +150,6 @@ class ConfirmUploadPage extends StatelessWidget {
                   ),
                 ),
               ],
-              Container(height: 1, color: Colors.grey[100]),
-              TextField(
-                controller: captionController,
-                style: TextStyles.defaultText.copyWith(fontSize: 15),
-                maxLines: 4,
-                minLines: 1,
-                maxLength: 2000,
-                decoration: InputDecoration(
-                  contentPadding: EdgeInsets.all(10),
-                  counterText: '',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide.none,
-                  ),
-                  hintText: 'Write a post caption...',
-                ),
-              ),
               AvatarListItem(
                 avatar: AvatarImage(
                   url: auth.user.urls.small,
@@ -221,6 +204,23 @@ class ConfirmUploadPage extends StatelessWidget {
                       ),
                     ),
                   ),
+                ),
+              ),
+              Container(height: 1, color: Colors.grey[100]),
+              TextField(
+                controller: captionController,
+                style: TextStyles.defaultText.copyWith(fontSize: 15),
+                maxLines: 4,
+                minLines: 1,
+                maxLength: 2000,
+                decoration: InputDecoration(
+                  contentPadding: EdgeInsets.all(10),
+                  counterText: '',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide.none,
+                  ),
+                  hintText: 'Write a post caption...',
                 ),
               ),
             ],

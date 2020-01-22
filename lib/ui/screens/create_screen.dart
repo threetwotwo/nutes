@@ -28,6 +28,11 @@ class _CreateScreenState extends State<CreateScreen> {
   }
 
   @override
+  void setState(fn) {
+    if (mounted) super.setState(fn);
+  }
+
+  @override
   void initState() {
     _getFollowings();
     super.initState();
