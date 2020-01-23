@@ -1,16 +1,13 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:nutes/core/models/user.dart';
 import 'package:nutes/ui/screens/activity_screen.dart';
 import 'package:nutes/ui/screens/feed_screen.dart';
 import 'package:nutes/ui/screens/my_profile_screen.dart';
 import 'package:nutes/ui/screens/search_screen.dart';
 import 'package:nutes/core/models/tab_item.dart';
-//import 'package:nutes/core/services/local_cache.dart';
 import 'package:nutes/ui/screens/create_screen.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/widgets/bottom_navigation.dart';
-import 'package:provider/provider.dart';
 
 class HomeScreen extends StatefulWidget {
   final void Function(int) onTabTapped;

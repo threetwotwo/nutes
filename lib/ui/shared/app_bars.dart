@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:line_icons/line_icons.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:nutes/core/models/user.dart';
-import 'package:nutes/ui/shared/logos.dart';
 import 'package:nutes/ui/shared/styles.dart';
 
 class BaseAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -93,13 +92,15 @@ class ProfileAppBar extends StatelessWidget implements PreferredSizeWidget {
             ],
             elevation: 1.5,
             brightness: Brightness.light,
-            title: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            title: Wrap(
+              alignment: WrapAlignment.center,
+//              mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
                 if (profile.user.isPrivate) Icon(Icons.lock, size: 17),
                 Text(
                   '${profile.user.username}',
-                  style: TextStyles.defaultDisplay.copyWith(fontSize: 18),
+                  style: TextStyles.header,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 if (profile.isVerified) ...[
                   SizedBox(width: 4),

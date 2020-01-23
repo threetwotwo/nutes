@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:nutes/core/services/local_cache.dart';
 
 class DismissView extends StatelessWidget {
   final bool enabled;

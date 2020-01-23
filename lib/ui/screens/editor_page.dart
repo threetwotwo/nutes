@@ -110,7 +110,7 @@ class _EditorPageState extends State<EditorPage>
   void onVariant(int variantIndex) {
     print('change variant');
 
-    final existingController = capturePages[currentPage].controller;
+//    final existingController = capturePages[currentPage].controller;
 
     final filter =
         capturePages[currentPage].filter.copyWith(variantIndex: variantIndex);
@@ -238,6 +238,10 @@ class _EditorPageState extends State<EditorPage>
 
   @override
   Widget build(BuildContext context) {
+    ///TODO: review if need to call super
+
+    super.build(context);
+
     final filter = capturePages[currentPage].filter;
 
     return Scaffold(

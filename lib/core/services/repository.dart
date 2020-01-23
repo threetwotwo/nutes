@@ -300,6 +300,9 @@ class Repo {
   static Future<void> deletePost(String postId) async =>
       shared._firestore.deletePost(postId);
 
+  static Future<void> deleteComment(String postId, String commentId) async =>
+      shared._firestore.deleteComment(postId, commentId);
+
   ///Uploads a shout as a post
   static Future<Post> uploadShoutPost(
       {@required User peer, @required Map data}) {

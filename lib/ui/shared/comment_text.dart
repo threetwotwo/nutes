@@ -164,11 +164,11 @@ class CommentText extends StatelessWidget {
 //      }
 //    }
 
-    void _onTagClick(String url) {
-      if (onTagClick != null) {
-        onTagClick(url);
-      }
-    }
+//    void _onTagClick(String url) {
+//      if (onTagClick != null) {
+//        onTagClick(url);
+//      }
+//    }
 
     final elements = _smartify(text, leading: leading);
 

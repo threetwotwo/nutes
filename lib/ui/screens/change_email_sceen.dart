@@ -218,7 +218,7 @@ class _ChangeEmailScreenState extends State<ChangeEmailScreen> {
               CupertinoDialogAction(
                 child: Text('Done'),
                 onPressed: () async {
-                  final cred = await EmailAuthProvider.getCredential(
+                  final cred = EmailAuthProvider.getCredential(
                     email: widget.email,
                     password: passwordController.text,
                   );

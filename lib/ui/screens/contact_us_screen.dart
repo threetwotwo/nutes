@@ -1,14 +1,11 @@
 import 'package:bot_toast/bot_toast.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:nutes/core/services/firestore_service.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/shared/app_bars.dart';
-import 'package:nutes/ui/shared/avatar_image.dart';
 import 'package:nutes/ui/shared/empty_indicator.dart';
 import 'package:nutes/ui/shared/loading_indicator.dart';
 import 'package:nutes/ui/shared/styles.dart';
-import 'package:nutes/ui/widgets/login_textfield.dart';
 
 class ContactUsScreen extends StatefulWidget {
   @override

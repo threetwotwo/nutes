@@ -1,6 +1,5 @@
 import 'package:firebase_database/firebase_database.dart';
 import 'package:nutes/core/models/user.dart';
-import 'package:nutes/core/models/post.dart';
 
 class RTDBProvider {
   final _instance = FirebaseDatabase.instance;

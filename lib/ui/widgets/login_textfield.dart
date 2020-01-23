@@ -6,14 +6,14 @@ import 'package:nutes/ui/shared/styles.dart';
 final GlobalKey<FormFieldState<String>> _passwordFieldKey =
     GlobalKey<FormFieldState<String>>();
 
-String _validatePassword(String value) {
-//  _formWasEdited = true;
-  final FormFieldState<String> passwordField = _passwordFieldKey.currentState;
-  if (passwordField.value == null || passwordField.value.isEmpty)
-    return 'Please enter a password.';
-  if (passwordField.value != value) return 'The passwords don\'t match';
-  return null;
-}
+//String _validatePassword(String value) {
+////  _formWasEdited = true;
+//  final FormFieldState<String> passwordField = _passwordFieldKey.currentState;
+//  if (passwordField.value == null || passwordField.value.isEmpty)
+//    return 'Please enter a password.';
+//  if (passwordField.value != value) return 'The passwords don\'t match';
+//  return null;
+//}
 
 class PasswordField extends StatefulWidget {
   const PasswordField({

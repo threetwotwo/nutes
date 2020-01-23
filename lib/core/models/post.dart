@@ -248,7 +248,6 @@ class PostStats {
 
   factory PostStats.fromDoc(DocumentSnapshot doc) {
     final data = doc.data;
-    final List comments = (data['top_comments'] ?? []);
     return PostStats(
       ownerId: data['owner_id'],
       postId: doc.documentID,

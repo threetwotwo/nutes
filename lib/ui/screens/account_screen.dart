@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:nutes/core/models/user.dart';
 import 'package:nutes/core/services/repository.dart';
-import 'package:nutes/ui/screens/account_settings_screen.dart';
 import 'package:nutes/ui/screens/change_password_screen.dart';
 import 'package:nutes/ui/screens/help_screen.dart';
 import 'package:nutes/ui/screens/info_screen.dart';
-import 'package:nutes/ui/screens/privacy_policy_screen.dart';
 import 'package:nutes/ui/screens/privacy_screen.dart';
 import 'package:nutes/ui/shared/app_bars.dart';
 import 'package:line_icons/line_icons.dart';

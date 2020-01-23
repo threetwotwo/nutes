@@ -1,6 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:nutes/ui/shared/post_grid_view.dart';
 import 'package:nutes/ui/shared/shout_post.dart';
 
 class ChatPostContent extends StatelessWidget {

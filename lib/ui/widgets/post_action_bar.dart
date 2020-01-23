@@ -38,7 +38,7 @@ class PostActionBar extends StatelessWidget {
                     children: <Widget>[
                       PostActionButton(
                         onTap: () async {
-                          await Vibrate.feedback(FeedbackType.selection);
+                          Vibrate.feedback(FeedbackType.selection);
                           return onHeartTapped();
                         },
                         color: didLike ? Colors.red : Colors.black,

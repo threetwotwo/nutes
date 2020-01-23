@@ -67,7 +67,7 @@ class _SearchResultViewState extends State<SearchResultView> {
                   SizedBox(width: 8),
                   Text(
                     'Searching for '
-                    '\"${searchText}\"',
+                    '\"$searchText\"',
                     style: TextStyle(color: Colors.grey),
                   )
                 ],

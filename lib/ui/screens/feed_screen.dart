@@ -379,7 +379,7 @@ class _FeedScreenState extends State<FeedScreen>
   }
 
   ///TODO: sort the user stories
-  Future<List<UserStory>> _getStoriesOfFollowings() async {
+  Future<void> _getStoriesOfFollowings() async {
     final result = await Repo.getStoriesOfFollowings();
     setState(() {
       followingsStories = result;

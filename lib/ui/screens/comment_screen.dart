@@ -83,6 +83,8 @@ class _CommentScreenState extends State<CommentScreen> {
   }
 
   Future<void> _getMoreComments() async {
+    if (comments.length < 8) return;
+
     final result = await Repo.getComments(widget.post.id, startAfter);
 
     setState(() {
@@ -131,11 +133,12 @@ class _CommentScreenState extends State<CommentScreen> {
                       ///Caption
                       if (widget.post.caption.isNotEmpty) ...[
                         CommentListItem(
-                            isCaption: true,
-                            comment: Comment(
-                                text: widget.post.caption,
-                                timestamp: widget.post.timestamp,
-                                owner: widget.post.owner)),
+                          isCaption: true,
+                          comment: Comment(
+                              text: widget.post.caption,
+                              timestamp: widget.post.timestamp,
+                              owner: widget.post.owner),
+                        ),
                         Divider(),
                       ],
                       comments.isEmpty
@@ -161,6 +164,15 @@ class _CommentScreenState extends State<CommentScreen> {
                                         isLoadingMore:
                                             _isLoadingMoreReplies == comment.id,
                                         didLike: didLike,
+                                        onDelete: () {
+                                          print(
+                                              'delete comment ${comment.text}');
+                                          Repo.deleteComment(
+                                              widget.post.id, comment.id);
+                                          setState(() {
+                                            comments.remove(comment);
+                                          });
+                                        },
                                         onLike: () {
                                           didLike
                                               ? Repo.unlikeComment(

@@ -1944,29 +1944,6 @@ class FirestoreService {
     return ref.snapshots();
   }
 
-  DocumentReference _fcmTokensRef(String uid) =>
-      userRef(uid).collection('fcm_tokens').document('tokens');
-
-//  Future<void> createFCMDeviceToken(String uid, String token) {
-//    final ref = _fcmTokensRef(uid);
-//    return ref.setData(
-//      {
-//        'tokens': FieldValue.arrayUnion([token])
-//      },
-//      merge: true,
-//    );
-//  }
-//
-//  Future<void> deleteFCMToken(String uid, String token) {
-//    final ref = _fcmTokensRef(uid);
-//    return ref.setData(
-//      {
-//        'tokens': FieldValue.arrayRemove([token])
-//      },
-//      merge: true,
-//    );
-//  }
-
   Future<Map> getMyInfo() async {
     final ref = myProfileRef.collection('private').document('info');
     final doc = await ref.get();
@@ -2142,5 +2119,10 @@ class FirestoreService {
     batch.delete(myRef);
 
     return batch.commit();
+  }
+
+  Future<void> deleteComment(String postId, String commentId) async {
+    final commentRef = _commentRef(postId, commentId);
+    return commentRef.delete();
   }
 }

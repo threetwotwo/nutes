@@ -28,7 +28,6 @@ import 'package:nutes/utils/painter.dart';
 import 'package:nutes/utils/timeAgo.dart';
 import 'package:preload_page_view/preload_page_view.dart';
 import 'package:nutes/core/models/post_type.dart';
-import 'package:nutes/core/models/user.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/screens/comment_screen.dart';
 import 'package:nutes/ui/shared/page_viewer.dart';
@@ -193,13 +192,13 @@ class _PostListItemState extends State<PostListItem>
     });
   }
 
-  void _endDoodles() {
-    setState(() {
-      _showDoodle = false;
-    });
-
-    return;
-  }
+//  void _endDoodles() {
+//    setState(() {
+//      _showDoodle = false;
+//    });
+//
+//    return;
+//  }
 
   Future<void> _getDoodles() async {
     if (_showDoodle) {
@@ -285,9 +284,6 @@ class _PostListItemState extends State<PostListItem>
 
     final data = post.metadata;
 
-    final challenger = User.fromMap(data['challenger'] ?? {});
-    final challenged = User.fromMap(data['challenged'] ?? {});
-
     return post.stats == null || post.myFollowingLikes == null
         ? LoadingIndicator()
         : Column(
@@ -295,104 +291,6 @@ class _PostListItemState extends State<PostListItem>
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               ///Header
-//              isShout
-//                  ? ShoutHeader(
-//                      challenger: challenger,
-//                      challenged: challenged,
-//                      post: post,
-//                      onTrailing: post.owner.uid != auth.uid
-//                          ? null
-//                          : () {
-//                              final isOwner = post.owner.uid == auth.uid;
-//
-//                              return !isOwner
-//                                  ? null
-//                                  : showCupertinoModalPopup(
-//                                      context: context,
-//                                      builder: (context) {
-//                                        return CupertinoActionSheet(
-//                                          actions: <Widget>[
-//                                            if (isOwner)
-//                                              CupertinoActionSheetAction(
-//                                                child: Text('Delete',
-//                                                    style: TextStyles
-//                                                        .defaultDisplay
-//                                                        .copyWith(
-//                                                      color: Colors.red,
-//                                                    )),
-//                                                onPressed: () async {
-//                                                  BotToast.showText(
-//                                                    text: 'Deleting post',
-//                                                    align: Alignment.center,
-//                                                  );
-//                                                  await Repo.deletePost(
-//                                                      post.id);
-//                                                  BotToast.showText(
-//                                                    text: 'Deleted',
-//                                                    align: Alignment.center,
-//                                                  );
-//                                                  eventBus.fire(
-//                                                      PostDeleteEvent(post.id));
-//
-//                                                  Navigator.popUntil(context,
-//                                                      (r) => r.isFirst);
-//
-//                                                  return;
-//                                                },
-//                                              ),
-//                                            if (isOwner)
-//                                              CupertinoActionSheetAction(
-//                                                child: Text('Edit',
-//                                                    style: TextStyles
-//                                                        .defaultDisplay),
-//                                                onPressed: () async {
-//                                                  Navigator.pop(context);
-//                                                  final result =
-//                                                      await Navigator.push(
-//                                                          context,
-//                                                          EditPostScreen.route(
-//                                                              post));
-//
-//                                                  if (result is Post) {
-//                                                    setState(() {
-//                                                      post = result;
-//                                                    });
-//                                                  }
-//                                                  return;
-//                                                },
-//                                              ),
-//                                            if (!isOwner) ...[
-//                                              CupertinoActionSheetAction(
-//                                                child: Text('Unfollow',
-//                                                    style: TextStyles
-//                                                        .defaultDisplay),
-//                                                onPressed: () {
-//                                                  Repo.unfollowUser(
-//                                                      post.owner.uid);
-//                                                  BotToast.showText(
-//                                                    text:
-//                                                        'Unfollowed ${post.owner.username}',
-//                                                    align: Alignment.center,
-//                                                  );
-//                                                  widget.onUnfollow(
-//                                                      post.owner.uid);
-//                                                  return Navigator.pop(context);
-//                                                },
-//                                              ),
-//                                            ]
-//                                          ],
-//                                          cancelButton: FlatButton(
-//                                            onPressed: () =>
-//                                                Navigator.pop(context),
-//                                            child: Text('Cancel',
-//                                                style:
-//                                                    TextStyles.defaultDisplay),
-//                                          ),
-//                                        );
-//                                      });
-//                            },
-//                    )
-//                  :
               PostHeader(
                 isShout: isShout,
                 post: post,

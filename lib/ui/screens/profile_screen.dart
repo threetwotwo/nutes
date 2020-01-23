@@ -195,8 +195,9 @@ class _ProfileScreenState extends State<ProfileScreen>
         : Scaffold(
             backgroundColor: Colors.white,
             appBar: BaseAppBar(
-              title: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              title: Wrap(
+                alignment: WrapAlignment.center,
+//                mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[
                   Text(
                     profile == null ? '' : profile.user.username,

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:nutes/core/events/events.dart';
-import 'package:nutes/core/services/auth.dart';
 import 'package:nutes/core/services/events.dart';
 import 'package:nutes/ui/screens/change_bio_screen.dart';
 import 'package:nutes/ui/screens/change_email_sceen.dart';

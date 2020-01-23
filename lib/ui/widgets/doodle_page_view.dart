@@ -25,8 +25,6 @@ class DoodlePageView extends StatefulWidget {
 class _DoodlePageViewState extends State<DoodlePageView> {
   bool isLoaded = false;
 
-  List<Image> _images;
-
   final pageController = PageController();
 
   Timer _debounce;
@@ -37,7 +35,7 @@ class _DoodlePageViewState extends State<DoodlePageView> {
 
   int currentPage = 0;
 
-  bool _headerIsVisible = true;
+  bool headerIsVisible = true;
 
   ImageStreamListener imageStreamListener() =>
       ImageStreamListener((info, call) async {
@@ -98,14 +96,14 @@ class _DoodlePageViewState extends State<DoodlePageView> {
 
   void _onLongPress() {
     setState(() {
-      _headerIsVisible = false;
+      headerIsVisible = false;
     });
 //    if (_debounce?.isActive ?? false) _debounce.cancel();
   }
 
   void _onLongPressUp() {
     setState(() {
-      _headerIsVisible = true;
+      headerIsVisible = true;
     });
 
     _nextDoodle();

@@ -6,7 +6,6 @@ import 'dart:async';
 import 'package:flutter/gestures.dart';
 import 'package:nutes/core/models/story.dart';
 import 'package:nutes/core/models/user.dart';
-import 'package:nutes/core/services/firestore_service.dart';
 import 'package:nutes/core/services/repository.dart';
 
 import 'package:flutter/services.dart';
@@ -137,8 +136,6 @@ class _StoryViewState extends State<StoryView>
   int momentIndex;
   bool isInFullscreenMode = false;
   Story story;
-
-  Map<String, dynamic> _seenStories = {};
 
   PageController _momentPageController;
 
@@ -412,58 +409,68 @@ class _StoryViewState extends State<StoryView>
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: <Widget>[
-                              GestureDetector(
-                                onTap: () {
-                                  _stop();
-                                  Navigator.of(context).push(
-                                      ProfileScreen.route(widget.uploader.uid));
-                                },
-                                child: Row(
-                                  children: <Widget>[
-                                    AvatarImage(
-                                      bordered: false,
-                                      url: widget.uploader.urls.small,
-                                      spacing: 0,
-                                      padding: 8,
-                                      addStory: false,
-                                    ),
-                                    RichText(
-                                      text: TextSpan(children: [
-                                        TextSpan(
-                                          text: widget.uploader.username,
-                                          style: TextStyles.w500Text.copyWith(
-                                            color: Colors.white,
-                                            fontSize: 15,
-                                            shadows: [
-                                              Shadow(
-                                                blurRadius: 4.0,
-                                                color: Colors.black
-                                                    .withOpacity(0.2),
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: () {
+                                    _stop();
+                                    Navigator.of(context).push(
+                                        ProfileScreen.route(
+                                            widget.uploader.uid));
+                                  },
+                                  child: Row(
+                                    children: <Widget>[
+                                      AvatarImage(
+                                        bordered: false,
+                                        url: widget.uploader.urls.small,
+                                        spacing: 0,
+                                        padding: 8,
+                                        addStory: false,
+                                      ),
+                                      Expanded(
+                                        child: RichText(
+                                          overflow: TextOverflow.ellipsis,
+                                          maxLines: 1,
+                                          text: TextSpan(children: [
+                                            TextSpan(
+                                              text: widget.uploader.username,
+                                              style:
+                                                  TextStyles.w500Text.copyWith(
+                                                color: Colors.white,
+                                                fontSize: 15,
+                                                shadows: [
+                                                  Shadow(
+                                                    blurRadius: 4.0,
+                                                    color: Colors.black
+                                                        .withOpacity(0.2),
+                                                  ),
+                                                ],
                                               ),
-                                            ],
-                                          ),
-                                        ),
-                                        TextSpan(text: '  '),
-                                        TextSpan(
-                                          text: TimeAgo.formatShort(widget.story
-                                              .moments[momentIndex].timestamp
-                                              .toDate()),
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 15,
-                                            fontWeight: FontWeight.w300,
-                                            shadows: [
-                                              Shadow(
-                                                blurRadius: 4.0,
-                                                color: Colors.black
-                                                    .withOpacity(0.2),
+                                            ),
+                                            TextSpan(text: '  '),
+                                            TextSpan(
+                                              text: TimeAgo.formatShort(widget
+                                                  .story
+                                                  .moments[momentIndex]
+                                                  .timestamp
+                                                  .toDate()),
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.w300,
+                                                shadows: [
+                                                  Shadow(
+                                                    blurRadius: 4.0,
+                                                    color: Colors.black
+                                                        .withOpacity(0.2),
+                                                  ),
+                                                ],
                                               ),
-                                            ],
-                                          ),
+                                            ),
+                                          ]),
                                         ),
-                                      ]),
-                                    ),
-                                  ],
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                               CancelButton(

@@ -4,8 +4,6 @@ import 'package:nutes/core/services/firestore_service.dart';
 import 'package:nutes/ui/screens/account_screen.dart';
 import 'package:nutes/ui/screens/account_settings_screen.dart';
 import 'package:nutes/ui/screens/blocked_accounts_screen.dart';
-import 'package:nutes/ui/screens/contact_us_screen.dart';
-import 'package:nutes/ui/screens/feedback_screen.dart';
 import 'package:nutes/ui/shared/app_bars.dart';
 import 'package:nutes/ui/shared/styles.dart';
 

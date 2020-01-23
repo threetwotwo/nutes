@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:nutes/core/models/post.dart';
-import 'package:nutes/core/models/post_type.dart';
 import 'package:nutes/core/models/user.dart';
 
 enum ActivityType {

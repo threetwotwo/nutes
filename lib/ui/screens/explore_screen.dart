@@ -77,7 +77,7 @@ class _ExploreScreenState extends State<ExploreScreen>
       setState(() {
         newestPosts = result.posts
           ..removeWhere((p) => blockedBy.contains(p.owner.uid));
-        ;
+
         newestLastDoc = result.startAfter;
       });
   }
@@ -197,6 +197,8 @@ class _ExploreTabViewState extends State<ExploreTabView>
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
+
     return RefreshListView(
       onRefresh: widget.onRefresh,
       onLoadMore: widget.onLoadMore,

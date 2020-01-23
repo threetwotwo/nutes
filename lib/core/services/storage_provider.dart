@@ -3,7 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:meta/meta.dart';
 import 'package:nutes/core/services/firestore_service.dart';
-import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/utils/image_file_bundle.dart';
 
 class FIRStorage {

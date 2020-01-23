@@ -19,6 +19,7 @@ import 'package:nutes/ui/widgets/app_page_view.dart';
 import 'package:nutes/ui/screens/login_screen.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'core/models/user.dart';
 import 'core/services/firestore_service.dart';
 
@@ -166,8 +167,6 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  bool isLoaded = false;
-
   @override
   void initState() {
     initCurrentUser();
@@ -215,9 +214,34 @@ class _MainBuilderState extends State<MainBuilder> {
     }
   }
 
+  _incrementOpenCount() async {
+    final prefs = await SharedPreferences.getInstance();
+    final counter = (prefs.getInt('open_count') ?? 0) + 1;
+    print('Opened app $counter times.');
+
+    if (counter < 2) {
+      showCupertinoDialog(
+        context: context,
+        builder: (context) => CupertinoAlertDialog(
+          title: Text(
+              "By using NUTES you agree to the terms of service(EULA) and privacy policy. NUTES has no tolerance for objectionable content and abusive users. Any inappropriate usage will be banned."),
+          actions: <Widget>[
+            CupertinoDialogAction(
+              child: Text('I Agree'),
+              isDefaultAction: true,
+              onPressed: () => Navigator.popUntil(context, (r) => r.isFirst),
+            )
+          ],
+        ),
+      );
+    }
+    await prefs.setInt('open_count', counter);
+  }
+
   @override
   void initState() {
     super.initState();
+    _incrementOpenCount();
 
     if (Platform.isIOS) _fcm.requestNotificationPermissions();
 
