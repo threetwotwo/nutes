@@ -35,7 +35,9 @@ class _AvatarListExtendedState extends State<AvatarListExtended> {
               builder: (context, snapshot) {
                 if (!snapshot.hasData) return SizedBox();
 
-                final List requests = snapshot.data['requests'];
+                final Map<String, dynamic> data = snapshot.data?.data ?? {};
+
+                final List requests = data['requests'] ?? [];
 
                 return ListView.builder(
                     shrinkWrap: true,

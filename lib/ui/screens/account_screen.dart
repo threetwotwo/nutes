@@ -6,6 +6,7 @@ import 'package:nutes/ui/screens/change_password_screen.dart';
 import 'package:nutes/ui/screens/help_screen.dart';
 import 'package:nutes/ui/screens/info_screen.dart';
 import 'package:nutes/ui/screens/privacy_policy_screen.dart';
+import 'package:nutes/ui/screens/privacy_screen.dart';
 import 'package:nutes/ui/shared/app_bars.dart';
 import 'package:line_icons/line_icons.dart';
 import 'package:nutes/ui/shared/styles.dart';
@@ -30,12 +31,20 @@ class AccountScreen extends StatelessWidget {
         body: ListView(
           children: <Widget>[
 //            AccountListTile(LineIcons.bookmark_o, 'Saved'),
+//            AccountListTile(
+//              LineIcons.gear,
+//              'Settings',
+//              onTap: () => Navigator.push(
+//                context,
+//                AccountSettingsScreen.route(profile),
+//              ),
+//            ),
             AccountListTile(
-              LineIcons.gear,
-              'Settings',
+              LineIcons.shield,
+              'Privacy',
               onTap: () => Navigator.push(
                 context,
-                AccountSettingsScreen.route(profile),
+                PrivacyScreen.route(),
               ),
             ),
             AccountListTile(
@@ -46,6 +55,7 @@ class AccountScreen extends StatelessWidget {
                 ChangePasswordScreen.route(),
               ),
             ),
+
             AccountListTile(
               LineIcons.question_circle,
               'Help',
@@ -56,7 +66,7 @@ class AccountScreen extends StatelessWidget {
             ),
             AccountListTile(
               LineIcons.info_circle,
-              'Info and Privacy',
+              'Info',
               onTap: () => Navigator.push(
                 context,
                 InfoScreen.route(),

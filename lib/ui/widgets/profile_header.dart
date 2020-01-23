@@ -28,6 +28,10 @@ class ProfileHeader extends StatelessWidget {
 
   final bool hasRequest;
 
+  final bool isBlocked;
+
+  final VoidCallback onUnblock;
+
   const ProfileHeader({
     Key key,
     @required this.profile,
@@ -44,6 +48,8 @@ class ProfileHeader extends StatelessWidget {
     this.onRequest,
     this.storyState = StoryState.none,
     this.hasRequest = false,
+    this.isBlocked = true,
+    this.onUnblock,
   }) : super(key: key);
 
   @override
@@ -110,14 +116,24 @@ class ProfileHeader extends StatelessWidget {
                               ? EditProfileButton(
                                   onEditPressed: onEditPressed,
                                 )
-                              : ProfileFollowButton(
-                                  hasRequest: hasRequest,
-                                  user: profile.user,
-                                  isFollowing: isFollowing,
-                                  onMessagePressed: onMessagePressed,
-                                  onRequest: onRequest,
-                                  onFollow: onFollow,
-                                )
+                              : isBlocked
+                                  ? FlatButton(
+                                      color: Colors.blueAccent[400],
+                                      child: Text(
+                                        'Unblock',
+                                        style: TextStyles.defaultText
+                                            .copyWith(color: Colors.white),
+                                      ),
+                                      onPressed: onUnblock,
+                                    )
+                                  : ProfileFollowButton(
+                                      hasRequest: hasRequest,
+                                      user: profile.user,
+                                      isFollowing: isFollowing,
+                                      onMessagePressed: onMessagePressed,
+                                      onRequest: onRequest,
+                                      onFollow: onFollow,
+                                    )
                     ],
                   ),
                 ),
@@ -328,11 +344,11 @@ class MessageButton extends StatelessWidget {
     return SoftBorderedButton(
       backgroundColor: isFollowing ? Colors.blueAccent[400] : Colors.white,
       onPressed: onMessagePressed,
-      borderColor: Colors.blueAccent[100],
+      borderColor: Colors.blueAccent[400],
       child: Center(
           child: Icon(
         SimpleLineIcons.paper_plane,
-        color: isFollowing ? Colors.white : Colors.blueAccent[100],
+        color: isFollowing ? Colors.white : Colors.blueAccent[400],
         size: 20,
       )),
     );

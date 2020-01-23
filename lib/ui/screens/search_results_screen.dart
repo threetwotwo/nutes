@@ -23,11 +23,25 @@ class _SearchResultsScreenState extends State<SearchResultsScreen>
     with AutomaticKeepAliveClientMixin<SearchResultsScreen> {
   List<User> users = [];
 
+  ///List of users who have blocked me
+  List blockedBy = [];
+
   bool isSearching = false;
 
   bool isEmpty = true;
 
   String searchText;
+
+  _getBlockedBy() async {
+    final result = await Repo.getBlockedBy();
+
+    if (mounted)
+      setState(() {
+        blockedBy = result;
+      });
+
+    print('blocked by: $result');
+  }
 
   _search(String text) async {
     if (text.isEmpty)
@@ -39,7 +53,8 @@ class _SearchResultsScreenState extends State<SearchResultsScreen>
           searchText = text;
         });
 
-      final result = await Repo.searchUsers(text);
+      final result = await Repo.searchUsers(text)
+        ..removeWhere((user) => blockedBy.contains(user.uid));
 
       if (mounted)
         setState(() {
@@ -51,6 +66,8 @@ class _SearchResultsScreenState extends State<SearchResultsScreen>
 
   @override
   void initState() {
+    _getBlockedBy();
+
     widget.controller.addListener(() {
       if (widget.controller.text != searchText) _search(widget.controller.text);
 

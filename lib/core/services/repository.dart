@@ -50,6 +50,22 @@ class Repo {
   static StreamController<StorySnapshot> storiesStreamController;
   static ScrollController storiesScrollController = ScrollController();
 
+  static Stream<DocumentSnapshot> blockedUserStream(String uid) =>
+      shared._firestore.blockedUserStream(uid);
+
+  static Stream<DocumentSnapshot> blockedByStream() =>
+      shared._firestore.blockedByStream();
+
+  static Future<List> getBlockedBy() => shared._firestore.getBlockedBy();
+
+  static Future<List<User>> getBlockedUsers() =>
+      shared._firestore.getBlockedUsers();
+
+  static Future<void> blockUser(User user) => shared._firestore.blockUser(user);
+
+  static Future<void> unblockUser(User user) =>
+      shared._firestore.unblockUser(user);
+
   static Future<void> reportPost(Post post, String type) =>
       shared._firestore.reportPost(post, type);
 

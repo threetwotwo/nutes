@@ -11,7 +11,7 @@ class InfoScreen extends StatelessWidget {
     return Scaffold(
       appBar: BaseAppBar(
         title: Text(
-          'Info and Privacy',
+          'Info',
           style: TextStyles.header,
         ),
       ),

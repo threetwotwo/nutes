@@ -10,6 +10,7 @@ import 'package:nutes/core/events/events.dart';
 import 'package:nutes/core/models/comment.dart';
 import 'package:nutes/core/models/doodle.dart';
 import 'package:nutes/core/services/events.dart';
+import 'package:nutes/core/services/firestore_service.dart';
 import 'package:nutes/core/services/local_cache.dart';
 import 'package:nutes/ui/screens/edit_post_screen.dart';
 import 'package:nutes/ui/screens/send_post_screen.dart';
@@ -67,7 +68,6 @@ class PostListView extends StatelessWidget {
         itemCount: posts == null ? 0 : posts.length,
         itemBuilder: (context, index) {
           return PostListItem(
-            showEllipsis: showEllipsis,
             post: posts[index],
             onAddComment: (post) => onAddComment(posts[index]),
             shouldNavigate: pushNavigationEnabled,
@@ -88,7 +88,6 @@ class PostListItem extends StatefulWidget {
   final Function(String) onUnfollow;
   final VoidCallback onDoodleStart;
   final VoidCallback onDoodleEnd;
-  final bool showEllipsis;
 
   PostListItem({
     Key key,
@@ -100,7 +99,6 @@ class PostListItem extends StatefulWidget {
     this.onUnfollow,
     this.onDoodleStart,
     this.onDoodleEnd,
-    this.showEllipsis,
   }) : super(key: key);
 
   @override
@@ -145,7 +143,7 @@ class _PostListItemState extends State<PostListItem>
   final commentController = TextEditingController();
   final commentNode = FocusNode();
 
-  final auth = Repo.auth;
+  final auth = FirestoreService.ath;
 
   double biggestAspectRatio;
 
@@ -397,7 +395,6 @@ class _PostListItemState extends State<PostListItem>
 //                  :
               PostHeader(
                 isShout: isShout,
-                canUnfollow: widget.showEllipsis ?? false,
                 post: post,
                 onDisplayNameTapped: () =>
                     widget.shouldNavigate ? _navigateToProfile(context) : null,
@@ -447,7 +444,7 @@ class _PostListItemState extends State<PostListItem>
                                 return;
                               },
                             ),
-                          if (!isOwner && widget.showEllipsis) ...[
+                          if (!isOwner) ...[
                             CupertinoActionSheetAction(
                               child: Text('Unfollow',
                                   style: TextStyles.defaultDisplay),

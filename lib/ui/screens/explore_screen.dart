@@ -35,9 +35,12 @@ class _ExploreScreenState extends State<ExploreScreen>
   DocumentSnapshot newestLastDoc;
   DocumentSnapshot trendingLastDoc;
 
+  List blockedBy = [];
+
 //  final cache = LocalCache.instance;
 
   Future _getInitialTrending() async {
+    await _getBlockedBy();
     print('get init trending posts');
     final result = await Repo.getTrendingPosts(null);
 
@@ -45,7 +48,8 @@ class _ExploreScreenState extends State<ExploreScreen>
 
     if (result.posts.isNotEmpty && mounted)
       setState(() {
-        trendingPosts = result.posts;
+        trendingPosts = result.posts
+          ..removeWhere((p) => blockedBy.contains(p.owner.uid));
         trendingLastDoc = result.startAfter;
       });
   }
@@ -58,18 +62,22 @@ class _ExploreScreenState extends State<ExploreScreen>
 
     if (result.posts.isNotEmpty && mounted)
       setState(() {
-        trendingPosts.addAll(result.posts);
+        trendingPosts.addAll(
+            result.posts..removeWhere((p) => blockedBy.contains(p.owner.uid)));
         trendingLastDoc = result.startAfter;
       });
   }
 
   Future _getInitialNewest() async {
+    await _getBlockedBy();
     print('get newest posts');
     final result = await Repo.getNewestPosts(null);
 
     if (result.posts.isNotEmpty && mounted)
       setState(() {
-        newestPosts = result.posts;
+        newestPosts = result.posts
+          ..removeWhere((p) => blockedBy.contains(p.owner.uid));
+        ;
         newestLastDoc = result.startAfter;
       });
   }
@@ -80,9 +88,21 @@ class _ExploreScreenState extends State<ExploreScreen>
 
     if (result.posts.isNotEmpty && mounted)
       setState(() {
-        newestPosts.addAll(result.posts);
+        newestPosts.addAll(
+            result.posts..removeWhere((p) => blockedBy.contains(p.owner.uid)));
         newestLastDoc = result.startAfter;
       });
+  }
+
+  _getBlockedBy() async {
+    final result = await Repo.getBlockedBy();
+
+    if (mounted)
+      setState(() {
+        blockedBy = result;
+      });
+
+    print('blocked by: $result');
   }
 
   @override

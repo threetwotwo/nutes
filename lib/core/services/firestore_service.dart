@@ -2056,4 +2056,91 @@ class FirestoreService {
 
     return reportRef.setData(payload);
   }
+
+  ///Check id I am being blocked
+  Stream<DocumentSnapshot> blockedByStream() =>
+      myProfileRef.collection('blocked_by').document('blocked_by').snapshots();
+
+  ///Check if I am blocking this user
+  Stream<DocumentSnapshot> blockedUserStream(String uid) {
+    final ref = myProfileRef.collection('blocked_accounts').document(uid);
+
+    return ref.snapshots();
+  }
+
+  Future<List> getBlockedBy() async {
+    final ref = myProfileRef.collection('blocked_by').document('blocked_by');
+
+    final doc = await ref.get();
+
+    if (!doc.exists) return [];
+
+    if (doc.data.isEmpty) return [];
+
+    final result = doc.data['users'];
+
+    return result;
+  }
+
+  Future<List<User>> getBlockedUsers() async {
+    final ref = myProfileRef
+        .collection('blocked_accounts')
+        .orderBy('timestamp', descending: true);
+
+    final snap = await ref.getDocuments();
+
+    return snap.documents
+        .map((doc) => User.fromMap(doc['user'] ?? {}))
+        .toList();
+  }
+
+  Future<void> blockUser(User user) async {
+    final batch = shared.batch();
+
+    ///Add to blocked user's blocked_by list
+    final peerRef =
+        userRef(user.uid).collection('blocked_by').document('blocked_by');
+
+    ///Add to my blocked accounts collection
+    final myRef =
+        myProfileRef.collection('blocked_accounts').document(user.uid);
+
+    batch.setData(
+        peerRef,
+        {
+          'users': FieldValue.arrayUnion([ath.uid]),
+        },
+        merge: true);
+
+    batch.setData(myRef, {
+      'user': user.toMap(),
+      'timestamp': Timestamp.now(),
+    });
+
+    unfollow(user.uid);
+
+    return batch.commit();
+  }
+
+  Future<void> unblockUser(User user) async {
+    final batch = shared.batch();
+
+    final peerRef =
+        userRef(user.uid).collection('blocked_by').document('blocked_by');
+
+    ///Delete from my blocked accounts collection
+    final myRef =
+        myProfileRef.collection('blocked_accounts').document(user.uid);
+
+    batch.setData(
+        peerRef,
+        {
+          'users': FieldValue.arrayRemove([ath.uid])
+        },
+        merge: true);
+
+    batch.delete(myRef);
+
+    return batch.commit();
+  }
 }

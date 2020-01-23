@@ -6,7 +6,6 @@ import 'package:line_icons/line_icons.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:nutes/core/models/post.dart';
 import 'package:nutes/core/models/story.dart';
-import 'package:nutes/core/services/events.dart';
 import 'package:nutes/core/services/firestore_service.dart';
 import 'package:nutes/core/services/local_cache.dart';
 import 'package:nutes/ui/screens/chat_screen.dart';
@@ -26,7 +25,6 @@ import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/shared/styles.dart';
 import 'package:nutes/ui/screens/edit_profile_page.dart';
 import 'package:nutes/ui/widgets/story_page_view.dart';
-import 'package:provider/provider.dart';
 import 'my_profile_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -93,6 +91,8 @@ class _ProfileScreenState extends State<ProfileScreen>
   UserStory userStory;
 
   DocumentSnapshot startAfter;
+
+//  bool isBlocked = false;
 
   _init() async {
     print('init');
@@ -221,20 +221,6 @@ class _ProfileScreenState extends State<ProfileScreen>
                       builder: (context) => CupertinoActionSheet(
                         actions: <Widget>[
                           CupertinoActionSheetAction(
-                            child: Text("Report for spam",
-                                style: TextStyles.defaultDisplay),
-                            onPressed: () {
-                              Navigator.pop(context, 'spam');
-                            },
-                          ),
-                          CupertinoActionSheetAction(
-                            child: Text("Report for being inappropriate",
-                                style: TextStyles.defaultDisplay),
-                            onPressed: () {
-                              Navigator.pop(context, 'inappropriate');
-                            },
-                          ),
-                          CupertinoActionSheetAction(
                             child:
                                 Text("Block", style: TextStyles.defaultDisplay),
                             onPressed: () {
@@ -244,7 +230,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                                   title:
                                       Text('Block ${profile.user.username}?'),
                                   content: Text(
-                                      "\nThey won't be able to find your profile, posts or story. They won't know that you blocked them."),
+                                      "\nThey won't be able to find your profile, posts or story.\nYou will also stop receiving messages from them and unfollow them."),
                                   actions: <Widget>[
                                     CupertinoDialogAction(
                                       child: Text(
@@ -252,6 +238,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                                       ),
                                       isDestructiveAction: true,
                                       onPressed: () {
+                                        Repo.blockUser(profile.user);
+                                        BotToast.showText(
+                                            text: 'Account has been blocked',
+                                            align: Alignment.center);
                                         Navigator.pop(context);
                                       },
                                     ),
@@ -264,6 +254,20 @@ class _ProfileScreenState extends State<ProfileScreen>
                                   ],
                                 ),
                               );
+                            },
+                          ),
+                          CupertinoActionSheetAction(
+                            child: Text("Report for spam",
+                                style: TextStyles.defaultDisplay),
+                            onPressed: () {
+                              Navigator.pop(context, 'spam');
+                            },
+                          ),
+                          CupertinoActionSheetAction(
+                            child: Text("Report for being inappropriate",
+                                style: TextStyles.defaultDisplay),
+                            onPressed: () {
+                              Navigator.pop(context, 'inappropriate');
                             },
                           ),
                         ],
@@ -279,9 +283,11 @@ class _ProfileScreenState extends State<ProfileScreen>
                       Repo.reportProfile(profile.user, type);
 
                       BotToast.showText(
-                          text: 'Thank you for taking the time to report',
+                          text: 'Account has been reported',
                           align: Alignment.center);
                     }
+
+//                    if (type != null && type is String) Navigator.pop(context);
                   },
                   child: Icon(
                     Icons.more_horiz,
@@ -297,203 +303,235 @@ class _ProfileScreenState extends State<ProfileScreen>
                     : profile == null
                         ? SizedBox()
                         : StreamBuilder<DocumentSnapshot>(
-//                        stream: Repo.myFollowingListStream(),
-                            stream: Repo.amIFollowingUserStream(uid),
-                            builder: (context, snapshot) {
-                              if (!snapshot.hasData || userStory == null)
-                                return Container();
-                              final imFollowingUser = snapshot.data.exists;
-//                          final List uids = snapshot.data.data == null
-//                              ? []
-//                              : snapshot.data['uids'];
-//                          print('is following user ${uid}: $imFollowingUser');
-                              return RefreshListView(
-                                onLoadMore: _loadMore,
-                                children: <Widget>[
-                                  StreamBuilder<DocumentSnapshot>(
-                                      stream: Repo.seenStoriesStream(),
-                                      builder: (context, snapshot) {
-                                        final data = snapshot.data?.data ?? {};
+                            stream: Repo.blockedUserStream(profile.uid),
+                            builder: (context, blockedSnap) {
+                              if (!blockedSnap.hasData) return SizedBox();
 
-                                        final Timestamp seenStoryTimestamp =
-                                            data[userStory.uploader.uid];
+                              final isBlocked = blockedSnap.data.exists;
 
-                                        final storyState =
-                                            userStory.lastTimestamp == null
-                                                ? StoryState.none
-                                                : seenStoryTimestamp == null
-                                                    ? StoryState.unseen
-                                                    : seenStoryTimestamp
-                                                                .seconds <
-                                                            userStory
-                                                                .lastTimestamp
-                                                                .seconds
-                                                        ? StoryState.unseen
-                                                        : StoryState.seen;
+                              return StreamBuilder<DocumentSnapshot>(
+                                  stream: Repo.amIFollowingUserStream(uid),
+                                  builder: (context, snapshot) {
+                                    if (!snapshot.hasData || userStory == null)
+                                      return Container();
+                                    final imFollowingUser =
+                                        snapshot.data.exists;
+                                    return RefreshListView(
+                                      onLoadMore: _loadMore,
+                                      children: <Widget>[
+                                        StreamBuilder<DocumentSnapshot>(
+                                            stream: Repo.seenStoriesStream(),
+                                            builder: (context, snapshot) {
+                                              final data =
+                                                  snapshot.data?.data ?? {};
 
-                                        return StreamBuilder<DocumentSnapshot>(
-                                            stream:
-                                                Repo.myFollowRequestStream(),
-                                            builder: (context, s) {
-                                              if (!s.hasData) return SizedBox();
+                                              final Timestamp
+                                                  seenStoryTimestamp =
+                                                  data[userStory.uploader.uid];
 
-                                              final List requests =
-                                                  s.data.data == null
-                                                      ? []
-                                                      : s.data['requests'] ??
-                                                          [];
+                                              final storyState = userStory
+                                                          .lastTimestamp ==
+                                                      null
+                                                  ? StoryState.none
+                                                  : seenStoryTimestamp == null
+                                                      ? StoryState.unseen
+                                                      : seenStoryTimestamp
+                                                                  .seconds <
+                                                              userStory
+                                                                  .lastTimestamp
+                                                                  .seconds
+                                                          ? StoryState.unseen
+                                                          : StoryState.seen;
 
-                                              return ProfileHeader(
-                                                hasRequest: requests
-                                                    .contains(profile.uid),
-                                                storyState: storyState,
-                                                onAvatarPressed: () =>
-                                                    userStory ==
-                                                                null ||
-                                                            userStory.story
-                                                                .moments.isEmpty
-                                                        ? () {}
-                                                        : StoryPageView
-                                                            .show(
-                                                                context,
-                                                                initialPage: 0,
-                                                                topPadding:
-                                                                    topPadding,
-                                                                userStories: [
-                                                                  userStory
-                                                                ],
-                                                                onPageChange:
-                                                                    (val) {}),
-                                                isFollowing: imFollowingUser,
-                                                isOwner: false,
-                                                profile: profile,
-                                                onFollowersPressed: () =>
-                                                    Navigator.push(
-                                                        context,
-                                                        FollowerListScreen
-                                                            .route(profile.user,
-                                                                0)),
-                                                onFollowingsPressed: () =>
-                                                    Navigator.push(
-                                                        context,
-                                                        FollowerListScreen
-                                                            .route(profile.user,
-                                                                1)),
-                                                onMessagePressed: () =>
-                                                    Navigator.of(context,
-                                                            rootNavigator: true)
-                                                        .push(
-                                                  MaterialPageRoute(
-                                                    builder: (context) =>
-                                                        ChatScreen(
-                                                      peer: profile.user,
-                                                    ),
-                                                  ),
-                                                ),
-                                                onEditPressed: profile == null
-                                                    ? null
-                                                    : () {
-                                                        return Navigator.of(
-                                                                context,
-                                                                rootNavigator:
-                                                                    true)
-                                                            .push(MaterialPageRoute(
-                                                                fullscreenDialog:
-                                                                    true,
-                                                                builder: (ctx) =>
-                                                                    EditProfilePage()));
+                                              return StreamBuilder<
+                                                      DocumentSnapshot>(
+                                                  stream: Repo
+                                                      .myFollowRequestStream(),
+                                                  builder: (context, s) {
+                                                    if (!s.hasData)
+                                                      return SizedBox();
+
+                                                    final List requests = s
+                                                                .data.data ==
+                                                            null
+                                                        ? []
+                                                        : s.data['requests'] ??
+                                                            [];
+
+                                                    return ProfileHeader(
+                                                      isBlocked: isBlocked,
+                                                      onUnblock: () {
+                                                        print(
+                                                            'unblock user ${profile.user.username}');
+                                                        return Repo.unblockUser(
+                                                            profile.user);
                                                       },
-                                                onFollow: () {
-                                                  if (profile.user.isPrivate) {
-//
-                                                    if (imFollowingUser)
-                                                      Repo.unfollowUser(
-                                                          profile.uid);
-
-                                                    return Repo.requestFollow(
-                                                        profile.user);
-                                                  } else {
-                                                    if (imFollowingUser) {
-                                                      Repo.unfollowUser(
-                                                          profile.uid);
-
-                                                      if (mounted)
-                                                        setState(() {
-                                                          profile = profile.copyWith(
-                                                              followerCount: profile
-                                                                      .stats
-                                                                      .followerCount -
-                                                                  1);
-                                                        });
-                                                    } else {
-                                                      Repo.requestFollow(
-                                                          profile.user);
-                                                      if (mounted)
-                                                        setState(() {
-//                                                    isFollowing = true;
-                                                          profile = profile.copyWith(
-                                                              followerCount: profile
-                                                                      .stats
-                                                                      .followerCount +
-                                                                  1);
-                                                        });
-                                                    }
-                                                  }
-                                                },
-                                                onRequest: () {
-                                                  print('on request follow');
-                                                  Repo.deleteFollowRequest(
-                                                      myProfile.uid,
-                                                      profile.uid);
-                                                },
-                                              );
-                                            });
-                                      }),
-                                  Divider(height: 0, thickness: 1),
-                                  profile.user.isPrivate == null
-                                      ? SizedBox()
-                                      : profile.user.isPrivate &&
-                                              !(imFollowingUser)
-                                          ? PrivateAccount()
-                                          : isLoadingPosts
-                                              ? LoadingIndicator()
-                                              : posts.isEmpty
-                                                  ? EmptyView(
-                                                      title: 'No Posts Yet',
-                                                      subtitle:
-                                                          'When ${profile.user.username} posts, you will see their photos here',
-                                                    )
-                                                  : ProfileTabController(
-                                                      view: view,
-                                                      postGridView:
-                                                          PostGridView(
-                                                        posts: posts,
-                                                        onTap: (index) => Navigator
-                                                                .of(context)
-                                                            .push(
-                                                                MaterialPageRoute(
-                                                                    builder:
-                                                                        (context) =>
-                                                                            PostDetailScreen(
-                                                                              post: posts[index],
-                                                                            ))),
-                                                      ),
-                                                      postListView:
-                                                          ListView.builder(
-                                                        shrinkWrap: true,
-                                                        physics:
-                                                            NeverScrollableScrollPhysics(),
-                                                        itemCount: posts.length,
-                                                        itemBuilder:
-                                                            (context, index) =>
-                                                                PostListItem(
-                                                          shouldNavigate: true,
-                                                          post: posts[index],
+                                                      hasRequest:
+                                                          requests.contains(
+                                                              profile.uid),
+                                                      storyState: storyState,
+                                                      onAvatarPressed: () =>
+                                                          userStory ==
+                                                                      null ||
+                                                                  userStory
+                                                                      .story
+                                                                      .moments
+                                                                      .isEmpty
+                                                              ? () {}
+                                                              : StoryPageView.show(
+                                                                  context,
+                                                                  initialPage:
+                                                                      0,
+                                                                  topPadding:
+                                                                      topPadding,
+                                                                  userStories: [
+                                                                    userStory
+                                                                  ],
+                                                                  onPageChange:
+                                                                      (val) {}),
+                                                      isFollowing:
+                                                          imFollowingUser,
+                                                      isOwner: false,
+                                                      profile: profile,
+                                                      onFollowersPressed: () =>
+                                                          Navigator.push(
+                                                              context,
+                                                              FollowerListScreen
+                                                                  .route(
+                                                                      profile
+                                                                          .user,
+                                                                      0)),
+                                                      onFollowingsPressed: () =>
+                                                          Navigator.push(
+                                                              context,
+                                                              FollowerListScreen
+                                                                  .route(
+                                                                      profile
+                                                                          .user,
+                                                                      1)),
+                                                      onMessagePressed: () =>
+                                                          Navigator.of(context,
+                                                                  rootNavigator:
+                                                                      true)
+                                                              .push(
+                                                        MaterialPageRoute(
+                                                          builder: (context) =>
+                                                              ChatScreen(
+                                                            peer: profile.user,
+                                                          ),
                                                         ),
-                                                      )),
-                                ],
-                              );
-                            }),
+                                                      ),
+                                                      onEditPressed:
+                                                          profile == null
+                                                              ? null
+                                                              : () {
+                                                                  return Navigator.of(
+                                                                          context,
+                                                                          rootNavigator:
+                                                                              true)
+                                                                      .push(MaterialPageRoute(
+                                                                          fullscreenDialog:
+                                                                              true,
+                                                                          builder: (ctx) =>
+                                                                              EditProfilePage()));
+                                                                },
+                                                      onFollow: () {
+                                                        if (profile
+                                                            .user.isPrivate) {
+//
+                                                          if (imFollowingUser)
+                                                            Repo.unfollowUser(
+                                                                profile.uid);
+
+                                                          return Repo
+                                                              .requestFollow(
+                                                                  profile.user);
+                                                        } else {
+                                                          if (imFollowingUser) {
+                                                            Repo.unfollowUser(
+                                                                profile.uid);
+
+                                                            if (mounted)
+                                                              setState(() {
+                                                                profile = profile.copyWith(
+                                                                    followerCount:
+                                                                        profile.stats.followerCount -
+                                                                            1);
+                                                              });
+                                                          } else {
+                                                            Repo.requestFollow(
+                                                                profile.user);
+                                                            if (mounted)
+                                                              setState(() {
+//                                                    isFollowing = true;
+                                                                profile = profile.copyWith(
+                                                                    followerCount:
+                                                                        profile.stats.followerCount +
+                                                                            1);
+                                                              });
+                                                          }
+                                                        }
+                                                      },
+                                                      onRequest: () {
+                                                        print(
+                                                            'on request follow');
+                                                        Repo.deleteFollowRequest(
+                                                            myProfile.uid,
+                                                            profile.uid);
+                                                      },
+                                                    );
+                                                  });
+                                            }),
+                                        Divider(height: 0, thickness: 1),
+                                        profile.user.isPrivate == null
+                                            ? SizedBox()
+                                            : profile.user.isPrivate &&
+                                                    !(imFollowingUser)
+                                                ? PrivateAccount()
+                                                : isLoadingPosts
+                                                    ? LoadingIndicator()
+                                                    : posts.isEmpty
+                                                        ? EmptyView(
+                                                            title:
+                                                                'No Posts Yet',
+                                                            subtitle:
+                                                                'When ${profile.user.username} posts, you will see their photos here',
+                                                          )
+                                                        : ProfileTabController(
+                                                            view: view,
+                                                            postGridView:
+                                                                PostGridView(
+                                                              posts: posts,
+                                                              onTap: (index) => Navigator
+                                                                      .of(context)
+                                                                  .push(MaterialPageRoute(
+                                                                      builder: (context) => PostDetailScreen(
+                                                                            post:
+                                                                                posts[index],
+                                                                          ))),
+                                                            ),
+                                                            postListView:
+                                                                ListView
+                                                                    .builder(
+                                                              shrinkWrap: true,
+                                                              physics:
+                                                                  NeverScrollableScrollPhysics(),
+                                                              itemCount:
+                                                                  posts.length,
+                                                              itemBuilder: (context,
+                                                                      index) =>
+                                                                  PostListItem(
+                                                                shouldNavigate:
+                                                                    true,
+                                                                post: posts[
+                                                                    index],
+                                                              ),
+                                                            )),
+                                      ],
+                                    );
+                                  });
+                            },
+                          ),
               ),
             ));
   }

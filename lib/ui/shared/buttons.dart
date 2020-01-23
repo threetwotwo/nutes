@@ -217,7 +217,7 @@ class FollowButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SoftBorderedButton(
-      backgroundColor: isFollowing ? Colors.white : Colors.blueAccent,
+      backgroundColor: isFollowing ? Colors.white : Colors.blueAccent[400],
       borderColor: isFollowing ? Colors.grey : Colors.transparent,
       onPressed: onFollowPressed,
       child: Text(
