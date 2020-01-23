@@ -6,6 +6,7 @@ import 'package:nutes/ui/shared/app_bars.dart';
 import 'package:nutes/ui/shared/dots_indicator.dart';
 import 'package:nutes/ui/shared/page_viewer.dart';
 import 'package:nutes/ui/shared/search_overlay.dart';
+import 'package:nutes/ui/shared/shout_post.dart';
 import 'package:nutes/ui/shared/styles.dart';
 import 'package:preload_page_view/preload_page_view.dart';
 
@@ -43,6 +44,8 @@ class _EditPostScreenState extends State<EditPostScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isShout = widget.post.type == PostType.shout;
+
     return Scaffold(
       appBar: BaseAppBar(
         ///Hide leading
@@ -90,42 +93,59 @@ class _EditPostScreenState extends State<EditPostScreen> {
               color: Colors.white,
               child: Column(
                 children: <Widget>[
-                  AspectRatio(
-                    aspectRatio: widget.post.urlBundles.first.aspectRatio,
-                    child: Stack(
-                      children: <Widget>[
-                        Positioned.fill(
-                          child: PageViewer(
-                            controller: _pageController,
-                            builder: (context, index) => Image.network(
-                              widget.post.urlBundles[index].original,
-                              fit: BoxFit.cover,
-                            ),
+                  isShout
+                      ? Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Column(
+                            children: <Widget>[
+                              GridShoutBubble(
+                                data: widget.post.metadata,
+                                isChallenger: true,
+                              ),
+                              GridShoutBubble(
+                                data: widget.post.metadata,
+                                isChallenger: false,
+                              )
+                            ],
+                          ),
+                        )
+                      : AspectRatio(
+                          aspectRatio:
+                              widget.post.urlBundles?.first?.aspectRatio ?? 1,
+                          child: Stack(
+                            children: <Widget>[
+                              Positioned.fill(
+                                child: PageViewer(
+                                  controller: _pageController,
+                                  builder: (context, index) => Image.network(
+                                    widget.post.urlBundles[index].original,
+                                    fit: BoxFit.cover,
+                                  ),
 //                                CachedNetworkImage(
 //                              imageUrl: widget.post.urlBundles[index].original,
 //                              fit: BoxFit.cover,
 //                            ),
-                            length: widget.post.urlBundles.length,
+                                  length: widget.post.urlBundles.length,
+                                ),
+                              ),
+                              Align(
+                                alignment: Alignment.bottomRight,
+                                child: Container(
+                                  margin: const EdgeInsets.all(8.0),
+                                  padding: const EdgeInsets.all(4.0),
+                                  decoration: BoxDecoration(
+                                      color: Colors.black54,
+                                      borderRadius: BorderRadius.circular(8)),
+                                  child: Icon(
+                                    Icons.edit,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                ),
+                              )
+                            ],
                           ),
                         ),
-                        Align(
-                          alignment: Alignment.bottomRight,
-                          child: Container(
-                            margin: const EdgeInsets.all(8.0),
-                            padding: const EdgeInsets.all(4.0),
-                            decoration: BoxDecoration(
-                                color: Colors.black54,
-                                borderRadius: BorderRadius.circular(8)),
-                            child: Icon(
-                              Icons.edit,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                          ),
-                        )
-                      ],
-                    ),
-                  ),
                   if (widget.post.type == PostType.text &&
                       widget.post.urlBundles.length > 1)
                     Padding(

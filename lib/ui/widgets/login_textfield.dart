@@ -114,7 +114,6 @@ class PasswordTextField extends StatelessWidget {
     return BaseTextField(
       obscureText: true,
       controller: controller,
-      textSize: 15,
       hint: 'Password',
       onChanged: onChanged,
     );
@@ -145,7 +144,6 @@ class UsernameTextField extends StatelessWidget {
         WhitelistingTextInputFormatter(RegExp("[a-z\._0-9]")),
       ],
       controller: controller,
-      textSize: 15,
       hint: 'Username',
       message:
           controller.text.isEmpty ? '' : usernameExists ? 'Username taken' : '',
@@ -177,7 +175,6 @@ class EmailTextField extends StatelessWidget {
     return BaseTextField(
       keyboardType: TextInputType.emailAddress,
       controller: controller,
-      textSize: 15,
       message: message.isNotEmpty
           ? message
           : emailIsValid ? '' : 'Enter a valid email',
@@ -191,7 +188,6 @@ class EmailTextField extends StatelessWidget {
 
 class BaseTextField extends StatelessWidget {
   final TextEditingController controller;
-  final double textSize;
   final String hint;
   final String message;
   final Color labelColor;
@@ -205,7 +201,6 @@ class BaseTextField extends StatelessWidget {
   const BaseTextField({
     Key key,
     @required this.controller,
-    @required this.textSize,
     this.hint,
     this.labelColor = Colors.white,
     this.keyboardType = TextInputType.text,
@@ -228,9 +223,9 @@ class BaseTextField extends StatelessWidget {
           child: Text(
             message ?? '',
             style: TextStyles.defaultText.copyWith(
-                color: Colors.black87,
-                fontSize: 15,
-                fontWeight: FontWeight.w500),
+              color: Colors.black87,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
         TextField(
@@ -243,7 +238,7 @@ class BaseTextField extends StatelessWidget {
           obscureText: this.obscureText,
           keyboardType: keyboardType,
           controller: controller,
-          style: TextStyles.defaultText.copyWith(fontSize: textSize),
+          style: TextStyles.defaultText,
           decoration: InputDecoration(
             counterText: '',
             border: OutlineInputBorder(

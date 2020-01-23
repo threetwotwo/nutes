@@ -1612,6 +1612,9 @@ class FirestoreService {
 
     final snap = await query.getDocuments();
 
+    if (snap.documents.isNotEmpty)
+      print('new post ${snap.documents.first.documentID}');
+
     return snap.documents.isNotEmpty;
   }
 
@@ -1986,5 +1989,71 @@ class FirestoreService {
     final FIRUSer = await FirebaseAuth.instance.currentUser();
 
     return FIRUSer.email;
+  }
+
+  Future<void> sendFeedback(String feedback) async {
+    final feedbackRef = shared.collection('feedback').document();
+
+    final payload = {
+      'feedback': feedback,
+      'uid': ath.uid,
+      'timstamp': Timestamp.now(),
+    };
+
+    return feedbackRef.setData(payload).catchError((e) => throw (e));
+  }
+
+  Future<void> sendSupportMessage(String email, String message) async {
+    final feedbackRef = shared.collection('support_messages').document();
+
+    final payload = {
+      'email': email,
+      'message': message,
+      'uid': ath.uid,
+      'timstamp': Timestamp.now(),
+    };
+
+    return feedbackRef.setData(payload).catchError((e) => throw (e));
+  }
+
+  Future<void> reportPost(Post post, String type) async {
+    final batch = shared.batch();
+
+    ///Delete post from your feed
+    final feedRef = myPostFeedRef(post.id);
+
+    batch.delete(feedRef);
+
+    ///Write to reports collection
+    final reportRef = shared
+        .collection('reported_posts')
+        .document(post.id)
+        .collection('reported_by')
+        .document(ath.uid);
+
+    batch.setData(reportRef, {
+      'post': post.toMap(),
+      'reported_by': ath.toMap(),
+      'timestamp': Timestamp.now(),
+      'type': type,
+    });
+
+    return batch.commit().catchError((e) => throw (e));
+  }
+
+  Future<void> reportProfile(User user, String type) async {
+    final reportRef = shared
+        .collection('reported_users')
+        .document(user.uid)
+        .collection('reported_by')
+        .document(ath.uid);
+    final payload = {
+      'user': user.toMap(),
+      'reported_by': ath.toMap(),
+      'timestamp': Timestamp.now(),
+      'type': type,
+    };
+
+    return reportRef.setData(payload);
   }
 }

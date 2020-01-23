@@ -3,6 +3,9 @@ import 'package:nutes/core/models/user.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/screens/account_settings_screen.dart';
 import 'package:nutes/ui/screens/change_password_screen.dart';
+import 'package:nutes/ui/screens/help_screen.dart';
+import 'package:nutes/ui/screens/info_screen.dart';
+import 'package:nutes/ui/screens/privacy_policy_screen.dart';
 import 'package:nutes/ui/shared/app_bars.dart';
 import 'package:line_icons/line_icons.dart';
 import 'package:nutes/ui/shared/styles.dart';
@@ -44,12 +47,28 @@ class AccountScreen extends StatelessWidget {
               ),
             ),
             AccountListTile(
+              LineIcons.question_circle,
+              'Help',
+              onTap: () => Navigator.push(
+                context,
+                HelpScreen.route(),
+              ),
+            ),
+            AccountListTile(
+              LineIcons.info_circle,
+              'Info and Privacy',
+              onTap: () => Navigator.push(
+                context,
+                InfoScreen.route(),
+              ),
+            ),
+
+            AccountListTile(
               LineIcons.sign_out,
               'Sign Out',
               onTap: () => showCupertinoDialog(
                 context: context,
                 builder: (context) => CupertinoAlertDialog(
-//                  title: Text('Are you sure you want to sign out?'),
                   content: Text('Are you sure you want to sign out?'),
                   actions: <Widget>[
                     CupertinoDialogAction(
@@ -91,18 +110,22 @@ class AccountListTile extends StatelessWidget {
             children: <Widget>[
               Row(
                 children: <Widget>[
+                  if (icon != null)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 8.0),
+                      child: Icon(icon, size: 28),
+                    ),
                   Padding(
-                    padding: const EdgeInsets.all(10.0),
-                    child: Icon(icon, size: 28),
-                  ),
-                  Text(
-                    title,
-                    style: TextStyles.defaultText.copyWith(fontSize: 16),
+                    padding: const EdgeInsets.all(16.0),
+                    child: Text(
+                      title,
+                      style: TextStyles.defaultText.copyWith(fontSize: 16),
+                    ),
                   ),
                 ],
               ),
               Padding(
-                padding: const EdgeInsets.all(10.0),
+                padding: const EdgeInsets.all(8.0),
                 child: Icon(
                   Icons.chevron_right,
                   color: Colors.grey,

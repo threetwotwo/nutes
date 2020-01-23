@@ -1,3 +1,4 @@
+import 'package:bot_toast/bot_toast.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -213,9 +214,79 @@ class _ProfileScreenState extends State<ProfileScreen>
               ),
               trailing: AspectRatio(
                 aspectRatio: 1,
-                child: Icon(
-                  Icons.arrow_back_ios,
-                  color: Colors.transparent,
+                child: InkWell(
+                  onTap: () async {
+                    final type = await showCupertinoModalPopup(
+                      context: context,
+                      builder: (context) => CupertinoActionSheet(
+                        actions: <Widget>[
+                          CupertinoActionSheetAction(
+                            child: Text("Report for spam",
+                                style: TextStyles.defaultDisplay),
+                            onPressed: () {
+                              Navigator.pop(context, 'spam');
+                            },
+                          ),
+                          CupertinoActionSheetAction(
+                            child: Text("Report for being inappropriate",
+                                style: TextStyles.defaultDisplay),
+                            onPressed: () {
+                              Navigator.pop(context, 'inappropriate');
+                            },
+                          ),
+                          CupertinoActionSheetAction(
+                            child:
+                                Text("Block", style: TextStyles.defaultDisplay),
+                            onPressed: () {
+                              showCupertinoDialog(
+                                context: context,
+                                builder: (context) => CupertinoAlertDialog(
+                                  title:
+                                      Text('Block ${profile.user.username}?'),
+                                  content: Text(
+                                      "\nThey won't be able to find your profile, posts or story. They won't know that you blocked them."),
+                                  actions: <Widget>[
+                                    CupertinoDialogAction(
+                                      child: Text(
+                                        'Block',
+                                      ),
+                                      isDestructiveAction: true,
+                                      onPressed: () {
+                                        Navigator.pop(context);
+                                      },
+                                    ),
+                                    CupertinoDialogAction(
+                                      child: Text(
+                                        'Cancel',
+                                      ),
+                                      onPressed: () => Navigator.pop(context),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                        cancelButton: FlatButton(
+                          onPressed: () => Navigator.pop(context),
+                          child:
+                              Text('Cancel', style: TextStyles.defaultDisplay),
+                        ),
+                      ),
+                    );
+
+                    if (type != null && type is String) {
+                      Repo.reportProfile(profile.user, type);
+
+                      BotToast.showText(
+                          text: 'Thank you for taking the time to report',
+                          align: Alignment.center);
+                    }
+                  },
+                  child: Icon(
+                    Icons.more_horiz,
+                    color: Colors.black,
+                  ),
                 ),
               ),
             ),

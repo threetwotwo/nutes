@@ -100,7 +100,8 @@ class CreateScreenShoutItem extends StatelessWidget {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                 child: Text(
                   doc['content'] ?? '',
                   maxLines: 4,
@@ -113,9 +114,11 @@ class CreateScreenShoutItem extends StatelessWidget {
             ],
           ),
           Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             child: Text(
               doc['topic'] ?? '',
+              overflow: TextOverflow.ellipsis,
               maxLines: 1,
               style: TextStyles.w600Display.copyWith(
                 color: Colors.white,

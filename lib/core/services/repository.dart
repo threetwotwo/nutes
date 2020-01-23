@@ -50,6 +50,18 @@ class Repo {
   static StreamController<StorySnapshot> storiesStreamController;
   static ScrollController storiesScrollController = ScrollController();
 
+  static Future<void> reportPost(Post post, String type) =>
+      shared._firestore.reportPost(post, type);
+
+  static Future<void> reportProfile(User user, String type) =>
+      shared._firestore.reportProfile(user, type);
+
+  static Future<void> sendFeedback(String feedback) =>
+      shared._firestore.sendFeedback(feedback);
+
+  static Future<void> sendSupportMessage(String email, String message) =>
+      shared._firestore.sendSupportMessage(email, message);
+
   static Future<List<User>> getFollowersOfUser(String uid) =>
       shared._firestore.getFollowersOfUser(uid);
 
