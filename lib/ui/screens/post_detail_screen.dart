@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:nutes/core/models/comment.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/shared/app_bars.dart';
 import 'package:nutes/ui/shared/comment_overlay.dart';
@@ -54,7 +53,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       posts = [result];
     });
 
-    if (posts.first.topComments == null) _getComments();
+//    if (posts.first.topComments == null) _getComments();
   }
 
   @override
@@ -65,8 +64,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   @override
   void initState() {
     if (widget.post != null) {
-      posts = [widget.post];
-      if (posts.first.topComments == null) _getComments();
+      _getPost();
     } else {
       _getPost();
     }
@@ -114,17 +112,19 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                     topComments: posts.first.topComments + [comment],
                   );
 
+                  posts = [];
                   setState(() {
-                    posts = [];
+//                    posts = [];
                     showCommentTextField = false;
                   });
 
                   ///To fix bug where post list view wont refresh
-                  await Future.delayed(Duration(milliseconds: 15));
+//                  await Future.delayed(Duration(milliseconds: 5));
 
-                  setState(() {
-                    posts = [newPost];
-                  });
+                  WidgetsBinding.instance
+                      .addPostFrameCallback((_) => setState(() {
+                            posts = [newPost];
+                          }));
                 },
                 showTextField: showCommentTextField,
                 controller: commentController,
@@ -163,21 +163,24 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     );
   }
 
-  void _getComments() async {
-    final result = await Repo.getPostTopComments(posts.first.id, limit: 5);
-
-    final newPost = posts.first.copyWith(
-        topComments: posts.first.topComments ?? List<Comment>() + result);
-
-    setState(() {
-      posts = [];
-    });
-
-    ///To fix bug where post list view wont refresh
-    await Future.delayed(Duration(milliseconds: 15));
-
-    setState(() {
-      posts = [newPost];
-    });
-  }
+//  Future<void> getComments() async {
+//    final result = await Repo.getPostTopComments(posts.first.id, limit: 5);
+//
+//    final newPost = posts.first.copyWith(
+//        topComments: posts.first.topComments ?? List<Comment>() + result);
+//
+//    setState(() {
+//      posts = [];
+//    });
+//
+//    ///To fix bug where post list view wont refresh
+////    await Future.delayed(Duration(milliseconds: 15));
+//
+//    SchedulerBinding.instance.addPostFrameCallback((_) => setState(() {
+//          posts = [newPost];
+//        }));
+////    setState(() {
+////      posts = [newPost];
+////    });
+//  }
 }

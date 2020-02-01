@@ -25,11 +25,11 @@ class FilterVariant {
   final BoxDecoration fgDecor;
 
   static const urbanText =
-      TextStyle(color: Colors.black, fontSize: 30, fontWeight: FontWeight.w600);
-  static const canvasText = TextStyle(color: Colors.black, fontSize: 24);
-  static const frameText = TextStyle(color: Colors.black, fontSize: 20);
+      TextStyle(color: Colors.black, fontSize: 28, fontWeight: FontWeight.w600);
+  static const canvasText = TextStyle(color: Colors.black, fontSize: 22);
+  static const frameText = TextStyle(color: Colors.black, fontSize: 18);
 
-  static final egoText = TextStyles.defaultText.copyWith(fontSize: 18);
+  static final egoText = TextStyles.defaultText.copyWith(fontSize: 16);
 
   static final frameShadow = [
     BoxShadow(

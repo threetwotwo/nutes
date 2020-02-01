@@ -175,6 +175,14 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  insertMessage(ChatItem message) {
+    ///remove any messages with same id
+    setState(() {
+      messages.removeWhere((m) => m.id == message.id);
+      messages.insert(0, message);
+    });
+  }
+
   initStream() {
     _messagesStream = Repo.messagesStream(chatId);
 
@@ -185,13 +193,14 @@ class _ChatScreenState extends State<ChatScreen> {
         if (initialMessagedFinishedLoading) {
           final message = ChatItem.fromDoc(c.document);
 
-          if (messages.firstWhere((m) => m.id == message.id,
-                      orElse: () => null) ==
-                  null ||
-              message.senderId == auth.uid)
-            setState(() {
-              messages.insert(0, message);
-            });
+//          if (messages.firstWhere((m) => m.id == message.id,
+//                  orElse: () => null) ==
+//              null)
+//          setState(() {
+//            messages.insert(0, message);
+//          });
+
+          insertMessage(message);
 
           _removeMessageOfType(Bubbles.text_temp, id: message.id);
 

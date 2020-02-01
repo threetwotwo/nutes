@@ -133,6 +133,7 @@ class CapturePageBody extends StatelessWidget {
                     .copyWith(color: filter.variant.textStyle.color),
                 title: auth.user.displayName,
                 subtitle: '@${auth.user.username}',
+                trailingFlexFactor: 1,
                 trailingWidget: Icon(
                   Icons.keyboard_arrow_down,
                   color: Colors.grey,

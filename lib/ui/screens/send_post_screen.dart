@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:nutes/core/models/chat_message.dart';
 import 'package:nutes/core/models/post.dart';
 import 'package:nutes/core/models/user.dart';
-import 'package:nutes/core/services/auth.dart';
+import 'package:nutes/core/services/firestore_service.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/shared/app_bars.dart';
 import 'package:nutes/ui/shared/avatar_image.dart';
@@ -37,12 +37,17 @@ class _SendPostScreenState extends State<SendPostScreen> {
   List<User> tappedUsers = [];
 
   Future<void> _send() async {
-    final uid = Auth.instance.profile.uid;
+    final uid = FirestoreService.ath.uid;
 
     final futures = tappedUsers.map((peer) {
       final chatId = (uid.hashCode <= peer.uid.hashCode)
           ? '$uid-${peer.uid}'
           : '${peer.uid}-$uid';
+
+      if (peer.uid == uid) {
+        BotToast.showText(text: 'You cannot send to yourself');
+        return null;
+      }
 
       return Repo.uploadMessage(
         ref: Repo.createMessageRef(chatId),
@@ -113,7 +118,8 @@ class _SendPostScreenState extends State<SendPostScreen> {
             if (filtered.isEmpty && text.isNotEmpty) {
               final result = await Repo.searchUsers(text);
               setState(() {
-                searchedUsers = result;
+                searchedUsers = result
+                  ..removeWhere((r) => r.uid == FirestoreService.ath.uid);
               });
               print('should do search');
             }
