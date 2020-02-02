@@ -247,7 +247,9 @@ class _FeedScreenState extends State<FeedScreen>
                           color: Colors.white,
                           child: myStory == null
                               ? Center(child: LoadingIndicator())
-                              : Row(
+                              : ListView(
+                                  physics: BouncingScrollPhysics(),
+                                  scrollDirection: Axis.horizontal,
                                   children: <Widget>[
                                     Visibility(
                                       visible: myStory.story.moments.isEmpty,

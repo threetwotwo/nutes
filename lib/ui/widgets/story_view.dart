@@ -310,32 +310,6 @@ class _StoryViewState extends State<StoryView>
                       );
                     },
                   ),
-//                  child: Image.network(
-//                    story.moments[momentIndex].url ?? '',
-//                    fit: BoxFit.cover,
-//                    loadingBuilder: (context, child, progress) {
-//                      if (progress == null) {
-//                        return child;
-//                      }
-//                      if (progress.cumulativeBytesLoaded ==
-//                              progress.expectedTotalBytes &&
-//                          mounted) {
-//                        print('image load complete');
-//                        story.moments[momentIndex].isLoaded = true;
-//                        _play();
-//                      }
-//                      return Center(
-//                        child: CircularProgressIndicator(
-//                          strokeWidth: 2,
-//                          valueColor: AlwaysStoppedAnimation(Colors.white),
-////                          value: progress.expectedTotalBytes != null
-////                              ? progress.cumulativeBytesLoaded /
-////                                  progress.expectedTotalBytes
-////                              : null,
-//                        ),
-//                      );
-//                    },
-//                  ),
                 ),
 
                 ///header

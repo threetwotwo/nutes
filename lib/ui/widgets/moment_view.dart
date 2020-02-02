@@ -4,7 +4,9 @@ import 'package:nutes/core/models/user.dart';
 import 'package:nutes/core/services/firestore_service.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/shared/avatar_image.dart';
+import 'package:nutes/ui/shared/buttons.dart';
 import 'package:nutes/ui/shared/styles.dart';
+import 'package:nutes/utils/icon_shadow.dart';
 
 class MomentView extends StatefulWidget {
 //  final String url;
@@ -15,6 +17,9 @@ class MomentView extends StatefulWidget {
   final User uploader;
   final bool isFooterVisible;
 
+  final VoidCallback onDeleteTapped;
+  final VoidCallback onSeenByTapped;
+
   const MomentView({
     Key key,
 //    this.url,
@@ -24,6 +29,8 @@ class MomentView extends StatefulWidget {
     this.uploader,
     this.onError,
     this.isFooterVisible = true,
+    this.onDeleteTapped,
+    this.onSeenByTapped,
   }) : super(key: key);
 
   @override
@@ -76,14 +83,7 @@ class _MomentViewState extends State<MomentView> {
 
           return child;
         }
-//        if (progress.cumulativeBytesLoaded >= progress.expectedTotalBytes &&
-//            mounted) {
-//          print('moment image load complete');
-////          story.moments[momentIndex].isLoaded = true;
-////          _play();
-//
-//          widget.onLoad();
-//        }
+
         return Center(
           child: CircularProgressIndicator(
             strokeWidth: 2,
@@ -106,35 +106,6 @@ class _MomentViewState extends State<MomentView> {
     return Stack(
       children: <Widget>[
         Positioned.fill(child: _image),
-//        Image.network(
-//          widget.moment.url ?? '',
-//          fit: BoxFit.cover,
-//          loadingBuilder: (context, child, progress) {
-//            if (progress == null) {
-//              Repo.setMomentAsSeen(widget.uploader.uid, widget.moment.id);
-//
-//              return child;
-//            }
-//            if (progress.cumulativeBytesLoaded >= progress.expectedTotalBytes &&
-//                mounted) {
-//              print('moment image load complete');
-////          story.moments[momentIndex].isLoaded = true;
-////          _play();
-//
-//              widget.onLoad();
-//            }
-//            return Center(
-//              child: CircularProgressIndicator(
-//                strokeWidth: 2,
-//                valueColor: AlwaysStoppedAnimation(Colors.white),
-////                          value: progress.expectedTotalBytes != null
-////                              ? progress.cumulativeBytesLoaded /
-////                                  progress.expectedTotalBytes
-////                              : null,
-//              ),
-//            );
-//          },
-//        ),
 
         ///footer
         if (isOwner && seenBy.isNotEmpty && widget.isFooterVisible)
@@ -202,7 +173,26 @@ class _MomentViewState extends State<MomentView> {
                           ),
                         ),
                       ),
-                    )
+                    ),
+                    FlatButton(
+                      onPressed: () {
+                        print('delete this story');
+                        return widget.onDeleteTapped();
+                      },
+                      child: Text(
+                        'Delete',
+                        style: TextStyles.w500Text.copyWith(
+                          color: Colors.white,
+                          fontSize: 14,
+                          shadows: [
+                            Shadow(
+                              blurRadius: 2.0,
+                              color: Colors.black.withOpacity(0.8),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
