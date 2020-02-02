@@ -68,7 +68,7 @@ class _MomentViewState extends State<MomentView> {
 
     _image = Image.network(
       widget.moment.url,
-      fit: BoxFit.cover,
+      fit: BoxFit.scaleDown,
 //      cacheWidth: 640,
       loadingBuilder: (context, child, progress) {
         if (progress == null) {

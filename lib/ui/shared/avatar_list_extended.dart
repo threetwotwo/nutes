@@ -8,6 +8,8 @@ import 'package:nutes/ui/shared/buttons.dart';
 import 'avatar_list_item.dart';
 import 'avatar_image.dart';
 
+///ListView with AvatarListItem as its children
+///each item also has a follow button
 class AvatarListExtended extends StatefulWidget {
   final List<User> users;
 
@@ -39,6 +41,7 @@ class _AvatarListExtendedState extends State<AvatarListExtended> {
                 final List requests = data['requests'] ?? [];
 
                 return ListView.builder(
+                    physics: NeverScrollableScrollPhysics(),
                     shrinkWrap: true,
                     itemCount: widget.users.length,
                     itemBuilder: (context, index) {

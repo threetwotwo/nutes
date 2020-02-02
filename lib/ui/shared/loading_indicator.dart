@@ -10,7 +10,10 @@ class LoadingIndicator extends StatelessWidget {
       alignment: Alignment.topCenter,
       child: Padding(
         padding: EdgeInsets.all(padding),
-        child: CupertinoActivityIndicator(),
+        child: CupertinoTheme(
+            data: CupertinoTheme.of(context)
+                .copyWith(brightness: Brightness.light),
+            child: CupertinoActivityIndicator()),
       ),
     );
   }

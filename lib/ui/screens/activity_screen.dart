@@ -176,6 +176,7 @@ class _SelfActivityViewState extends State<SelfActivityView> {
         _activities.isEmpty
             ? EmptyIndicator('No recent activity')
             : ListView.builder(
+                physics: NeverScrollableScrollPhysics(),
                 shrinkWrap: true,
                 itemCount: _activities.length,
                 itemBuilder: (context, index) {

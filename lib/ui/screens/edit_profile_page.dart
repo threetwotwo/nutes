@@ -276,7 +276,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
 
   Future<void> pickImageFromLibrary() async {
-    final imageFile = await ImagePicker.pickImage(source: ImageSource.gallery);
+    final imageFile = await ImagePicker.pickImage(source: ImageSource.gallery)
+        .catchError((e) => throw (e));
 
     final cropped = await ImageCropper.cropImage(
       sourcePath: imageFile.path,

@@ -120,7 +120,7 @@ class _FollowerTabViewState extends State<FollowerTabView> {
   Widget build(BuildContext context) {
     return RefreshListView(
       onRefresh: _initUsers,
-//      onLoadMore: () {},
+      onLoadMore: _loadMore,
       children: <Widget>[
         users == null
             ? EmptyIndicator('Loading...')
@@ -132,4 +132,6 @@ class _FollowerTabViewState extends State<FollowerTabView> {
       ],
     );
   }
+
+  Future<void> _loadMore() {}
 }
