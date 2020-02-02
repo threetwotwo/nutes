@@ -210,6 +210,7 @@ class _ExploreTabViewState extends State<ExploreTabView>
                 physics: NeverScrollableScrollPhysics(),
                 shrinkWrap: true,
                 mainAxisSpacing: 1,
+                crossAxisSpacing: 1,
                 itemCount: widget.posts.length,
                 crossAxisCount: 2,
                 itemBuilder: (context, index) {
@@ -219,7 +220,7 @@ class _ExploreTabViewState extends State<ExploreTabView>
                     onTap: () =>
                         Navigator.push(context, PostDetailScreen.route(post)),
                     child: Container(
-//                      color: Colors.grey[200],
+                      color: Colors.grey[100],
                       child: post.type == PostType.shout
                           ? Center(
                               child: ShoutGridItem(

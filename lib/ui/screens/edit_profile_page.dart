@@ -277,14 +277,21 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   Future<void> pickImageFromLibrary() async {
     final imageFile = await ImagePicker.pickImage(source: ImageSource.gallery)
-        .catchError((e) => throw (e));
+        .catchError((e) {
+      print(e);
+      throw (e);
+    });
 
     final cropped = await ImageCropper.cropImage(
       sourcePath: imageFile.path,
       cropStyle: CropStyle.circle,
+      aspectRatio: CropAspectRatio(ratioX: 1, ratioY: 1),
       maxHeight: 600,
       maxWidth: 600,
-    );
+    ).catchError((e) {
+      print(e);
+      throw (e);
+    });
 
     ///If cancelled image picking and/or image cropping
     if (cropped == null) return;
