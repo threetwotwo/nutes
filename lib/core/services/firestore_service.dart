@@ -1257,9 +1257,9 @@ class FirestoreService {
 
     await storyRef.delete();
 
-    BotToast.showText(text: 'Deleted Story', align: Alignment(0, -0.8));
+    return BotToast.showText(text: 'Deleted Story', align: Alignment(0, -0.8));
 
-    return eventBus.fire(StoryDeleteEvent(moment.id));
+//    return eventBus.fire(StoryDeleteEvent(moment.id));
   }
 
   Future uploadStory(

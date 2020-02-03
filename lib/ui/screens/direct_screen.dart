@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:nutes/core/models/user.dart';
-import 'package:nutes/core/services/events.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/shared/app_bars.dart';
 import 'package:nutes/ui/shared/empty_indicator.dart';
@@ -126,11 +125,6 @@ class _DirectScreenState extends State<DirectScreen> {
                                               lastCheckedTimestamp.seconds &&
                                           lastCheckedSender != auth.uid);
 
-                                  unreadChats[user.uid] = hasUnread;
-
-                                  eventBus
-                                      .fire(ChatReadStatusEvent(unreadChats));
-                                  print(unreadChats);
                                   return DMListItem(
                                     user: user,
                                     lastChecked: lastChecked,

@@ -173,39 +173,23 @@ class PhotoImage extends StatelessWidget {
                           'assets/images/profile.png',
                           fit: BoxFit.cover,
                         ))
-                    : CachedNetworkImage(
-                        placeholder: (context, _) => Container(
-                          color: Colors.grey[200],
+                    : Center(
+                        child: CachedNetworkImage(
+                          placeholder: (context, _) => Container(
+                            color: Colors.grey[200],
+                          ),
+                          errorWidget: (_, __, ___) => Transform.scale(
+                              scale: 0.65,
+                              child: Image.asset(
+                                'assets/images/profile.png',
+                                fit: BoxFit.cover,
+                              )),
+                          imageUrl: url,
+                          fit: BoxFit.cover,
                         ),
-                        errorWidget: (_, __, ___) => Transform.scale(
-                            scale: 0.65,
-                            child: Image.asset(
-                              'assets/images/profile.png',
-                              fit: BoxFit.cover,
-                            )),
-                        imageUrl: url,
-                        fit: BoxFit.cover,
                       ),
-//                FadeInImage(
-//                        placeholder: MemoryImage(kTransparentImage),
-//                        image: NetworkImage(url),
-//                        fit: BoxFit.cover,
-//                      ),
               ),
             ),
-//                CachedNetworkImage(
-//                        imageUrl: url,
-//                        placeholder: (context, _) => Container(
-//                          color: Colors.grey[200],
-//                        ),
-//                        errorWidget: (context, url, obj) => Transform.scale(
-//                          scale: 0.65,
-//                          child: Image.asset(
-//                            'assets/images/avatar.png',
-//                            fit: BoxFit.cover,
-//                          ),
-//                        ),
-//                      )),
           ),
         ),
       ),

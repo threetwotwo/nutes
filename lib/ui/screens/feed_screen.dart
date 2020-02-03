@@ -62,7 +62,7 @@ class _FeedScreenState extends State<FeedScreen>
   final commentController = TextEditingController();
   final commentFocusNode = FocusNode();
 
-  UserStory myStory;
+//  UserStory myStory;
 
   List<UserStory> followingsStories = [];
 
@@ -71,8 +71,6 @@ class _FeedScreenState extends State<FeedScreen>
   User auth = FirestoreService.ath.user;
 
   Timer _debounce;
-
-  bool _hasUnreadDMs = false;
 
   @override
   void didChangeDependencies() {
@@ -108,27 +106,23 @@ class _FeedScreenState extends State<FeedScreen>
 
   @override
   void initState() {
-    myStory = UserStory(
-      story: Story.empty(),
-      uploader: auth,
-      lastTimestamp: null,
-    );
+//    myStory = UserStory(
+//      story: Story.empty(),
+//      uploader: auth,
+//      lastTimestamp: null,
+//    );
     _getInitialPosts();
-    _getMyStory();
+//    _getMyStory();
     _getStoriesOfFollowings();
 
     _refreshTimer();
+
+    _checkForNewMessages();
 
     eventBus.on().listen((event) {
       if (event is StoryDeleteEvent) {
 //        _getMyStory();
 //        _getStoriesOfFollowings();
-      }
-
-      if (event is ChatReadStatusEvent) {
-        setState(() {
-          _hasUnreadDMs = event.unreadChats.containsValue(true);
-        });
       } else
         _getInitialPosts();
     });
@@ -181,7 +175,6 @@ class _FeedScreenState extends State<FeedScreen>
         onCreatePressed: widget.onCreatePressed,
 //        onLogoutPressed: () => Repo.logout(),
         onDM: widget.onDM,
-        hasUnread: _hasUnreadDMs,
       ),
       body: profile == null
           ? LoadingIndicator()
@@ -229,18 +222,39 @@ class _FeedScreenState extends State<FeedScreen>
                       },
                       onLoadMore: _getMorePosts,
                       children: <Widget>[
-                        Container(
-                          height: 112,
-                          width: MediaQuery.of(context).size.width,
-                          color: Colors.white,
-                          child: myStory == null
-                              ? Center(child: LoadingIndicator())
-                              : ListView(
+                        StreamBuilder<QuerySnapshot>(
+                            stream: Repo.myStoryStream(),
+                            builder: (context, storySnap) {
+                              if (!storySnap.hasData) return LoadingIndicator();
+                              final momentDocs = storySnap.data.documents;
+
+                              final moments = momentDocs
+                                  .map((doc) => Moment.fromDoc(doc))
+                                  .toList();
+
+                              final story = Story(
+                                moments: moments,
+                                isFinished: false,
+                              );
+
+                              final userStory = UserStory(
+                                story: story,
+                                uploader: profile.user,
+                                lastTimestamp: moments.isEmpty
+                                    ? null
+                                    : moments[moments.length - 1].timestamp,
+                              );
+
+                              return Container(
+                                height: 112,
+                                width: MediaQuery.of(context).size.width,
+                                color: Colors.white,
+                                child: ListView(
                                   physics: BouncingScrollPhysics(),
                                   scrollDirection: Axis.horizontal,
                                   children: <Widget>[
                                     Visibility(
-                                      visible: myStory.story.moments.isEmpty,
+                                      visible: story.moments.isEmpty,
                                       child: StoryAvatar(
                                         isOwner: true,
 //                            user: User.empty(),
@@ -253,9 +267,8 @@ class _FeedScreenState extends State<FeedScreen>
                                     ),
                                     InlineStories(
                                       userStories: [
-                                            if (myStory
-                                                .story.moments.isNotEmpty)
-                                              myStory
+                                            if (story.moments.isNotEmpty)
+                                              userStory
                                           ] +
                                           followingsStories,
 //                          onCreateStory: widget.onCreatePressed,
@@ -263,7 +276,8 @@ class _FeedScreenState extends State<FeedScreen>
                                     ),
                                   ],
                                 ),
-                        ),
+                              );
+                            }),
                         Divider(),
                         isFetchingPosts
                             ? LoadingIndicator()
@@ -383,39 +397,39 @@ class _FeedScreenState extends State<FeedScreen>
   @override
   bool get wantKeepAlive => true;
 
-  void _getMyStory() async {
-    myStoryStream = Repo.myStoryStream();
-
-    ///Listen to changes to my story
-    myStoryStream.listen((event) {
-      List<Moment> moments = [];
-      List<Moment> removedMoments = [];
-
-      event.documentChanges.forEach((dc) {
-        final moment = Moment.fromDoc(dc.document);
-//        print(dc.newIndex);
-        dc.newIndex < 0 ? removedMoments.add(moment) : moments.add(moment);
-      });
-
-      myStory.story.moments.removeWhere((m) =>
-          removedMoments.firstWhere((rm) => rm.id == m.id,
-              orElse: () => null) !=
-          null);
-
-      if (moments.isNotEmpty) myStory.story.moments.addAll(moments);
-
-//      print('removed moments ._getMyStory: ${removedMoments.length}');
-//      print('added moments ._getMyStory: ${moments.length}');
-//      print('_FeedScreenState._getMyStory: ${myStory.story.moments.length}');
-
-      if (moments.isNotEmpty && mounted)
-        setState(() {
-          myStory = myStory.copyWith(
-              story: myStory.story,
-              lastTimestamp: moments[moments.length - 1].timestamp);
-        });
-    });
-  }
+//  void _getMyStory() async {
+//    myStoryStream = Repo.myStoryStream();
+//
+//    ///Listen to changes to my story
+//    myStoryStream.listen((event) {
+//      List<Moment> moments = [];
+//      List<Moment> removedMoments = [];
+//
+//      event.documentChanges.forEach((dc) {
+//        final moment = Moment.fromDoc(dc.document);
+////        print(dc.newIndex);
+//        dc.newIndex < 0 ? removedMoments.add(moment) : moments.add(moment);
+//      });
+//
+//      myStory.story.moments.removeWhere((m) =>
+//          removedMoments.firstWhere((rm) => rm.id == m.id,
+//              orElse: () => null) !=
+//          null);
+//
+//      if (moments.isNotEmpty) myStory.story.moments.addAll(moments);
+//
+////      print('removed moments ._getMyStory: ${removedMoments.length}');
+////      print('added moments ._getMyStory: ${moments.length}');
+////      print('_FeedScreenState._getMyStory: ${myStory.story.moments.length}');
+//
+//      if (moments.isNotEmpty && mounted)
+//        setState(() {
+//          myStory = myStory.copyWith(
+//              story: myStory.story,
+//              lastTimestamp: moments[moments.length - 1].timestamp);
+//        });
+//    });
+//  }
 
   bool isDoodling = false;
   VoidCallback _onDoodleStart() {
@@ -432,4 +446,6 @@ class _FeedScreenState extends State<FeedScreen>
     });
     return widget.onDoodleEnd;
   }
+
+  void _checkForNewMessages() {}
 }
