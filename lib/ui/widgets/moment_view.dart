@@ -4,9 +4,7 @@ import 'package:nutes/core/models/user.dart';
 import 'package:nutes/core/services/firestore_service.dart';
 import 'package:nutes/core/services/repository.dart';
 import 'package:nutes/ui/shared/avatar_image.dart';
-import 'package:nutes/ui/shared/buttons.dart';
 import 'package:nutes/ui/shared/styles.dart';
-import 'package:nutes/utils/icon_shadow.dart';
 
 class MomentView extends StatefulWidget {
 //  final String url;
@@ -66,6 +64,11 @@ class _MomentViewState extends State<MomentView> {
     setState(() {
       seenBy = result;
     });
+  }
+
+  @override
+  void setState(fn) {
+    if (mounted) super.setState(fn);
   }
 
   @override
@@ -133,20 +136,24 @@ class _MomentViewState extends State<MomentView> {
                     const EdgeInsets.symmetric(vertical: 0.0, horizontal: 0.0),
                 child: Row(
                   children: <Widget>[
-                    Padding(
-                      padding: const EdgeInsets.only(
-                          left: 16.0, top: 16, bottom: 16),
-                      child: Text(
-                        'seen by ${seenBy.length}',
-                        style: TextStyles.w500Text.copyWith(
-                          color: Colors.white,
-                          fontSize: 13,
-                          shadows: [
-                            Shadow(
-                              blurRadius: 2.0,
-                              color: Colors.black.withOpacity(0.8),
-                            ),
-                          ],
+                    GestureDetector(
+                      behavior: HitTestBehavior.deferToChild,
+                      onTap: () => print('seen by tapped'),
+                      child: Padding(
+                        padding: const EdgeInsets.only(
+                            left: 16.0, top: 16, bottom: 16),
+                        child: Text(
+                          'seen by ${seenBy.length}',
+                          style: TextStyles.w500Text.copyWith(
+                            color: Colors.white,
+                            fontSize: 13,
+                            shadows: [
+                              Shadow(
+                                blurRadius: 2.0,
+                                color: Colors.black.withOpacity(0.8),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),

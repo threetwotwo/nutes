@@ -2,7 +2,9 @@ import 'package:bot_toast/bot_toast.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:meta/meta.dart';
+import 'package:nutes/core/events/events.dart';
 import 'package:nutes/core/models/activity.dart';
 import 'package:nutes/core/models/chat_message.dart';
 import 'package:nutes/core/models/comment.dart';
@@ -10,6 +12,7 @@ import 'package:nutes/core/models/doodle.dart';
 import 'package:nutes/core/models/post.dart';
 import 'package:nutes/core/models/story.dart';
 import 'package:nutes/core/models/user.dart';
+import 'package:nutes/core/services/events.dart';
 import 'package:nutes/core/services/local_cache.dart';
 import 'package:nutes/utils/image_file_bundle.dart';
 
@@ -1227,6 +1230,17 @@ class FirestoreService {
     return batch.commit();
   }
 
+  Future<void> deleteStory(Moment moment) async {
+    ///Delete story from my ref
+    final storyRef = _storiesRef(ath.uid).document(moment.id);
+
+    await storyRef.delete();
+
+    BotToast.showText(text: 'Deleted Story', align: Alignment(0, -0.8));
+
+    return eventBus.fire(StoryDeleteEvent(moment.id));
+  }
+
   Future uploadStory(
       {@required DocumentReference storyRef, @required String url}) async {
     return await storyRef.setData({
@@ -1245,7 +1259,7 @@ class FirestoreService {
     return ref;
   }
 
-  DocumentReference createStoryRef() {
+  DocumentReference storyRef() {
     final ref = shared
         .collection('users')
         .document(auth.uid)

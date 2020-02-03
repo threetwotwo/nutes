@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import 'dart:async';
@@ -8,7 +9,6 @@ import 'package:nutes/core/models/story.dart';
 import 'package:nutes/core/models/user.dart';
 import 'package:nutes/core/services/repository.dart';
 
-import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:nutes/ui/screens/profile_screen.dart';
 import 'package:nutes/ui/shared/avatar_image.dart';
@@ -146,6 +146,11 @@ class _StoryViewState extends State<StoryView>
   }
 
   @override
+  void setState(fn) {
+    if (mounted) super.setState(fn);
+  }
+
+  @override
   void initState() {
     _init();
 
@@ -159,6 +164,7 @@ class _StoryViewState extends State<StoryView>
     } else {
       story = widget.story;
 
+//      if (story.moments.isNotEmpty)
       _initAnimationController();
     }
   }
@@ -268,6 +274,10 @@ class _StoryViewState extends State<StoryView>
   ///provided the current moment has been loaded
   void _play() {
     if (story == null || widget.story == null) return;
+    if (story.moments.isEmpty) return;
+
+    ///if momentIndex is not in ranged (due to deletion)
+    if (momentIndex > story.moments.length - 1) return;
 
     if (story.moments[momentIndex].isLoaded) controller.forward();
   }
@@ -275,7 +285,7 @@ class _StoryViewState extends State<StoryView>
   @override
   void dispose() {
 //    SystemChrome.setEnabledSystemUIOverlays(SystemUiOverlay.values);
-    print('dispose moment ${widget.story.moments[momentIndex].id}');
+    print('dispose moment');
 
     controller.dispose();
     super.dispose();
@@ -286,7 +296,7 @@ class _StoryViewState extends State<StoryView>
     return Scaffold(
       backgroundColor: Colors.grey[600],
       body: story == null
-          ? Container(color: Colors.pink)
+          ? Container(color: Colors.grey[600])
           : Stack(
               alignment: Alignment.center,
               children: <Widget>[
@@ -295,18 +305,25 @@ class _StoryViewState extends State<StoryView>
                   child: PageView.builder(
                     controller: _momentPageController,
                     itemBuilder: (context, index) {
-                      final moment = story.moments[index];
+                      if (story.moments.isEmpty ||
+                          index > story.moments.length - 1) return SizedBox();
+
+//                      final moment = story.moments[index];
 
                       return MomentView(
                         isFooterVisible: !isInFullscreenMode,
-                        moment: moment,
+                        moment: story.moments[index],
                         uploader: widget.uploader,
 //                    url: moment.url,
                         onLoad: () {
-                          moment.isLoaded = true;
+                          story.moments[index].isLoaded = true;
                           _play();
                         },
                         onError: () {},
+                        onDeleteTapped: () {
+                          _stop();
+                          _showConfirmDelete();
+                        },
                       );
                     },
                   ),
@@ -421,25 +438,31 @@ class _StoryViewState extends State<StoryView>
                                               ),
                                             ),
                                             TextSpan(text: '  '),
-                                            TextSpan(
-                                              text: TimeAgo.formatShort(widget
-                                                  .story
-                                                  .moments[momentIndex]
-                                                  .timestamp
-                                                  .toDate()),
-                                              style: TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 15,
-                                                fontWeight: FontWeight.w300,
-                                                shadows: [
-                                                  Shadow(
-                                                    blurRadius: 4.0,
-                                                    color: Colors.black
-                                                        .withOpacity(0.2),
-                                                  ),
-                                                ],
+                                            if (widget
+                                                    .story.moments.isNotEmpty &&
+                                                momentIndex <=
+                                                    widget.story.moments
+                                                            .length -
+                                                        1)
+                                              TextSpan(
+                                                text: TimeAgo.formatShort(widget
+                                                    .story
+                                                    .moments[momentIndex]
+                                                    .timestamp
+                                                    .toDate()),
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 15,
+                                                  fontWeight: FontWeight.w300,
+                                                  shadows: [
+                                                    Shadow(
+                                                      blurRadius: 4.0,
+                                                      color: Colors.black
+                                                          .withOpacity(0.2),
+                                                    ),
+                                                  ],
+                                                ),
                                               ),
-                                            ),
                                           ]),
                                         ),
                                       ),
@@ -449,9 +472,6 @@ class _StoryViewState extends State<StoryView>
                               ),
                               CancelButton(
                                 onPressed: () {
-                                  SystemChrome.setEnabledSystemUIOverlays(
-                                      SystemUiOverlay.values);
-
                                   if (mounted) Navigator.of(context).pop();
                                   return;
                                 },
@@ -468,7 +488,7 @@ class _StoryViewState extends State<StoryView>
                   top: 120,
                   left: 0,
                   right: 0,
-                  bottom: 0,
+                  bottom: widget.isOwner ? 64 : 0,
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
                     onTapDown: onTapDown,
@@ -480,5 +500,43 @@ class _StoryViewState extends State<StoryView>
               ],
             ),
     );
+  }
+
+  Future<void> _showConfirmDelete() {
+    return showCupertinoDialog(
+        context: context,
+        builder: (context) => CupertinoAlertDialog(
+              content: Text('Delete this story?'),
+              actions: <Widget>[
+                CupertinoDialogAction(
+                  onPressed: () {
+                    _play();
+                    return Navigator.of(context).pop();
+                  },
+                  child: Text('Cancel'),
+                  isDefaultAction: true,
+                ),
+                CupertinoDialogAction(
+                  onPressed: () async {
+                    final moment = widget.story.moments[momentIndex];
+
+//                    setState(() {
+//                      momentIndex = 0;
+//                      story.moments.remove(moment);
+//                    });
+                    Navigator.of(context).popUntil((r) => r.isFirst);
+                    Repo.deleteStory(moment);
+//
+
+//                    controller.forward();
+//                    Navigator.of(context).pop();
+//                    _play();
+                    return;
+                  },
+                  child: Text('Delete'),
+                  isDestructiveAction: true,
+                ),
+              ],
+            ));
   }
 }

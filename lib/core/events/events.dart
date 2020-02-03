@@ -1,6 +1,12 @@
 import 'package:nutes/core/models/post.dart';
 import 'package:nutes/core/models/user.dart';
 
+class StoryDeleteEvent {
+  final String momentId;
+
+  StoryDeleteEvent(this.momentId);
+}
+
 class PostDeleteEvent {
   final String postId;
 

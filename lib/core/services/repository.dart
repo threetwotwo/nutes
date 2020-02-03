@@ -250,8 +250,11 @@ class Repo {
     );
   }
 
+  static Future<void> deleteStory(Moment moment) async =>
+      shared._firestore.deleteStory(moment);
+
   static Future uploadStory({@required ImageFileBundle fileBundle}) async {
-    final storyRef = shared._firestore.createStoryRef();
+    final storyRef = shared._firestore.storyRef();
 
     final url = await shared._storage.uploadStoryFiles(
         storyId: storyRef.documentID, uid: auth.uid, fileBundle: fileBundle);

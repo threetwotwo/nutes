@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:nutes/core/events/events.dart';
 import 'package:nutes/core/models/post.dart';
 import 'package:nutes/core/models/story.dart';
 import 'package:nutes/core/models/user.dart';
@@ -116,27 +117,14 @@ class _FeedScreenState extends State<FeedScreen>
     _getMyStory();
     _getStoriesOfFollowings();
 
-//    eventBus.on<UserFollowEvent>().listen((event) {
-////      BotToast.showText(text: 'Followed ${event.user.username}');
-//
-//      _getInitialPosts();
-//    });
-//
-//    eventBus.on<UserUnFollowEvent>().listen((event) {
-////      setState(() {
-////        posts = List<Post>.from(posts)
-////          ..removeWhere((p) => p.owner.uid == event.uid);
-////      });
-//      _getInitialPosts();
-//    });
-//
-//    eventBus.on<PostUploadEvent>().listen((event) {
-//      _getInitialPosts();
-//    });
-
     _refreshTimer();
 
     eventBus.on().listen((event) {
+      if (event is StoryDeleteEvent) {
+//        _getMyStory();
+//        _getStoriesOfFollowings();
+      }
+
       if (event is ChatReadStatusEvent) {
         setState(() {
           _hasUnreadDMs = event.unreadChats.containsValue(true);
@@ -383,6 +371,10 @@ class _FeedScreenState extends State<FeedScreen>
   ///TODO: sort the user stories
   Future<void> _getStoriesOfFollowings() async {
     final result = await Repo.getStoriesOfFollowings();
+
+    result.sort(
+        (a, b) => b.lastTimestamp.seconds.compareTo(a.lastTimestamp.seconds));
+
     setState(() {
       followingsStories = result;
     });
@@ -396,15 +388,30 @@ class _FeedScreenState extends State<FeedScreen>
 
     ///Listen to changes to my story
     myStoryStream.listen((event) {
-      final moments = event.documentChanges
-          .map((dc) => Moment.fromDoc(dc.document))
-          .toList();
+      List<Moment> moments = [];
+      List<Moment> removedMoments = [];
 
-      myStory.story.moments.addAll(moments);
+      event.documentChanges.forEach((dc) {
+        final moment = Moment.fromDoc(dc.document);
+//        print(dc.newIndex);
+        dc.newIndex < 0 ? removedMoments.add(moment) : moments.add(moment);
+      });
+
+      myStory.story.moments.removeWhere((m) =>
+          removedMoments.firstWhere((rm) => rm.id == m.id,
+              orElse: () => null) !=
+          null);
+
+      if (moments.isNotEmpty) myStory.story.moments.addAll(moments);
+
+//      print('removed moments ._getMyStory: ${removedMoments.length}');
+//      print('added moments ._getMyStory: ${moments.length}');
+//      print('_FeedScreenState._getMyStory: ${myStory.story.moments.length}');
 
       if (moments.isNotEmpty && mounted)
         setState(() {
           myStory = myStory.copyWith(
+              story: myStory.story,
               lastTimestamp: moments[moments.length - 1].timestamp);
         });
     });
