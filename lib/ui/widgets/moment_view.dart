@@ -1,8 +1,10 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:nutes/core/models/story.dart';
 import 'package:nutes/core/models/user.dart';
 import 'package:nutes/core/services/firestore_service.dart';
 import 'package:nutes/core/services/repository.dart';
+import 'package:nutes/ui/screens/seen_by_screen.dart';
 import 'package:nutes/ui/shared/avatar_image.dart';
 import 'package:nutes/ui/shared/styles.dart';
 
@@ -38,6 +40,8 @@ class MomentView extends StatefulWidget {
 class _MomentViewState extends State<MomentView> {
   List<User> seenBy = [];
 
+  UserCursor userCursor;
+
   var isOwner = false;
 
   Image _image;
@@ -61,8 +65,12 @@ class _MomentViewState extends State<MomentView> {
 
     final result = await Repo.getMomentSeenBy(owner, widget.moment.id);
 
+    print('_MomentViewState._getSeenBy');
+    print(result.users.length);
+
     setState(() {
-      seenBy = result;
+      seenBy = result.users;
+      userCursor = result;
     });
   }
 
@@ -108,7 +116,9 @@ class _MomentViewState extends State<MomentView> {
   Widget build(BuildContext context) {
     return Stack(
       children: <Widget>[
-        Positioned.fill(child: _image),
+        widget.moment.url.isEmpty
+            ? Center(child: Text('deleted'))
+            : Positioned.fill(child: _image),
 
         ///footer
         if (isOwner && seenBy.isNotEmpty && widget.isFooterVisible)
@@ -137,8 +147,14 @@ class _MomentViewState extends State<MomentView> {
                 child: Row(
                   children: <Widget>[
                     GestureDetector(
-                      behavior: HitTestBehavior.deferToChild,
-                      onTap: () => print('seen by tapped'),
+                      onTap: () {
+                        Navigator.of(context).push(SeenByScreen.route(
+                          momentId: widget.moment.id,
+                          ownerId: widget.uploader.uid,
+                          userCursor: userCursor,
+                        ));
+                        return widget.onSeenByTapped();
+                      },
                       child: Padding(
                         padding: const EdgeInsets.only(
                             left: 16.0, top: 16, bottom: 16),
@@ -158,22 +174,32 @@ class _MomentViewState extends State<MomentView> {
                       ),
                     ),
                     Expanded(
-                      child: Container(
+                      child: GestureDetector(
+                        onTap: () {
+                          Navigator.of(context).push(SeenByScreen.route(
+                            momentId: widget.moment.id,
+                            ownerId: widget.uploader.uid,
+                            userCursor: userCursor,
+                          ));
+                          return widget.onSeenByTapped();
+                        },
+                        child: Container(
 //                        color: Colors.blue.withOpacity(0.32),
-                        height: 48,
-                        child: Stack(
-                          children: List<Widget>.generate(
-                            seenBy.length,
-                            (idx) => Align(
-                              alignment: Alignment.bottomLeft,
-                              child: Padding(
-                                padding: EdgeInsets.only(
-                                  left: idx * 16.0,
-                                ),
-                                child: AvatarImage(
-                                  url: seenBy[idx].urls.small,
-                                  spacing: 4,
-                                  padding: 0,
+                          height: 48,
+                          child: Stack(
+                            children: List<Widget>.generate(
+                              seenBy.length,
+                              (idx) => Align(
+                                alignment: Alignment.bottomLeft,
+                                child: Padding(
+                                  padding: EdgeInsets.only(
+                                    left: idx * 16.0,
+                                  ),
+                                  child: AvatarImage(
+                                    url: seenBy[idx].urls.small,
+                                    spacing: 4,
+                                    padding: 0,
+                                  ),
                                 ),
                               ),
                             ),

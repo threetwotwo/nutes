@@ -76,6 +76,11 @@ class _FollowingsActivityScreenState extends State<FollowingsActivityScreen> {
   bool isLoading = false;
 
   @override
+  void setState(fn) {
+    if (mounted) super.setState(fn);
+  }
+
+  @override
   void initState() {
     _getActivities();
     super.initState();

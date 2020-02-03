@@ -97,7 +97,12 @@ class Repo {
     return storiesStreamController.add(snapshot);
   }
 
-  static Future<List<User>> getMomentSeenBy(String ownerId, String momentId) =>
+  static Future<UserCursor> getMoreMomentSeenBy(
+          {String ownerId, String momentId, DocumentSnapshot startAfter}) =>
+      shared._firestore.getMoreMomentSeenBy(
+          ownerId: ownerId, momentId: momentId, startAfter: startAfter);
+
+  static Future<UserCursor> getMomentSeenBy(String ownerId, String momentId) =>
       shared._firestore.getMomentSeenBy(ownerId, momentId);
 
   static Future<void> setMomentAsSeen(String ownerId, String momentId) =>

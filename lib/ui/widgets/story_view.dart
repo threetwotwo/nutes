@@ -11,6 +11,7 @@ import 'package:nutes/core/services/repository.dart';
 
 import 'package:flutter/widgets.dart';
 import 'package:nutes/ui/screens/profile_screen.dart';
+import 'package:nutes/ui/screens/seen_by_screen.dart';
 import 'package:nutes/ui/shared/avatar_image.dart';
 import 'package:nutes/ui/shared/buttons.dart';
 import 'package:nutes/ui/shared/styles.dart';
@@ -308,18 +309,20 @@ class _StoryViewState extends State<StoryView>
                       if (story.moments.isEmpty ||
                           index > story.moments.length - 1) return SizedBox();
 
-//                      final moment = story.moments[index];
+                      final moment = story.moments[index];
 
                       return MomentView(
                         isFooterVisible: !isInFullscreenMode,
-                        moment: story.moments[index],
+                        moment: moment,
                         uploader: widget.uploader,
-//                    url: moment.url,
                         onLoad: () {
-                          story.moments[index].isLoaded = true;
+                          moment.isLoaded = true;
                           _play();
                         },
                         onError: () {},
+                        onSeenByTapped: () {
+                          _stop();
+                        },
                         onDeleteTapped: () {
                           _stop();
                           _showConfirmDelete();

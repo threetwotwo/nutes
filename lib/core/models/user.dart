@@ -3,10 +3,15 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/foundation.dart';
 import 'package:nutes/utils/image_file_bundle.dart';
 
-class PrivateInfo {
-  final String email;
+///For pagination
+class UserCursor {
+  final List<User> users;
+  final DocumentSnapshot startAfter;
 
-  PrivateInfo(this.email);
+  UserCursor(
+    this.users,
+    this.startAfter,
+  );
 }
 
 class UserProfile {

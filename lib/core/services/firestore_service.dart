@@ -976,15 +976,36 @@ class FirestoreService {
     return ref.setData(stories);
   }
 
-  Future<List<User>> getMomentSeenBy(String ownerId, String momentId) async {
-    final query = momentRef(ownerId, momentId).collection('seen_by');
+  Future<UserCursor> getMoreMomentSeenBy(
+      {String ownerId, String momentId, DocumentSnapshot startAfter}) async {
+    final query = momentRef(ownerId, momentId)
+        .collection('seen_by')
+        .orderBy('timestamp', descending: true)
+        .startAfterDocument(startAfter)
+        .limit(24);
+    final snap = await query.getDocuments();
+
+    final users =
+        snap.documents.map((doc) => User.fromMap(doc['owner'] ?? {})).toList();
+
+    return snap.documents.isEmpty
+        ? UserCursor(users, startAfter)
+        : UserCursor(users, snap.documents.last);
+  }
+
+  Future<UserCursor> getMomentSeenBy(String ownerId, String momentId) async {
+    final query = momentRef(ownerId, momentId)
+        .collection('seen_by')
+        .orderBy('timestamp', descending: true)
+        .limit(8);
 
     final snap = await query.getDocuments();
 
     print('moment $momentId seen by ${snap.documents.length}');
-    return snap.documents
-        .map((doc) => User.fromMap(doc['owner'] ?? {}))
-        .toList();
+    final users =
+        snap.documents.map((doc) => User.fromMap(doc['owner'] ?? {})).toList();
+
+    return UserCursor(users, snap.documents.last);
   }
 
   Future<void> setMomentAsSeen(String ownerId, String momentId) async {
